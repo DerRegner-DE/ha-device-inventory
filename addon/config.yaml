@@ -1,0 +1,23 @@
+name: "Geräteverwaltung"
+description: "Smart Home Device Inventory Management - Offline-First PWA"
+version: "1.0.0"
+slug: "geraeteverwaltung"
+url: "https://github.com/DerRegner-DE/ha-device-inventory"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+homeassistant_api: true
+ingress: true
+ingress_port: 3001
+panel_icon: "mdi:devices"
+panel_title: "Geräteverwaltung"
+map:
+  - addon_config:rw
+  - media:rw
+options:
+  language: "de"
+schema:
+  language: "str"
+startup: "application"
+init: false

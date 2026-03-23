@@ -1,0 +1,200 @@
+import { useState, useEffect } from "preact/hooks";
+import { route } from "preact-router";
+import { liveQuery } from "dexie";
+import { db, type Device } from "../db/schema";
+import { FLOORS, getAreaName, getDeviceTypeLabel } from "../utils/constants";
+import { t } from "../i18n";
+import { useLanguage } from "../i18n";
+import { getDeviceLimit } from "../license";
+import { useLicense } from "../license/useLicense";
+
+interface CountItem {
+  label: string;
+  count: number;
+  filterKey: string;
+  filterValue: string;
+}
+
+export function Dashboard() {
+  useLanguage();
+  const license = useLicense();
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
+  const deviceLimit = getDeviceLimit();
+
+  useEffect(() => {
+    const sub = liveQuery(() => db.devices.toArray()).subscribe({
+      next: (result) => {
+        setDevices(result);
+        setLoading(false);
+      },
+      error: () => setLoading(false),
+    });
+    return () => sub.unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div class="flex items-center justify-center py-20">
+        <div class="animate-spin w-8 h-8 border-2 border-[#1F4E79] border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  const total = devices.length;
+
+  const byType = new Map<string, number>();
+  const byArea = new Map<string, number>();
+  const byIntegration = new Map<string, number>();
+
+  for (const d of devices) {
+    byType.set(d.typ, (byType.get(d.typ) ?? 0) + 1);
+    if (d.standort_area_id) {
+      byArea.set(d.standort_area_id, (byArea.get(d.standort_area_id) ?? 0) + 1);
+    }
+    if (d.integration) {
+      byIntegration.set(d.integration, (byIntegration.get(d.integration) ?? 0) + 1);
+    }
+  }
+
+  const typeCounts: CountItem[] = [...byType.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([typeId, count]) => ({
+      label: t(getDeviceTypeLabel(typeId)),
+      count,
+      filterKey: "typ",
+      filterValue: typeId,
+    }));
+
+  const areaCounts: CountItem[] = [...byArea.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([id, count]) => ({
+      label: getAreaName(id),
+      count,
+      filterKey: "area",
+      filterValue: id,
+    }));
+
+  const integrationCounts: CountItem[] = [...byIntegration.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([label, count]) => ({
+      label,
+      count,
+      filterKey: "integration",
+      filterValue: label,
+    }));
+
+  const recentDevices = [...devices]
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
+    .slice(0, 5);
+
+  return (
+    <div class="p-4 space-y-6">
+      <div class="bg-gradient-to-br from-[#1F4E79] to-[#2d6da3] rounded-2xl p-5 text-white">
+        <p class="text-white/70 text-xs font-medium uppercase tracking-wider">{t("dashboard.total")}</p>
+        <p class="text-4xl font-bold mt-1">{total}</p>
+        <p class="text-white/70 text-sm mt-1">
+          {deviceLimit < Infinity
+            ? t("license.deviceLimit", { count: total, limit: deviceLimit })
+            : total !== 1
+            ? t("dashboard.devicesCountPlural", { count: total })
+            : t("dashboard.devicesCount", { count: total })}
+        </p>
+        <div class="flex gap-4 mt-4">
+          <div>
+            <p class="text-2xl font-semibold">{byType.size}</p>
+            <p class="text-white/60 text-xs">{t("dashboard.types")}</p>
+          </div>
+          <div>
+            <p class="text-2xl font-semibold">{byArea.size}</p>
+            <p class="text-white/60 text-xs">{t("dashboard.locations")}</p>
+          </div>
+          <div>
+            <p class="text-2xl font-semibold">{byIntegration.size}</p>
+            <p class="text-white/60 text-xs">{t("dashboard.integrations")}</p>
+          </div>
+        </div>
+      </div>
+
+      {total === 0 && (
+        <div class="text-center py-8">
+          <p class="text-gray-400 text-sm mb-3">{t("dashboard.noDevices")}</p>
+          <button
+            onClick={() => route("/add")}
+            class="px-4 py-2 bg-[#1F4E79] text-white rounded-xl text-sm font-medium"
+          >
+            {t("dashboard.addFirst")}
+          </button>
+        </div>
+      )}
+
+      {typeCounts.length > 0 && (
+        <CountSection title={t("dashboard.byType")} items={typeCounts} />
+      )}
+
+      {areaCounts.length > 0 && (
+        <CountSection title={t("dashboard.byLocation")} items={areaCounts} />
+      )}
+
+      {integrationCounts.length > 0 && (
+        <CountSection title={t("dashboard.byIntegration")} items={integrationCounts} />
+      )}
+
+      {recentDevices.length > 0 && (
+        <div>
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">{t("dashboard.recentlyEdited")}</h3>
+          <div class="space-y-2">
+            {recentDevices.map((d) => (
+              <div
+                key={d.uuid}
+                onClick={() => route(`/devices/${d.uuid}`)}
+                class="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3 cursor-pointer hover:bg-gray-50"
+              >
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-gray-800 truncate">{d.bezeichnung}</p>
+                  <p class="text-[10px] text-gray-400">
+                    {new Date(d.updated_at).toLocaleString("de-DE")}
+                  </p>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 shrink-0 ml-2">
+                  {t(getDeviceTypeLabel(d.typ))}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CountSection({
+  title,
+  items,
+}: {
+  title: string;
+  items: CountItem[];
+}) {
+  const maxCount = Math.max(...items.map((i) => i.count));
+
+  return (
+    <div>
+      <h3 class="text-sm font-semibold text-gray-700 mb-3">{title}</h3>
+      <div class="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+        {items.map((item) => (
+          <div key={item.label} class="flex items-center gap-3 px-4 py-2.5">
+            <span class="text-xs text-gray-600 w-28 truncate shrink-0">{item.label}</span>
+            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                class="h-full bg-[#1F4E79] rounded-full transition-all"
+                style={{ width: `${(item.count / maxCount) * 100}%` }}
+              />
+            </div>
+            <span class="text-xs font-semibold text-gray-700 w-8 text-right">{item.count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,27 @@
+[Unit]
+Description=Geraeteverwaltung Backend (FastAPI)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/geraeteverwaltung/backend
+Environment="PATH=/opt/geraeteverwaltung/backend/.venv/bin:/usr/local/bin:/usr/bin"
+Environment="GV_HA_TOKEN="
+Environment="GV_HA_URL=http://homeassistant.local:8123"
+ExecStart=/opt/geraeteverwaltung/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 3002 --workers 2 --log-level info
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/geraeteverwaltung/backend/data /opt/geraeteverwaltung/backend/photos
+
+[Install]
+WantedBy=multi-user.target
