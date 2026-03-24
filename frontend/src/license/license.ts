@@ -76,7 +76,12 @@ function getApiBase(): string {
 function base64urlDecode(str: string): string {
   let b64 = str.replace(/-/g, "+").replace(/_/g, "/");
   while (b64.length % 4 !== 0) b64 += "=";
-  return atob(b64);
+  // Use Uint8Array + TextDecoder for proper UTF-8 handling.
+  // atob() returns Latin-1 which breaks on multi-byte UTF-8 sequences.
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
 }
 
 // ----- HMAC-SHA256 (Web Crypto API with backend fallback) ----------------------

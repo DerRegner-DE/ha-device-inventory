@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Geraeteverwaltung API",
     description="Device inventory management for Home Assistant",
-    version="0.1.3",
+    version="1.3.1",
     lifespan=lifespan,
 )
 
@@ -95,7 +95,7 @@ app.include_router(ha_proxy.router, prefix="/api")
 def health_check():
     return {
         "status": "ok",
-        "version": "0.1.3",
+        "version": "1.3.1",
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
     }
@@ -154,9 +154,12 @@ def _hmac_sha256(message: str, secret: str) -> str:
 def _base64url_decode(s: str) -> str:
     import base64
 
-    padded = s + "=" * (4 - len(s) % 4) if len(s) % 4 else s
-    padded = padded.replace("-", "+").replace("_", "/")
-    return base64.b64decode(padded).decode("utf-8")
+    # Restore base64url → standard base64 alphabet first, then pad.
+    s = s.replace("-", "+").replace("_", "/")
+    remainder = len(s) % 4
+    if remainder:
+        s += "=" * (4 - remainder)
+    return base64.b64decode(s).decode("utf-8")
 
 
 @app.post("/api/license/validate")
@@ -170,9 +173,10 @@ def validate_license(body: LicenseValidateBody):
 
         payload_json = _base64url_decode(payload_b64)
         expected_sig = _hmac_sha256(payload_json, VERIFY_KEY)
-        provided_sig = _base64url_decode(sig_b64)
-
-        if provided_sig != expected_sig:
+        # sig_b64 is base64url-encoded hex string from frontend
+        provided_sig_raw = _base64url_decode(sig_b64)
+        # Compare: frontend sends hex-encoded HMAC as base64url, so decode gives hex string
+        if provided_sig_raw != expected_sig:
             return {"valid": False, "tier": "free", "features": []}
 
         payload = json.loads(payload_json)
