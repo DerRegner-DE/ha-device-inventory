@@ -19,8 +19,11 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const [webcamAvailable, setWebcamAvailable] = useState(false);
 
   // Check if getUserMedia is available (secure context + not in restrictive iframe)
+  // Hide webcam button on mobile devices where getUserMedia doesn't work in Ingress iframes
   useEffect(() => {
+    const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (
+      !isMobile &&
       window.isSecureContext &&
       navigator.mediaDevices &&
       typeof navigator.mediaDevices.getUserMedia === "function"

@@ -19,9 +19,17 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
   const handleClose = () => {
     if (html5QrCodeRef.current) {
-      html5QrCodeRef.current.stop().catch(() => {});
+      html5QrCodeRef.current
+        .stop()
+        .catch(() => {})
+        .finally(() => {
+          document.getElementById("barcode-reader")?.replaceChildren();
+          html5QrCodeRef.current = null;
+          onCloseRef.current();
+        });
+    } else {
+      onCloseRef.current();
     }
-    onCloseRef.current();
   };
 
   useEffect(() => {
@@ -44,8 +52,14 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
           (decodedText) => {
-            onScanRef.current(decodedText);
-            scanner.stop().catch(() => {});
+            scanner
+              .stop()
+              .catch(() => {})
+              .finally(() => {
+                document.getElementById("barcode-reader")?.replaceChildren();
+                html5QrCodeRef.current = null;
+                onScanRef.current(decodedText);
+              });
           },
           () => {}
         );
