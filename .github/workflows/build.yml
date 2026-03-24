@@ -46,9 +46,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+      - name: Extract version and repo
+        id: meta
+        run: |
+          echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v5
@@ -58,7 +60,7 @@ jobs:
           platforms: linux/amd64,linux/aarch64,linux/arm/v7
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ steps.meta.outputs.repo }}:${{ steps.meta.outputs.version }}
+            ghcr.io/${{ steps.meta.outputs.repo }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
