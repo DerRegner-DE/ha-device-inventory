@@ -27,7 +27,7 @@ export function Layout({ children, activeRoute }: LayoutProps) {
       )}
       <main
         class="flex-1 overflow-y-auto"
-        style="padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));"
+        style="padding-bottom: calc(5.5rem + max(env(safe-area-inset-bottom, 0px), 12px));"
       >
         {children}
       </main>
