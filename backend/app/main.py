@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Geraeteverwaltung API",
     description="Device inventory management for Home Assistant",
-    version="0.1.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -95,7 +95,7 @@ app.include_router(ha_proxy.router, prefix="/api")
 def health_check():
     return {
         "status": "ok",
-        "version": "0.1.0",
+        "version": "1.1.0",
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
     }
