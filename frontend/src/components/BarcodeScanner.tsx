@@ -57,7 +57,19 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
     return () => {
       mounted = false;
       if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().catch(() => {});
+        html5QrCodeRef.current
+          .stop()
+          .catch(() => {})
+          .finally(() => {
+            // Clear any leftover DOM elements from html5-qrcode
+            const container = document.getElementById("barcode-reader");
+            if (container) {
+              while (container.firstChild) {
+                container.removeChild(container.firstChild);
+              }
+            }
+            html5QrCodeRef.current = null;
+          });
       }
     };
   }, []);

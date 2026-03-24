@@ -115,16 +115,18 @@ async function fetchLicenseFromServer(): Promise<string> {
   }
 }
 
-async function saveLicenseToServer(key: string): Promise<void> {
+async function saveLicenseToServer(key: string): Promise<boolean> {
   try {
-    await fetch(`${getApiBase()}/license`, {
+    const res = await fetch(`${getApiBase()}/license`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key }),
       signal: AbortSignal.timeout(5000),
     });
+    return res.ok;
   } catch {
     // Server save failed, localStorage still works as fallback
+    return false;
   }
 }
 
@@ -216,19 +218,21 @@ let cacheReady = false;
 
 /** Initialise the cache from server (then localStorage fallback). Call once at app startup. */
 export async function initLicense(): Promise<LicenseInfo> {
-  // Try to fetch from server first
-  let stored = await fetchLicenseFromServer();
+  let serverKey = await fetchLicenseFromServer();
+  const localKey = localStorage.getItem(STORAGE_KEY) ?? "";
 
-  if (stored) {
-    // Sync server key to localStorage for offline use
-    localStorage.setItem(STORAGE_KEY, stored);
-  } else {
-    // Fallback to localStorage
-    stored = localStorage.getItem(STORAGE_KEY) ?? "";
+  if (!serverKey && localKey) {
+    // localStorage has key but server doesn't - sync to server
+    const saved = await saveLicenseToServer(localKey);
+    if (saved) serverKey = localKey;
+  } else if (serverKey && serverKey !== localKey) {
+    // Server has key - sync to localStorage for offline use
+    localStorage.setItem(STORAGE_KEY, serverKey);
   }
 
-  if (stored) {
-    cachedLicense = await validateKey(stored);
+  const keyToUse = serverKey || localKey;
+  if (keyToUse) {
+    cachedLicense = await validateKey(keyToUse);
   } else {
     cachedLicense = FREE_LICENSE;
   }
