@@ -1,20 +1,5 @@
 # ==============================================================================
-# Stage 1: Build frontend with Node.js
-# ==============================================================================
-FROM node:20-alpine AS frontend-builder
-
-WORKDIR /build/frontend
-
-# Copy package files first for better layer caching
-COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci --ignore-scripts
-
-# Copy frontend source and build
-COPY frontend/ ./
-RUN npm run build
-
-# ==============================================================================
-# Stage 2: Python runtime with nginx
+# Runtime image - frontend is pre-built in CI pipeline
 # ==============================================================================
 FROM python:3.12-alpine
 
@@ -34,8 +19,8 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 
-# Copy built frontend from stage 1
-COPY --from=frontend-builder /build/frontend/dist/ /app/frontend/
+# Copy pre-built frontend (built in CI before docker build)
+COPY frontend/dist/ /app/frontend/
 
 # Copy backend
 COPY backend/ /app/backend/
