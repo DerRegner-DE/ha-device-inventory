@@ -16,6 +16,17 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   useEffect(() => {
     let mediaStream: MediaStream | null = null;
+
+    if (!window.isSecureContext) {
+      setError(t("camera.httpsRequired"));
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError(t("camera.notSupported"));
+      return;
+    }
+
     navigator.mediaDevices
       .getUserMedia({
         video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } },

@@ -130,9 +130,12 @@
   "sync.pending": "{count} pending",
 
   "camera.error": "Could not open camera.",
+  "camera.httpsRequired": "Camera requires a secure connection (HTTPS). Please access via Nabu Casa or HTTPS.",
+  "camera.notSupported": "Camera is not supported by this browser.",
   "scanner.title": "Scan Barcode / QR Code",
   "scanner.hint": "Hold barcode within the frame",
   "scanner.error": "Could not start scanner.",
+  "scanner.httpsRequired": "Barcode scanner requires a secure connection (HTTPS). Please access via Nabu Casa or HTTPS.",
 
   "types.router": "Router",
   "types.repeater": "Repeater",

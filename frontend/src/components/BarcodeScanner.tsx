@@ -29,6 +29,11 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
     (async () => {
       try {
+        if (!window.isSecureContext) {
+          if (mounted) setError(t("scanner.httpsRequired"));
+          return;
+        }
+
         const { Html5Qrcode } = await import("html5-qrcode");
         if (!mounted || !scannerRef.current) return;
 

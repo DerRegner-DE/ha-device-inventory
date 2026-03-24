@@ -89,7 +89,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
   };
 
   return (
-    <div class="p-4 pt-6 space-y-4 pb-24">
+    <div class="p-4 pt-2 space-y-4 pb-24">
       <div class="flex items-center justify-between">
         <button
           onClick={() => route("/devices")}

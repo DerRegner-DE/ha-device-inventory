@@ -130,9 +130,12 @@
   "sync.pending": "{count} pendientes",
 
   "camera.error": "No se pudo abrir la c\u00e1mara.",
+  "camera.httpsRequired": "La c\u00e1mara requiere una conexi\u00f3n segura (HTTPS). Acceda a trav\u00e9s de Nabu Casa o HTTPS.",
+  "camera.notSupported": "La c\u00e1mara no es compatible con este navegador.",
   "scanner.title": "Escanear C\u00f3digo de Barras / QR",
   "scanner.hint": "Mantenga el c\u00f3digo dentro del marco",
   "scanner.error": "No se pudo iniciar el esc\u00e1ner.",
+  "scanner.httpsRequired": "El esc\u00e1ner de c\u00f3digos de barras requiere una conexi\u00f3n segura (HTTPS). Acceda a trav\u00e9s de Nabu Casa o HTTPS.",
 
   "types.router": "Router",
   "types.repeater": "Repetidor",
