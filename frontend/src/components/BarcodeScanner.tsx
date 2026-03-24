@@ -64,7 +64,10 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
 
   if (error) {
     return (
-      <div class="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      <div
+        class="absolute top-0 left-0 w-full bg-black flex items-center justify-center"
+        style="height: 100vh; height: 100dvh; z-index: 9999;"
+      >
         <div class="text-white text-center p-4">
           <p class="mb-4">{error}</p>
           <button onClick={handleClose} class="px-4 py-2 bg-white text-black rounded-lg">
@@ -76,19 +79,22 @@ export function BarcodeScanner({ onScan, onClose }: BarcodeScannerProps) {
   }
 
   return (
-    <div class="fixed inset-0 bg-black z-50 flex flex-col">
-      <div class="flex items-center justify-between p-4">
+    <div
+      class="absolute top-0 left-0 w-full bg-black flex flex-col"
+      style="height: 100vh; height: 100dvh; z-index: 9999;"
+    >
+      <div class="flex items-center justify-between p-4 flex-shrink-0">
         <h2 class="text-white font-semibold">{t("scanner.title")}</h2>
-        <button onClick={handleClose} class="text-white">
+        <button onClick={handleClose} class="text-white p-2">
           <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-      <div class="flex-1 flex items-center justify-center">
+      <div class="flex-1 flex items-center justify-center overflow-hidden">
         <div ref={scannerRef} id="barcode-reader" class="w-full max-w-md" />
       </div>
-      <p class="text-center text-white/60 text-xs pb-6">
+      <p class="text-center text-white/60 text-xs pb-8 flex-shrink-0">
         {t("scanner.hint")}
       </p>
     </div>

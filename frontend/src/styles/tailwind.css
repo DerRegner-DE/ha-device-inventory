@@ -1,1 +1,8 @@
 @import "tailwindcss";
+
+/* Safe area support for mobile devices (notch, home indicator, etc.) */
+@supports (padding: env(safe-area-inset-bottom)) {
+  html {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}

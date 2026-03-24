@@ -209,7 +209,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
   };
 
   return (
-    <>
+    <div class="relative" style="min-height: 100vh;">
       {showCamera && (
         <CameraCapture
           onCapture={(blob) => {
@@ -222,7 +222,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
       {showScanner && (
         <BarcodeScanner onScan={handleScan} onClose={() => setShowScanner(false)} />
       )}
-      <form onSubmit={handleSubmit} class="p-4 space-y-4">
+      <form onSubmit={handleSubmit} class="p-4 space-y-4 pb-8">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-800">
             {isEdit ? t("form.editDevice") : t("form.newDevice")}
@@ -500,7 +500,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
           </Field>
         </Section>
 
-        <div class="flex gap-3 pt-2">
+        <div class="flex gap-3 pt-2 pb-6">
           <button
             type="button"
             onClick={() => history.back()}
@@ -517,6 +517,6 @@ export function DeviceForm({ device }: DeviceFormProps) {
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }

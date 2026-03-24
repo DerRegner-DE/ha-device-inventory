@@ -65,7 +65,10 @@ function NavIcon({ icon, active }: { icon: string; active: boolean }) {
 export function BottomNav({ activeRoute }: BottomNavProps) {
   useLanguage();
   return (
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-bottom">
+    <nav
+      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"
+      style="padding-bottom: env(safe-area-inset-bottom, 0px);"
+    >
       <div class="flex justify-around items-center h-16 max-w-lg mx-auto">
         {NAV_ITEMS.map((item) => {
           const isActive =

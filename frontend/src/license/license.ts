@@ -55,12 +55,15 @@ const FREE_LICENSE: LicenseInfo = {
   features: [],
 };
 
-// ----- base64url helpers -------------------------------------------------------
+// ----- API base URL helper -----------------------------------------------------
 
-function base64urlEncode(data: string): string {
-  const b64 = btoa(data);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+function getApiBase(): string {
+  const match = window.location.pathname.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+  if (match) return match[1] + "/api";
+  return "/api";
 }
+
+// ----- base64url helpers -------------------------------------------------------
 
 function base64urlDecode(str: string): string {
   let b64 = str.replace(/-/g, "+").replace(/_/g, "/");
@@ -68,21 +71,84 @@ function base64urlDecode(str: string): string {
   return atob(b64);
 }
 
-// ----- HMAC-SHA256 (Web Crypto API) -------------------------------------------
+// ----- HMAC-SHA256 (Web Crypto API with backend fallback) ----------------------
 
 async function hmacSha256(message: string, secret: string): Promise<string> {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-  return Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(message));
+    return Array.from(new Uint8Array(sig))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  }
+  // No crypto.subtle available (HTTP context) - return empty to trigger backend fallback
+  return "";
+}
+
+// ----- server-side license storage helpers ------------------------------------
+
+async function fetchLicenseFromServer(): Promise<string> {
+  try {
+    const res = await fetch(`${getApiBase()}/license`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.key || "";
+  } catch {
+    return "";
+  }
+}
+
+async function saveLicenseToServer(key: string): Promise<void> {
+  try {
+    await fetch(`${getApiBase()}/license`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // Server save failed, localStorage still works as fallback
+  }
+}
+
+async function validateKeyViaBackend(key: string): Promise<LicenseInfo> {
+  try {
+    const res = await fetch(`${getApiBase()}/license/validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return FREE_LICENSE;
+    const data = await res.json();
+    if (!data.valid) {
+      return {
+        valid: false,
+        tier: "free",
+        email: data.email,
+        expiresAt: data.exp ? new Date(data.exp * 1000) : undefined,
+        features: [],
+      };
+    }
+    return {
+      valid: true,
+      tier: "pro",
+      email: data.email,
+      expiresAt: data.exp ? new Date(data.exp * 1000) : undefined,
+      features: data.features ?? [...PRO_FEATURES],
+    };
+  } catch {
+    return FREE_LICENSE;
+  }
 }
 
 // ----- validation --------------------------------------------------------------
@@ -97,6 +163,12 @@ async function validateKey(key: string): Promise<LicenseInfo> {
 
     const payloadJson = base64urlDecode(payloadB64);
     const expectedSig = await hmacSha256(payloadJson, VERIFY_KEY);
+
+    // If crypto.subtle is not available (HTTP), fall back to backend validation
+    if (!expectedSig) {
+      return validateKeyViaBackend(key);
+    }
+
     const providedSig = base64urlDecode(sigB64);
 
     if (providedSig !== expectedSig) return FREE_LICENSE;
@@ -134,9 +206,19 @@ async function validateKey(key: string): Promise<LicenseInfo> {
 let cachedLicense: LicenseInfo = FREE_LICENSE;
 let cacheReady = false;
 
-/** Initialise the cache from localStorage.  Call once at app startup. */
+/** Initialise the cache from server (then localStorage fallback). Call once at app startup. */
 export async function initLicense(): Promise<LicenseInfo> {
-  const stored = localStorage.getItem(STORAGE_KEY);
+  // Try to fetch from server first
+  let stored = await fetchLicenseFromServer();
+
+  if (stored) {
+    // Sync server key to localStorage for offline use
+    localStorage.setItem(STORAGE_KEY, stored);
+  } else {
+    // Fallback to localStorage
+    stored = localStorage.getItem(STORAGE_KEY) ?? "";
+  }
+
   if (stored) {
     cachedLicense = await validateKey(stored);
   } else {
@@ -188,6 +270,8 @@ export async function setLicenseKey(key: string): Promise<LicenseInfo> {
     return FREE_LICENSE;
   }
   localStorage.setItem(STORAGE_KEY, trimmed);
+  // Also save to server for cross-browser/cross-device persistence
+  await saveLicenseToServer(trimmed);
   cachedLicense = await validateKey(trimmed);
   cacheReady = true;
   window.dispatchEvent(new CustomEvent("licensechange"));
@@ -197,6 +281,8 @@ export async function setLicenseKey(key: string): Promise<LicenseInfo> {
 /** Remove stored license and revert to Free tier. */
 export function removeLicense(): void {
   localStorage.removeItem(STORAGE_KEY);
+  // Also clear on server
+  saveLicenseToServer("").catch(() => {});
   cachedLicense = FREE_LICENSE;
   cacheReady = true;
   window.dispatchEvent(new CustomEvent("licensechange"));

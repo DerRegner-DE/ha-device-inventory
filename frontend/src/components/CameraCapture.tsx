@@ -73,7 +73,10 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
 
   if (error) {
     return (
-      <div class="fixed inset-0 bg-black z-50 flex items-center justify-center">
+      <div
+        class="absolute top-0 left-0 w-full bg-black flex items-center justify-center"
+        style="height: 100vh; height: 100dvh; z-index: 9999;"
+      >
         <div class="text-white text-center p-4">
           <p class="mb-4">{error}</p>
           <button onClick={onClose} class="px-4 py-2 bg-white text-black rounded-lg">
@@ -85,8 +88,11 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   }
 
   return (
-    <div class="fixed inset-0 bg-black z-50 flex flex-col">
-      <div class="flex-1 relative">
+    <div
+      class="absolute top-0 left-0 w-full bg-black flex flex-col"
+      style="height: 100vh; height: 100dvh; z-index: 9999;"
+    >
+      <div class="flex-1 relative overflow-hidden">
         <video
           ref={videoRef}
           autoPlay
@@ -95,7 +101,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         />
         <canvas ref={canvasRef} class="hidden" />
       </div>
-      <div class="flex items-center justify-center gap-8 p-6 bg-black">
+      <div class="flex items-center justify-center gap-8 p-6 pb-8 bg-black flex-shrink-0">
         <button
           onClick={onClose}
           class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white"

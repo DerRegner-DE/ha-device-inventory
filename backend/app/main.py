@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
+import json
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from app.config import settings
 from app.database import init_db
@@ -55,7 +60,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Geraeteverwaltung API",
     description="Device inventory management for Home Assistant",
-    version="1.0.0",
+    version="0.1.0",
     lifespan=lifespan,
 )
 
@@ -90,7 +95,112 @@ app.include_router(ha_proxy.router, prefix="/api")
 def health_check():
     return {
         "status": "ok",
-        "version": "1.0.0",
+        "version": "0.1.0",
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
     }
+
+
+# ----- License storage & validation endpoints --------------------------------
+
+LICENSE_FILE = Path(settings.DB_PATH).parent / "license.json"
+VERIFY_KEY = "gv-pro-2024-DerRegner"
+
+
+class LicenseKeyBody(BaseModel):
+    key: str
+
+
+class LicenseValidateBody(BaseModel):
+    key: str
+
+
+def _read_license_file() -> dict:
+    try:
+        if LICENSE_FILE.exists():
+            return json.loads(LICENSE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+
+def _write_license_file(data: dict) -> None:
+    LICENSE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    LICENSE_FILE.write_text(json.dumps(data), encoding="utf-8")
+
+
+@app.get("/api/license")
+def get_license():
+    data = _read_license_file()
+    return {"key": data.get("key", "")}
+
+
+@app.post("/api/license")
+def set_license(body: LicenseKeyBody):
+    data = _read_license_file()
+    data["key"] = body.key
+    _write_license_file(data)
+    return {"ok": True}
+
+
+def _hmac_sha256(message: str, secret: str) -> str:
+    return hmac.new(
+        secret.encode("utf-8"),
+        message.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def _base64url_decode(s: str) -> str:
+    import base64
+
+    padded = s + "=" * (4 - len(s) % 4) if len(s) % 4 else s
+    padded = padded.replace("-", "+").replace("_", "/")
+    return base64.b64decode(padded).decode("utf-8")
+
+
+@app.post("/api/license/validate")
+def validate_license(body: LicenseValidateBody):
+    """Validate a license key server-side (for HTTP contexts without crypto.subtle)."""
+    try:
+        key = body.key.strip()
+        dot_idx = key.index(".")
+        payload_b64 = key[:dot_idx]
+        sig_b64 = key[dot_idx + 1:]
+
+        payload_json = _base64url_decode(payload_b64)
+        expected_sig = _hmac_sha256(payload_json, VERIFY_KEY)
+        provided_sig = _base64url_decode(sig_b64)
+
+        if provided_sig != expected_sig:
+            return {"valid": False, "tier": "free", "features": []}
+
+        payload = json.loads(payload_json)
+
+        if payload.get("tier") != "pro":
+            return {"valid": False, "tier": "free", "features": []}
+
+        import time
+        exp = payload.get("exp", 0)
+        if not isinstance(exp, (int, float)) or exp < time.time():
+            return {
+                "valid": False,
+                "tier": "free",
+                "email": payload.get("email"),
+                "exp": exp,
+                "features": [],
+            }
+
+        features = payload.get("features") or [
+            "unlimited_devices", "multilingual", "excel",
+            "ha_sync", "camera", "barcode",
+        ]
+        return {
+            "valid": True,
+            "tier": "pro",
+            "email": payload.get("email"),
+            "exp": exp,
+            "features": features,
+        }
+    except Exception:
+        return {"valid": False, "tier": "free", "features": []}

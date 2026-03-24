@@ -25,7 +25,12 @@ export function Layout({ children, activeRoute }: LayoutProps) {
           <SyncStatus />
         </div>
       )}
-      <main class="flex-1 pb-20 overflow-y-auto">{children}</main>
+      <main
+        class="flex-1 overflow-y-auto"
+        style="padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));"
+      >
+        {children}
+      </main>
       <BottomNav activeRoute={activeRoute} />
     </div>
   );
