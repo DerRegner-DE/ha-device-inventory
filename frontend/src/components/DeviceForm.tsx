@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useRef } from "preact/hooks";
 import { route } from "preact-router";
 import { db, type Device, type Photo } from "../db/schema";
 import { apiPost, apiPut } from "../api/client";
@@ -119,6 +119,8 @@ export function DeviceForm({ device }: DeviceFormProps) {
   const [showCamera, setShowCamera] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [saving, setSaving] = useState(false);
+  const directFileRef = useRef<HTMLInputElement>(null);
+  const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
   const toggleSection = (key: keyof typeof sections) => {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -257,10 +259,26 @@ export function DeviceForm({ device }: DeviceFormProps) {
             {isEdit ? t("form.editDevice") : t("form.newDevice")}
           </h2>
           <div class="flex gap-2">
+            <input
+              ref={directFileRef}
+              type="file"
+              accept="image/*"
+              class="hidden"
+              onChange={(e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) setPhotoBlob(file);
+              }}
+            />
             {hasFeature("camera") && (
               <button
                 type="button"
-                onClick={() => setShowCamera(true)}
+                onClick={() => {
+                  if (isMobile && directFileRef.current) {
+                    directFileRef.current.click();
+                  } else {
+                    setShowCamera(true);
+                  }
+                }}
                 class="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
                 title={t("form.photoTitle")}
               >
