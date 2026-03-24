@@ -32,7 +32,7 @@ jobs:
         run: |
           cd backend
           python -m pytest tests/ -v --tb=short 2>/dev/null || echo "No tests found yet - skipping"
-      - name: Verify license generator
+      - name: Verify app imports
         run: |
           cd backend
-          python -m app.license_gen generate --email test@example.com --days 30
+          python -c "from app.main import app; print('FastAPI app loads OK')"
