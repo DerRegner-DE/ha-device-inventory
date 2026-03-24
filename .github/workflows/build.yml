@@ -74,7 +74,7 @@ jobs:
         with:
           context: .
           file: addon/Dockerfile
-          platforms: linux/amd64,linux/aarch64,linux/arm/v7
+          platforms: linux/amd64
           push: true
           tags: |
             ghcr.io/${{ steps.meta.outputs.repo }}:${{ steps.meta.outputs.version }}
