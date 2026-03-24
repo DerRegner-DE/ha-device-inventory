@@ -5,6 +5,7 @@ slug: "geraeteverwaltung"
 url: "https://github.com/DerRegner-DE/ha-device-inventory"
 arch:
   - amd64
+image: "ghcr.io/derregner-de/ha-device-inventory"
 homeassistant_api: true
 ingress: true
 ingress_port: 3001
