@@ -58,8 +58,12 @@ const FREE_LICENSE: LicenseInfo = {
 // ----- API base URL helper -----------------------------------------------------
 
 function getApiBase(): string {
-  const match = window.location.pathname.match(/^(\/api\/hassio_ingress\/[^/]+)/);
-  if (match) return match[1] + "/api";
+  // HA Ingress local: /api/hassio_ingress/<token>/
+  const ingressMatch = window.location.pathname.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+  if (ingressMatch) return ingressMatch[1] + "/api";
+  // HA Ingress via Nabu Casa: /<addon_slug>/
+  const slugMatch = window.location.pathname.match(/^(\/[0-9a-f]{8}_[^/]+)/);
+  if (slugMatch) return slugMatch[1] + "/api";
   return "/api";
 }
 

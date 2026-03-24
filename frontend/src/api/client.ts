@@ -2,11 +2,12 @@ import { db, type SyncQueueItem } from "../db/schema";
 
 // Detect if running behind HA Ingress
 function getBaseUrl(): string {
-  // Check for ingress path in URL (e.g. /api/hassio_ingress/<token>)
-  const match = window.location.pathname.match(/^(\/api\/hassio_ingress\/[^/]+)/);
-  if (match) {
-    return match[1] + '/api';
-  }
+  // HA Ingress local: /api/hassio_ingress/<token>/
+  const ingressMatch = window.location.pathname.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+  if (ingressMatch) return ingressMatch[1] + '/api';
+  // HA Ingress via Nabu Casa: /<addon_slug>/
+  const slugMatch = window.location.pathname.match(/^(\/[0-9a-f]{8}_[^/]+)/);
+  if (slugMatch) return slugMatch[1] + '/api';
   // Fallback: same origin (works for standalone and reverse-proxy setups)
   return '/api';
 }
