@@ -9,10 +9,19 @@ echo "=== Geraeteverwaltung Add-on starting ==="
 OPTIONS_FILE="/data/options.json"
 if [ -f "$OPTIONS_FILE" ]; then
     LANGUAGE=$(jq -r '.language // "de"' "$OPTIONS_FILE")
+    LICENSE_KEY=$(jq -r '.license_key // ""' "$OPTIONS_FILE")
     echo "Language from options: $LANGUAGE"
 else
     LANGUAGE="de"
-    echo "No options.json found, using default language: $LANGUAGE"
+    LICENSE_KEY=""
+    echo "No options.json found, using defaults"
+fi
+
+# Write license key to license.json if provided in options
+if [ -n "$LICENSE_KEY" ]; then
+    mkdir -p /data/db
+    echo "{\"key\":\"$LICENSE_KEY\"}" > /data/db/license.json
+    echo "License key loaded from add-on configuration"
 fi
 
 # ---------------------------------------------------------------------------

@@ -130,11 +130,40 @@ export function DeviceForm({ device }: DeviceFormProps) {
 
   const handleScan = (data: string) => {
     setShowScanner(false);
+    // Try pipe-separated format: bezeichnung|hersteller|ip|seriennummer
+    if (data.includes("|")) {
+      const parts = data.split("|");
+      const updates: Partial<typeof form> = {};
+      for (const part of parts) {
+        const trimmed = part.trim();
+        // Named field: key:value
+        const kvMatch = trimmed.match(/^(SN|MAC|IP|MODEL|MFG):(.+)$/i);
+        if (kvMatch) {
+          const key = kvMatch[1].toUpperCase();
+          const val = kvMatch[2].trim();
+          if (key === "SN") updates.seriennummer = val;
+          else if (key === "MAC") updates.mac_adresse = val;
+          else if (key === "IP") updates.ip_adresse = val;
+          else if (key === "MODEL") updates.modell = val;
+          else if (key === "MFG") updates.hersteller = val;
+        }
+      }
+      // Unnamed fields: positional (bezeichnung, hersteller, ip, seriennummer)
+      const unnamed = parts.filter(p => !p.includes(":")).map(p => p.trim());
+      if (unnamed[0] && !form.bezeichnung && !updates.bezeichnung) updates.bezeichnung = unnamed[0];
+      if (unnamed[1] && !form.hersteller && !updates.hersteller) updates.hersteller = unnamed[1];
+      if (unnamed[2] && !form.ip_adresse && !updates.ip_adresse) updates.ip_adresse = unnamed[2];
+      if (unnamed[3] && !form.seriennummer && !updates.seriennummer) updates.seriennummer = unnamed[3];
+      setForm(prev => ({ ...prev, ...updates }));
+      return;
+    }
+    // MAC address pattern
     const macMatch = data.match(/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/);
     if (macMatch) {
       updateField("mac_adresse", macMatch[0]);
       return;
     }
+    // Fallback: use as serial number
     if (!form.seriennummer) {
       updateField("seriennummer", data);
     }
