@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.11
+
+- Bereiche werden jetzt nach HA-Etagen gruppiert (OG, UG, Garten, 19a OG etc.)
+- Backend liefert floor_id pro Bereich mit (war vorher nicht enthalten)
+
 ## 1.3.10
 
 - Fix: Bereiche werden jetzt korrekt über HA Ingress-API geladen (nutzt bestehenden API-Client)
