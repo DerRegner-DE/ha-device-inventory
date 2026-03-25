@@ -195,7 +195,7 @@ export async function getPendingCount(): Promise<number> {
  */
 export async function syncFromServer(): Promise<number> {
   try {
-    const data = await apiGet<{ items: any[] }>("/devices?per_page=9999");
+    const data = await apiGet<{ items: any[] }>("/devices?per_page=500");
     if (!data || !data.items) return 0;
 
     const serverDevices = data.items;
