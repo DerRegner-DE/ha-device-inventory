@@ -189,6 +189,39 @@ export async function getPendingCount(): Promise<number> {
 }
 
 /**
+ * Upload a photo blob to the server for a device.
+ * Returns the server photo record (with uuid, filename etc.) or null on failure.
+ */
+export async function uploadPhoto(
+  deviceUuid: string,
+  blob: Blob,
+  isPrimary: boolean = true
+): Promise<any | null> {
+  try {
+    const formData = new FormData();
+    const ext = blob.type === "image/png" ? ".png" : ".jpg";
+    formData.append("file", blob, `photo${ext}`);
+    formData.append("is_primary", isPrimary ? "true" : "false");
+
+    const res = await fetch(`${BASE_URL}/devices/${deviceUuid}/photos`, {
+      method: "POST",
+      body: formData,
+      signal: AbortSignal.timeout(30000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Photo upload failed:", err);
+    return null;
+  }
+}
+
+/** Build the full URL to fetch a photo from the server */
+export function getPhotoUrl(photoUuid: string): string {
+  return `${BASE_URL}/photos/${photoUuid}`;
+}
+
+/**
  * Pull devices from server and merge into local IndexedDB.
  * Server wins if sync_version is higher. Local wins if local is higher (pending upload).
  * Devices deleted on server (not in response) are removed locally.
