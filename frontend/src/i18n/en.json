@@ -2,12 +2,10 @@
   "app.title": "Device Management",
   "app.version": "Device Management v1.0.0",
   "app.api": "API: auto-detected",
-
   "nav.dashboard": "Dashboard",
   "nav.devices": "Devices",
   "nav.add": "Add",
   "nav.settings": "Settings",
-
   "dashboard.total": "Total",
   "dashboard.devicesCount": "{count} device registered",
   "dashboard.devicesCountPlural": "{count} devices registered",
@@ -20,16 +18,13 @@
   "dashboard.byLocation": "By Location (Top 10)",
   "dashboard.byIntegration": "By Integration",
   "dashboard.recentlyEdited": "Recently edited",
-
   "devices.loading": "Loading...",
   "devices.noDevicesFound": "No devices found",
   "devices.resetFilter": "Reset filters",
   "devices.countSingular": "{count} device",
   "devices.countPlural": "{count} devices",
-
   "filter.search": "Search device...",
   "filter.all": "All",
-
   "form.newDevice": "New Device",
   "form.editDevice": "Edit Device",
   "form.photoTitle": "Take photo",
@@ -73,7 +68,6 @@
   "form.functionPlaceholder": "What is this device used for?",
   "form.notes": "Notes",
   "form.notesPlaceholder": "Additional notes...",
-
   "common.cancel": "Cancel",
   "common.save": "Save",
   "common.saving": "Saving...",
@@ -83,7 +77,6 @@
   "common.back": "Back",
   "common.close": "Close",
   "common.photo": "Photo",
-
   "detail.notFound": "Device not found",
   "detail.backToList": "Back to list",
   "detail.confirmDelete": "Really delete this device?",
@@ -105,7 +98,6 @@
   "detail.notes": "Notes",
   "detail.created": "Created",
   "detail.updated": "Updated",
-
   "settings.title": "Settings",
   "settings.language": "Language",
   "settings.languageDesc": "Change the display language of the app",
@@ -124,11 +116,16 @@
   "settings.clearing": "Deleting...",
   "settings.clearConfirm": "Delete all local data? This cannot be undone.",
   "settings.clearDone": "Local data deleted.",
-
   "sync.connected": "Connected",
   "sync.offline": "Offline",
   "sync.pending": "{count} pending",
-
+  "camera.title": "Camera",
+  "camera.takePhoto": "Take Photo",
+  "camera.useWebcam": "Use Webcam",
+  "camera.fileInputHint": "Opens your camera app on mobile, or file picker on desktop",
+  "camera.preview": "Preview",
+  "camera.retake": "Retake",
+  "camera.confirm": "Use Photo",
   "camera.error": "Could not open camera.",
   "camera.httpsRequired": "Camera requires a secure connection (HTTPS). Please access via Nabu Casa or HTTPS.",
   "camera.notSupported": "Camera is not supported by this browser.",
@@ -136,7 +133,6 @@
   "scanner.hint": "Hold barcode within the frame",
   "scanner.error": "Could not start scanner.",
   "scanner.httpsRequired": "Barcode scanner requires a secure connection (HTTPS). Please access via Nabu Casa or HTTPS.",
-
   "types.router": "Router",
   "types.repeater": "Repeater",
   "types.powerline": "Powerline",
@@ -159,10 +155,8 @@
   "types.sensor": "Sensor",
   "types.smartphone": "Smartphone",
   "types.other": "Other",
-
   "integrations.not_connected": "Not connected",
   "integrations.other": "Other",
-
   "networks.wlan": "WiFi",
   "networks.lan": "LAN",
   "networks.zigbee": "Zigbee",
@@ -171,7 +165,6 @@
   "networks.powerline": "Powerline",
   "networks.homematic_rf": "HomeMatic RF",
   "networks.usb": "USB",
-
   "power.adapter": "Power Adapter",
   "power.mains": "230V Mains",
   "power.battery": "Battery",
@@ -180,7 +173,6 @@
   "power.poe": "PoE",
   "power.solar": "Solar",
   "power.high_voltage": "High Voltage",
-
   "license.title": "License",
   "license.free": "Free",
   "license.pro": "Pro",
