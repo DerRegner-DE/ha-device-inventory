@@ -190,9 +190,10 @@
   "camera.title": "Камера",
   "camera.takePhoto": "Сделать фото",
   "camera.useWebcam": "Использовать веб-камеру",
-  "camera.fileInputHint": "Открывает камеру на телефоне или выбор файлов на ПК",
+  "camera.fileInputHint": "Выберите существующее изображение из галереи",
   "camera.preview": "Предпросмотр",
   "camera.retake": "Переснять",
   "camera.confirm": "Использовать фото",
-  "camera.starting": "Запуск камеры..."
+  "camera.starting": "Запуск камеры...",
+  "camera.chooseImage": "Выбрать изображение"
 }

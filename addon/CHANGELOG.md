@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.8
+
+- "Foto aufnehmen" öffnet jetzt direkt die Kamera (primärer Button)
+- "Bild auswählen" für bestehende Bilder aus der Galerie (sekundärer Button)
+- "Erneut aufnehmen" geht direkt zurück zur Kamera statt zur Auswahl
+- Foto im Formular wird nicht mehr abgeschnitten (object-contain statt object-cover)
+- capture="environment" entfernt (funktioniert nicht in HA Ingress-iframe)
+
 ## 1.3.7
 
 - Fix: Webcam-Livebild spielt jetzt korrekt ab auf Mobilgeräten (muted + explizites play())

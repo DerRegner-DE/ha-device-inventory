@@ -190,9 +190,10 @@
   "camera.title": "Cámara",
   "camera.takePhoto": "Tomar foto",
   "camera.useWebcam": "Usar webcam",
-  "camera.fileInputHint": "Abre la cámara en el móvil o el selector de archivos en el PC",
+  "camera.fileInputHint": "Selecciona una imagen existente de la galería",
   "camera.preview": "Vista previa",
   "camera.retake": "Repetir",
   "camera.confirm": "Usar foto",
-  "camera.starting": "Iniciando cámara..."
+  "camera.starting": "Iniciando cámara...",
+  "camera.chooseImage": "Elegir imagen"
 }

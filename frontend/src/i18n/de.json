@@ -190,9 +190,10 @@
   "camera.title": "Kamera",
   "camera.takePhoto": "Foto aufnehmen",
   "camera.useWebcam": "Webcam verwenden",
-  "camera.fileInputHint": "Öffnet die Kamera-App auf dem Handy oder die Dateiauswahl auf dem PC",
+  "camera.fileInputHint": "Wähle ein bestehendes Bild aus der Galerie",
   "camera.preview": "Vorschau",
   "camera.retake": "Erneut aufnehmen",
   "camera.confirm": "Foto verwenden",
-  "camera.starting": "Kamera wird gestartet..."
+  "camera.starting": "Kamera wird gestartet...",
+  "camera.chooseImage": "Bild auswählen"
 }

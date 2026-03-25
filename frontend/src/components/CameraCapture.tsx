@@ -18,6 +18,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [webcamAvailable, setWebcamAvailable] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
+  const [capturedViaWebcam, setCapturedViaWebcam] = useState(false);
 
   // Check if getUserMedia is available (secure context required)
   useEffect(() => {
@@ -42,7 +43,6 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         video.play().then(() => {
           setVideoReady(true);
         }).catch(() => {
-          // Autoplay blocked, try muted play
           video.muted = true;
           video.play().catch(() => {
             setVideoReady(false);
@@ -75,6 +75,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     const url = URL.createObjectURL(file);
     setPreview(url);
     setPendingBlob(file);
+    setCapturedViaWebcam(false);
   };
 
   const triggerFileInput = () => {
@@ -88,9 +89,9 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       });
       setStream(mediaStream);
       setUseWebcam(true);
-      // srcObject assignment is handled by the useEffect above
+      setVideoReady(false);
     } catch {
-      // getUserMedia failed (e.g. iframe restriction), fall back to file input
+      // getUserMedia failed, fall back to file input
       setWebcamAvailable(false);
       triggerFileInput();
     }
@@ -116,6 +117,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
           // Show preview
           setPreview(URL.createObjectURL(blob));
           setPendingBlob(blob);
+          setCapturedViaWebcam(true);
         }
       },
       "image/jpeg",
@@ -133,6 +135,13 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
     setPendingBlob(null);
+
+    // If the photo was taken via webcam, go directly back to camera
+    if (capturedViaWebcam && webcamAvailable) {
+      setCapturedViaWebcam(false);
+      startWebcam();
+    }
+    // Otherwise (file input), go back to selection screen
   };
 
   const handleClose = () => {
@@ -151,7 +160,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         style="height: 100vh; height: 100dvh; z-index: 9999;"
       >
         <div class="flex items-center justify-between p-4 flex-shrink-0">
-          <h2 class="text-white font-semibold">{t("camera.preview") || "Preview"}</h2>
+          <h2 class="text-white font-semibold">{t("camera.preview") || "Vorschau"}</h2>
           <button onClick={handleClose} class="text-white p-2">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -166,20 +175,20 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
             onClick={retake}
             class="px-6 py-3 rounded-xl bg-white/20 text-white text-sm font-medium"
           >
-            {t("camera.retake") || "Retake"}
+            {t("camera.retake") || "Erneut aufnehmen"}
           </button>
           <button
             onClick={confirmPhoto}
             class="px-6 py-3 rounded-xl bg-white text-black text-sm font-medium"
           >
-            {t("camera.confirm") || "Use Photo"}
+            {t("camera.confirm") || "Foto verwenden"}
           </button>
         </div>
       </div>
     );
   }
 
-  // Webcam mode: live video feed with capture button
+  // Webcam/Camera mode: live video feed with capture button
   if (useWebcam && stream) {
     return (
       <div
@@ -223,7 +232,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
     );
   }
 
-  // Default mode: buttons to take photo (file input) or use webcam
+  // Default mode: camera (primary) or choose from gallery
   return (
     <div
       class="absolute top-0 left-0 w-full bg-black flex flex-col items-center justify-center"
@@ -233,13 +242,12 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         onChange={handleFileSelect}
         class="hidden"
       />
 
       <div class="flex items-center justify-between p-4 absolute top-0 left-0 w-full">
-        <h2 class="text-white font-semibold">{t("camera.title") || "Camera"}</h2>
+        <h2 class="text-white font-semibold">{t("camera.title") || "Kamera"}</h2>
         <button onClick={handleClose} class="text-white p-2">
           <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -248,31 +256,31 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       </div>
 
       <div class="flex flex-col items-center gap-4">
-        <button
-          onClick={triggerFileInput}
-          class="flex items-center gap-3 px-8 py-4 rounded-xl bg-white text-black text-sm font-medium"
-        >
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-            <circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="2" />
-          </svg>
-          {t("camera.takePhoto") || "Take Photo"}
-        </button>
-
         {webcamAvailable && (
           <button
             onClick={startWebcam}
-            class="flex items-center gap-3 px-8 py-4 rounded-xl bg-white/20 text-white text-sm font-medium"
+            class="flex items-center gap-3 px-8 py-4 rounded-xl bg-white text-black text-sm font-medium"
           >
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <circle cx="12" cy="13" r="3" stroke="currentColor" stroke-width="2" />
             </svg>
-            {t("camera.useWebcam") || "Use Webcam"}
+            {t("camera.takePhoto") || "Foto aufnehmen"}
           </button>
         )}
 
+        <button
+          onClick={triggerFileInput}
+          class={`flex items-center gap-3 px-8 py-4 rounded-xl text-sm font-medium ${webcamAvailable ? "bg-white/20 text-white" : "bg-white text-black"}`}
+        >
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {t("camera.chooseImage") || "Bild auswählen"}
+        </button>
+
         <p class="text-white/40 text-xs mt-4 text-center px-8">
-          {t("camera.fileInputHint") || "Opens your camera app on mobile, or file picker on desktop."}
+          {t("camera.fileInputHint") || "Öffnet die Kamera-App auf dem Handy oder die Dateiauswahl auf dem PC"}
         </p>
       </div>
     </div>

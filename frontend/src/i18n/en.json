@@ -122,7 +122,7 @@
   "camera.title": "Camera",
   "camera.takePhoto": "Take Photo",
   "camera.useWebcam": "Use Webcam",
-  "camera.fileInputHint": "Opens your camera app on mobile, or file picker on desktop",
+  "camera.fileInputHint": "Choose an existing image from your gallery",
   "camera.preview": "Preview",
   "camera.retake": "Retake",
   "camera.confirm": "Use Photo",
@@ -194,5 +194,6 @@
   "license.deviceLimit": "{count}/{limit} devices",
   "license.deviceLimitReached": "Device limit reached (Free: {limit}). Upgrade to Pro for unlimited devices.",
   "license.languageProOnly": "Additional languages available with Pro license",
-  "camera.starting": "Starting camera..."
+  "camera.starting": "Starting camera...",
+  "camera.chooseImage": "Choose Image"
 }

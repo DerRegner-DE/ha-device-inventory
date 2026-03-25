@@ -342,7 +342,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
             <img
               src={URL.createObjectURL(photoBlob)}
               alt={t("common.photo")}
-              class="w-full h-48 object-cover rounded-xl"
+              class="w-full max-h-64 object-contain rounded-xl bg-gray-100 dark:bg-gray-800"
             />
             <button
               type="button"
