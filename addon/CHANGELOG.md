@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.10
+
+- Fix: Bereiche werden jetzt korrekt über HA Ingress-API geladen (nutzt bestehenden API-Client)
+
 ## 1.3.9
 
 - Bereiche/Standorte werden jetzt live aus Home Assistant geladen (echte HA-Areas statt hardcodierter Liste)
