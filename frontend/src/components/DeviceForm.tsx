@@ -1,7 +1,7 @@
 import { useState, useRef } from "preact/hooks";
 import { route } from "preact-router";
 import { db, type Device, type Photo } from "../db/schema";
-import { apiPost, apiPut } from "../api/client";
+import { apiPost, apiPut, uploadPhoto, getPhotoUrl } from "../api/client";
 import {
   DEVICE_TYPES,
   INTEGRATIONS,
@@ -231,21 +231,26 @@ export function DeviceForm({ device }: DeviceFormProps) {
 
     await db.devices.put(deviceData);
 
-    if (photoBlob) {
-      const photo: Photo = {
-        uuid: generateUUID(),
-        device_uuid: uuid,
-        blob: photoBlob,
-        is_primary: true,
-        created_at: now,
-      };
-      await db.photos.put(photo);
-    }
-
     if (isEdit) {
       await apiPut(`/devices/${uuid}`, deviceData, "device", uuid);
     } else {
       await apiPost("/devices", deviceData, "device", uuid);
+    }
+
+    if (photoBlob) {
+      // Upload to server first
+      const serverPhoto = await uploadPhoto(uuid, photoBlob, true);
+
+      // Store locally with URL for cross-device access
+      const photo: Photo = {
+        uuid: serverPhoto?.uuid || generateUUID(),
+        device_uuid: uuid,
+        blob: photoBlob,
+        url: serverPhoto ? getPhotoUrl(serverPhoto.uuid) : undefined,
+        is_primary: true,
+        created_at: now,
+      };
+      await db.photos.put(photo);
     }
 
     setSaving(false);

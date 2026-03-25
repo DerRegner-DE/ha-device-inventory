@@ -27,6 +27,7 @@ export interface Device {
   created_at: string;
   updated_at: string;
   sync_version: number;
+  photos?: { uuid: string; is_primary: number; filename: string; mime_type: string }[];
 }
 
 export interface Photo {

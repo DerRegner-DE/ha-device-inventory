@@ -5,7 +5,7 @@ import { db, type Photo } from "../db/schema";
 import { getAreaName, getFloorForArea, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
-import { apiDelete } from "../api/client";
+import { apiDelete, getPhotoUrl } from "../api/client";
 
 interface DeviceDetailProps {
   uuid?: string;
@@ -30,6 +30,8 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
 
   useEffect(() => {
     if (!uuid) return;
+
+    // Try local IndexedDB first (has blob for same-device access)
     db.photos
       .where("device_uuid")
       .equals(uuid)
@@ -45,6 +47,10 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
           } else if (p.url) {
             setPhotoUrl(p.url);
           }
+        } else if (device?.photos && device.photos.length > 0) {
+          // No local photo - use server photo URL
+          const primary = device.photos.find((ph: any) => ph.is_primary) || device.photos[0];
+          setPhotoUrl(getPhotoUrl(primary.uuid));
         }
       });
 
@@ -54,7 +60,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         blobUrlRef.current = null;
       }
     };
-  }, [uuid]);
+  }, [uuid, device]);
 
   if (loading) {
     return (
@@ -122,7 +128,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         <img
           src={photoUrl}
           alt={device.bezeichnung}
-          class="w-full h-48 object-cover rounded-xl"
+          class="w-full max-h-64 object-contain rounded-xl bg-gray-100"
         />
       )}
 
