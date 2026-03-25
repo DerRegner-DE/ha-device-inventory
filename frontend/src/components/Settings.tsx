@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { db } from "../db/schema";
-import { syncPendingQueue, getPendingCount } from "../api/client";
+import { syncPendingQueue, getPendingCount, apiPost, syncFromServer } from "../api/client";
 import { t, setLanguage, getLanguage, getAvailableLanguages } from "../i18n";
 import { useLanguage } from "../i18n";
 import { LicenseSettings } from "./LicenseSettings";
@@ -17,6 +17,9 @@ export function Settings() {
 
   const isPro = license.valid && license.tier === "pro";
   const hasMultilingual = hasFeature("multilingual");
+  const hasHaSync = hasFeature("ha_sync");
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
@@ -48,6 +51,31 @@ export function Settings() {
     await db.syncQueue.clear();
     setClearing(false);
     alert(t("settings.clearDone"));
+  };
+
+  const handleImportHA = async () => {
+    if (!confirm(t("settings.haImportConfirm"))) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const result = await apiPost<any>("/ha/import-devices", {});
+      if (result) {
+        // Pull imported devices into local IndexedDB
+        await syncFromServer();
+        setImportResult(
+          t("settings.haImportResult", {
+            imported: result.imported || 0,
+            duplicates: result.skipped_duplicates || 0,
+            total: result.total_ha_devices || 0,
+          })
+        );
+      } else {
+        setImportResult(t("settings.haImportFailed"));
+      }
+    } catch {
+      setImportResult(t("settings.haImportFailed"));
+    }
+    setImporting(false);
   };
 
   const handleExport = async () => {
@@ -123,6 +151,24 @@ export function Settings() {
           </button>
           {syncResult && (
             <p class="text-xs text-gray-500 mt-2 text-center">{syncResult}</p>
+          )}
+        </div>
+
+        <div class="p-4">
+          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.haImport")}</h3>
+          <p class="text-xs text-gray-400 mb-3">
+            {t("settings.haImportDesc")}
+          </p>
+          <button
+            onClick={handleImportHA}
+            disabled={importing || !hasHaSync}
+            class="w-full py-2.5 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] disabled:opacity-50"
+          >
+            {importing ? t("settings.haImporting") : t("settings.haImportButton")}
+            {!hasHaSync && " (Pro)"}
+          </button>
+          {importResult && (
+            <p class="text-xs text-gray-500 mt-2 text-center">{importResult}</p>
           )}
         </div>
 

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.services import ha_client
 from app.services.device_sync import sync_ha_areas
+from app.services.ha_import import import_ha_devices
 
 router = APIRouter(prefix="/ha", tags=["home-assistant"])
 
@@ -66,5 +67,25 @@ async def update_ha_device_area(device_id: str, body: AreaUpdateRequest):
     try:
         result = await ha_client.update_device_area(device_id, body.area_id)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@router.post("/import-devices")
+async def import_devices_from_ha():
+    """Import all HA devices into the Geräteverwaltung inventory.
+
+    - Fetches device + entity registries via WebSocket API
+    - Maps HA fields to inventory fields (type, area, integration, network)
+    - Deduplicates by ha_device_id (safe to run multiple times)
+    - Returns import statistics
+    """
+    try:
+        result = await import_ha_devices()
+        if result.get("status") == "error":
+            raise HTTPException(status_code=502, detail=result.get("message"))
+        return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
