@@ -193,5 +193,6 @@
   "camera.fileInputHint": "Ouvre l'appareil photo sur mobile ou le sélecteur de fichiers sur PC",
   "camera.preview": "Aperçu",
   "camera.retake": "Reprendre",
-  "camera.confirm": "Utiliser la photo"
+  "camera.confirm": "Utiliser la photo",
+  "camera.starting": "Démarrage de la caméra..."
 }

@@ -17,9 +17,9 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const [useWebcam, setUseWebcam] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [webcamAvailable, setWebcamAvailable] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   // Check if getUserMedia is available (secure context required)
-  // Works in HA Ingress because add-on runs in same origin via Ingress proxy
   useEffect(() => {
     if (
       window.isSecureContext &&
@@ -29,6 +29,34 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       setWebcamAvailable(true);
     }
   }, []);
+
+  // Assign stream to video element when both are available
+  useEffect(() => {
+    if (useWebcam && stream && videoRef.current) {
+      const video = videoRef.current;
+      video.srcObject = stream;
+      video.muted = true;
+      setVideoReady(false);
+
+      const onCanPlay = () => {
+        video.play().then(() => {
+          setVideoReady(true);
+        }).catch(() => {
+          // Autoplay blocked, try muted play
+          video.muted = true;
+          video.play().catch(() => {
+            setVideoReady(false);
+          });
+        });
+      };
+
+      video.addEventListener("canplay", onCanPlay, { once: true });
+
+      return () => {
+        video.removeEventListener("canplay", onCanPlay);
+      };
+    }
+  }, [useWebcam, stream]);
 
   // Cleanup webcam stream on unmount
   useEffect(() => {
@@ -60,12 +88,7 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
       });
       setStream(mediaStream);
       setUseWebcam(true);
-      // Assign stream to video element after state update
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      });
+      // srcObject assignment is handled by the useEffect above
     } catch {
       // getUserMedia failed (e.g. iframe restriction), fall back to file input
       setWebcamAvailable(false);
@@ -168,9 +191,15 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
             ref={videoRef}
             autoPlay
             playsInline
+            muted
             class="w-full h-full object-cover"
           />
           <canvas ref={canvasRef} class="hidden" />
+          {!videoReady && (
+            <div class="absolute inset-0 flex items-center justify-center bg-black/80">
+              <div class="text-white/60 text-sm">{t("camera.starting") || "Kamera wird gestartet..."}</div>
+            </div>
+          )}
         </div>
         <div class="flex items-center justify-center gap-8 p-6 pb-8 bg-black flex-shrink-0">
           <button
@@ -183,9 +212,10 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
           </button>
           <button
             onClick={captureFromWebcam}
-            class="w-16 h-16 rounded-full bg-white flex items-center justify-center"
+            disabled={!videoReady}
+            class={`w-16 h-16 rounded-full flex items-center justify-center ${videoReady ? "bg-white" : "bg-white/30"}`}
           >
-            <div class="w-14 h-14 rounded-full border-2 border-gray-300" />
+            <div class={`w-14 h-14 rounded-full border-2 ${videoReady ? "border-gray-300" : "border-gray-500"}`} />
           </button>
           <div class="w-12" />
         </div>

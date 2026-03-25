@@ -193,5 +193,6 @@
   "camera.fileInputHint": "Открывает камеру на телефоне или выбор файлов на ПК",
   "camera.preview": "Предпросмотр",
   "camera.retake": "Переснять",
-  "camera.confirm": "Использовать фото"
+  "camera.confirm": "Использовать фото",
+  "camera.starting": "Запуск камеры..."
 }

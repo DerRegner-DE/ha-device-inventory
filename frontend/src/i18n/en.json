@@ -193,5 +193,6 @@
   "license.featureLockedInline": "{feature} (Pro)",
   "license.deviceLimit": "{count}/{limit} devices",
   "license.deviceLimitReached": "Device limit reached (Free: {limit}). Upgrade to Pro for unlimited devices.",
-  "license.languageProOnly": "Additional languages available with Pro license"
+  "license.languageProOnly": "Additional languages available with Pro license",
+  "camera.starting": "Starting camera..."
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.3.7
+
+- Fix: Webcam-Livebild spielt jetzt korrekt ab auf Mobilgeräten (muted + explizites play())
+- Fix: Auslöser-Button erst aktiv wenn Kamera-Feed bereit ist (kein schwarzes Bild mehr)
+- Ladeindikator "Kamera wird gestartet..." während Webcam-Initialisierung
+- Neuer i18n-Key camera.starting in allen 5 Sprachen
+
 ## 1.3.6
 
 - Kamera-UI: Alle Texte vollständig in 5 Sprachen übersetzt (DE, EN, ES, FR, RU)
