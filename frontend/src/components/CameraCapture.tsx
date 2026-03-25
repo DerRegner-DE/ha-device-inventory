@@ -18,12 +18,10 @@ export function CameraCapture({ onCapture, onClose }: CameraCaptureProps) {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [webcamAvailable, setWebcamAvailable] = useState(false);
 
-  // Check if getUserMedia is available (secure context + not in restrictive iframe)
-  // Hide webcam button on mobile devices where getUserMedia doesn't work in Ingress iframes
+  // Check if getUserMedia is available (secure context required)
+  // Works in HA Ingress because add-on runs in same origin via Ingress proxy
   useEffect(() => {
-    const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (
-      !isMobile &&
       window.isSecureContext &&
       navigator.mediaDevices &&
       typeof navigator.mediaDevices.getUserMedia === "function"

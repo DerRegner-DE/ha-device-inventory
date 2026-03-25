@@ -132,6 +132,10 @@ export function DeviceForm({ device }: DeviceFormProps) {
 
   const handleScan = (data: string) => {
     setShowScanner(false);
+    const networkFields = ["mac_adresse", "ip_adresse"];
+    const detailFields = ["seriennummer", "modell", "hersteller", "ain_artikelnr"];
+    let filledFields: string[] = [];
+
     // Try pipe-separated format: bezeichnung|hersteller|ip|seriennummer
     if (data.includes("|")) {
       const parts = data.split("|");
@@ -143,31 +147,40 @@ export function DeviceForm({ device }: DeviceFormProps) {
         if (kvMatch) {
           const key = kvMatch[1].toUpperCase();
           const val = kvMatch[2].trim();
-          if (key === "SN") updates.seriennummer = val;
-          else if (key === "MAC") updates.mac_adresse = val;
-          else if (key === "IP") updates.ip_adresse = val;
-          else if (key === "MODEL") updates.modell = val;
-          else if (key === "MFG") updates.hersteller = val;
+          if (key === "SN") { updates.seriennummer = val; filledFields.push("seriennummer"); }
+          else if (key === "MAC") { updates.mac_adresse = val; filledFields.push("mac_adresse"); }
+          else if (key === "IP") { updates.ip_adresse = val; filledFields.push("ip_adresse"); }
+          else if (key === "MODEL") { updates.modell = val; filledFields.push("modell"); }
+          else if (key === "MFG") { updates.hersteller = val; filledFields.push("hersteller"); }
         }
       }
       // Unnamed fields: positional (bezeichnung, hersteller, ip, seriennummer)
       const unnamed = parts.filter(p => !p.includes(":")).map(p => p.trim());
-      if (unnamed[0] && !form.bezeichnung && !updates.bezeichnung) updates.bezeichnung = unnamed[0];
-      if (unnamed[1] && !form.hersteller && !updates.hersteller) updates.hersteller = unnamed[1];
-      if (unnamed[2] && !form.ip_adresse && !updates.ip_adresse) updates.ip_adresse = unnamed[2];
-      if (unnamed[3] && !form.seriennummer && !updates.seriennummer) updates.seriennummer = unnamed[3];
+      if (unnamed[0] && !form.bezeichnung && !updates.bezeichnung) { updates.bezeichnung = unnamed[0]; filledFields.push("bezeichnung"); }
+      if (unnamed[1] && !form.hersteller && !updates.hersteller) { updates.hersteller = unnamed[1]; filledFields.push("hersteller"); }
+      if (unnamed[2] && !form.ip_adresse && !updates.ip_adresse) { updates.ip_adresse = unnamed[2]; filledFields.push("ip_adresse"); }
+      if (unnamed[3] && !form.seriennummer && !updates.seriennummer) { updates.seriennummer = unnamed[3]; filledFields.push("seriennummer"); }
       setForm(prev => ({ ...prev, ...updates }));
-      return;
+    } else {
+      // MAC address pattern
+      const macMatch = data.match(/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/);
+      if (macMatch) {
+        updateField("mac_adresse", macMatch[0]);
+        filledFields.push("mac_adresse");
+      } else if (!form.seriennummer) {
+        // Fallback: use as serial number
+        updateField("seriennummer", data);
+        filledFields.push("seriennummer");
+      }
     }
-    // MAC address pattern
-    const macMatch = data.match(/([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}/);
-    if (macMatch) {
-      updateField("mac_adresse", macMatch[0]);
-      return;
-    }
-    // Fallback: use as serial number
-    if (!form.seriennummer) {
-      updateField("seriennummer", data);
+
+    // Auto-expand sections that contain filled fields
+    const expandSections: Partial<typeof sections> = {};
+    if (filledFields.some(f => networkFields.includes(f))) expandSections.network = true;
+    if (filledFields.some(f => detailFields.includes(f))) expandSections.details = true;
+    if (filledFields.some(f => f === "bezeichnung")) expandSections.basic = true;
+    if (Object.keys(expandSections).length > 0) {
+      setSections(prev => ({ ...prev, ...expandSections }));
     }
   };
 
