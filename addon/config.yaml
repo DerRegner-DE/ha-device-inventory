@@ -1,6 +1,6 @@
 name: "Geräteverwaltung"
 description: "Smart Home Device Inventory Management - Offline-First PWA"
-version: "1.3.11"
+version: "1.3.12"
 slug: "geraeteverwaltung"
 url: "https://github.com/DerRegner-DE/ha-device-inventory"
 arch:

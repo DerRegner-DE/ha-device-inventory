@@ -1,6 +1,9 @@
 # Changelog
 
 ## 1.3.11
+n## 1.3.12
+
+- Fix: Areas-API gibt jetzt korrekt floor_id zurück (area_floor() existiert nicht, nutzt jetzt floor_areas() Lookup)
 
 - Bereiche werden jetzt nach HA-Etagen gruppiert (OG, UG, Garten, 19a OG etc.)
 - Backend liefert floor_id pro Bereich mit (war vorher nicht enthalten)

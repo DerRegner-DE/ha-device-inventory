@@ -77,9 +77,7 @@ async def _post_template(data: dict) -> str:
 async def get_areas() -> list[dict[str, Any]]:
     """Fetch all HA areas via REST API (template endpoint workaround)."""
     result = await _post_template({"template": """
-[{% for area in areas() %}
-  {"area_id": "{{ area }}", "name": "{{ area_name(area) }}", "floor_id": {{ area_floor(area) | tojson }}}{% if not loop.last %},{% endif %}
-{% endfor %}]
+[{% for area in areas() %}{% set floor_found = namespace(id=None) %}{% for floor in floors() %}{% if area in floor_areas(floor) %}{% set floor_found.id = floor %}{% endif %}{% endfor %}{"area_id": "{{ area }}", "name": "{{ area_name(area) }}", "floor_id": {{ floor_found.id | tojson }}}{% if not loop.last %},{% endif %}{% endfor %}]
 """})
     import json
     try:
