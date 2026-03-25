@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.9
+
+- Bereiche/Standorte werden jetzt live aus Home Assistant geladen (echte HA-Areas statt hardcodierter Liste)
+- Gruppierung nach HA-Etagen (Floors) im Standort-Dropdown
+- Fallback auf Standard-Bereiche wenn HA nicht erreichbar (Offline-Modus)
+
 ## 1.3.8
 
 - "Foto aufnehmen" öffnet jetzt direkt die Kamera (primärer Button)

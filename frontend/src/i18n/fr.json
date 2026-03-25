@@ -195,5 +195,6 @@
   "camera.retake": "Reprendre",
   "camera.confirm": "Utiliser la photo",
   "camera.starting": "Démarrage de la caméra...",
-  "camera.chooseImage": "Choisir une image"
+  "camera.chooseImage": "Choisir une image",
+  "areas.other": "Autres"
 }

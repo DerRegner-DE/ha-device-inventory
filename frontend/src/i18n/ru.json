@@ -195,5 +195,6 @@
   "camera.retake": "Переснять",
   "camera.confirm": "Использовать фото",
   "camera.starting": "Запуск камеры...",
-  "camera.chooseImage": "Выбрать изображение"
+  "camera.chooseImage": "Выбрать изображение",
+  "areas.other": "Прочие"
 }

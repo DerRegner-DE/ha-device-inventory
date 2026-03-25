@@ -195,5 +195,6 @@
   "license.deviceLimitReached": "Device limit reached (Free: {limit}). Upgrade to Pro for unlimited devices.",
   "license.languageProOnly": "Additional languages available with Pro license",
   "camera.starting": "Starting camera...",
-  "camera.chooseImage": "Choose Image"
+  "camera.chooseImage": "Choose Image",
+  "areas.other": "Other"
 }
