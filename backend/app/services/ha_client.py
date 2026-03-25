@@ -78,7 +78,7 @@ async def get_areas() -> list[dict[str, Any]]:
     """Fetch all HA areas via REST API (template endpoint workaround)."""
     result = await _post_template({"template": """
 [{% for area in areas() %}
-  {"area_id": "{{ area }}", "name": "{{ area_name(area) }}"}{% if not loop.last %},{% endif %}
+  {"area_id": "{{ area }}", "name": "{{ area_name(area) }}", "floor_id": {{ area_floor(area) | tojson }}}{% if not loop.last %},{% endif %}
 {% endfor %}]
 """})
     import json
