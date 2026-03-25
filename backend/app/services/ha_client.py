@@ -120,69 +120,56 @@ async def get_area_details(area_id: str) -> dict[str, Any] | None:
         return None
 
 
-# ---- Devices --------------------------------------------------------------
+# ---- Devices (WebSocket API) ---------------------------------------------
 
-async def get_devices() -> list[dict[str, Any]]:
-    """Fetch device list from HA REST API."""
-    # Use /api/states as a workaround to gather device info
-    # The actual device registry needs websocket, so we use the config endpoint
+def _get_ws_url() -> str:
+    """Determine HA WebSocket URL."""
+    if os.environ.get("SUPERVISOR_TOKEN"):
+        return "ws://supervisor/core/websocket"
+    base = settings.HA_URL.rstrip("/")
+    return base.replace("http://", "ws://").replace("https://", "wss://") + "/api/websocket"
+
+
+async def _ws_command(cmd: dict) -> Any:
+    """Execute a single WebSocket command and return the result."""
+    token = os.environ.get("SUPERVISOR_TOKEN") or settings.HA_TOKEN
+    url = _get_ws_url()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.ws_connect(url, timeout=aiohttp.ClientTimeout(total=30)) as ws:
+            # Wait for auth_required
+            msg = await ws.receive_json()
+            if msg.get("type") != "auth_required":
+                raise RuntimeError(f"Unexpected WS message: {msg}")
+
+            # Authenticate
+            await ws.send_json({"type": "auth", "access_token": token})
+            msg = await ws.receive_json()
+            if msg.get("type") != "auth_ok":
+                raise RuntimeError(f"WS auth failed: {msg}")
+
+            # Send command
+            await ws.send_json({"id": 1, **cmd})
+            msg = await ws.receive_json()
+            if not msg.get("success"):
+                raise RuntimeError(f"WS command failed: {msg}")
+
+            return msg.get("result", [])
+
+
+async def get_ha_device_registry() -> list[dict[str, Any]]:
+    """Fetch complete HA device registry via WebSocket API."""
     try:
-        states = await _get("/states")
-        # Group by device_id concept - extract unique device-like entities
-        # This is a simplified approach; real device registry needs WS
-        devices: dict[str, dict] = {}
-        for state in states:
-            attrs = state.get("attributes", {})
-            entity_id = state.get("entity_id", "")
-            friendly_name = attrs.get("friendly_name", entity_id)
-
-            # We return entity-level data since REST API doesn't expose device registry directly
-            devices[entity_id] = {
-                "entity_id": entity_id,
-                "friendly_name": friendly_name,
-                "state": state.get("state"),
-            }
-        return list(devices.values())
+        return await _ws_command({"type": "config/device_registry/list"})
     except Exception as e:
-        logger.error("Failed to get devices: %s", e)
+        logger.error("Failed to get device registry: %s", e)
         return []
 
 
-async def get_device_detail(device_id: str) -> dict[str, Any] | None:
-    """Get single device detail. Since REST API is limited, return what we can."""
+async def get_ha_entity_registry() -> list[dict[str, Any]]:
+    """Fetch complete HA entity registry via WebSocket API."""
     try:
-        # Try fetching via template to get device info
-        result = await _post_template({"template": f"""
-{{% set did = "{device_id}" %}}
-{{% set ents = device_entities(did) %}}
-{{
-  "device_id": "{{{{ did }}}}",
-  "entities": [
-    {{% for e in ents %}}
-      {{"entity_id": "{{{{ e }}}}", "state": "{{{{ states(e) }}}}"}}{{%- if not loop.last %}},"{{%- endif %}}
-    {{% endfor %}}
-  ]
-}}
-"""})
-        import json
-        try:
-            return json.loads(result)
-        except (json.JSONDecodeError, TypeError):
-            return None
+        return await _ws_command({"type": "config/entity_registry/list"})
     except Exception as e:
-        logger.error("Failed to get device %s: %s", device_id, e)
-        return None
-
-
-async def update_device_area(device_id: str, area_id: str) -> dict[str, Any]:
-    """Update device area via HA service call."""
-    # This requires the config API which uses websocket.
-    # For REST, we can use the service call approach if available.
-    # In practice this would need websocket; we log a warning.
-    logger.warning(
-        "update_device_area called for device=%s area=%s - "
-        "REST API has limited device registry support. "
-        "Consider using WebSocket API for full device management.",
-        device_id, area_id
-    )
-    return {"status": "not_supported_via_rest", "device_id": device_id, "area_id": area_id}
+        logger.error("Failed to get entity registry: %s", e)
+        return []
