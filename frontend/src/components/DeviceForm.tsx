@@ -286,11 +286,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
               <button
                 type="button"
                 onClick={() => {
-                  if (isMobile && directFileRef.current) {
-                    directFileRef.current.click();
-                  } else {
-                    setShowCamera(true);
-                  }
+                  setShowCamera(true);
                 }}
                 class="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
                 title={t("form.photoTitle")}
