@@ -9,7 +9,8 @@ photos/
 frontend/node_modules/
 frontend/dist/
 *.map
-*.docx
 backend/app/license_gen.py
 create_docs.py
 create_testplan.js
+docs/build_*_doc.cjs
+docs/Mockup_*
