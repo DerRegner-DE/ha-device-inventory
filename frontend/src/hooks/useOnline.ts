@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "preact/hooks";
-import { getPendingCount, syncPendingQueue } from "../api/client";
+import { getPendingCount, syncPendingQueue, syncFromServer } from "../api/client";
 
 export function useOnline() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -10,26 +10,37 @@ export function useOnline() {
     setPendingCount(count);
   }, []);
 
+  const fullSync = useCallback(async () => {
+    // First push pending local changes
+    await syncPendingQueue();
+    // Then pull from server
+    await syncFromServer();
+    // Update pending count
+    await refreshPending();
+  }, [refreshPending]);
+
   useEffect(() => {
     const handleOnline = () => {
       setOnline(true);
-      syncPendingQueue().then(() => refreshPending());
+      fullSync();
     };
     const handleOffline = () => setOnline(false);
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    refreshPending();
+    // Initial sync on mount
+    fullSync();
 
-    const interval = setInterval(refreshPending, 30000);
+    // Periodic sync every 30 seconds
+    const interval = setInterval(fullSync, 30000);
 
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
-  }, [refreshPending]);
+  }, [fullSync]);
 
   return { online, pendingCount, refreshPending };
 }

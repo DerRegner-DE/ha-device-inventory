@@ -187,3 +187,55 @@ export async function syncPendingQueue(): Promise<number> {
 export async function getPendingCount(): Promise<number> {
   return db.syncQueue.count();
 }
+
+/**
+ * Pull devices from server and merge into local IndexedDB.
+ * Server wins if sync_version is higher. Local wins if local is higher (pending upload).
+ * Devices deleted on server (not in response) are removed locally.
+ */
+export async function syncFromServer(): Promise<number> {
+  try {
+    const data = await apiGet<{ items: any[] }>("/devices?per_page=9999");
+    if (!data || !data.items) return 0;
+
+    const serverDevices = data.items;
+    const localDevices = await db.devices.toArray();
+    const localMap = new Map(localDevices.map(d => [d.uuid, d]));
+    const serverUuids = new Set(serverDevices.map((d: any) => d.uuid));
+    const pendingItems = await db.syncQueue.toArray();
+    const pendingUuids = new Set(pendingItems.map(i => i.entity_uuid));
+
+    let changes = 0;
+
+    // Merge server → local
+    for (const serverDev of serverDevices) {
+      const local = localMap.get(serverDev.uuid);
+      if (!local) {
+        // New device from server - add locally
+        await db.devices.put(serverDev);
+        changes++;
+      } else if (
+        (serverDev.sync_version ?? 0) > (local.sync_version ?? 0) &&
+        !pendingUuids.has(serverDev.uuid)
+      ) {
+        // Server has newer version and no pending local changes
+        await db.devices.put(serverDev);
+        changes++;
+      }
+    }
+
+    // Remove locally deleted devices (on server but not pending delete)
+    for (const local of localDevices) {
+      if (!serverUuids.has(local.uuid) && !pendingUuids.has(local.uuid)) {
+        await db.devices.delete(local.uuid);
+        await db.photos.where("device_uuid").equals(local.uuid).delete();
+        changes++;
+      }
+    }
+
+    return changes;
+  } catch (err) {
+    console.warn("syncFromServer failed:", err);
+    return 0;
+  }
+}
