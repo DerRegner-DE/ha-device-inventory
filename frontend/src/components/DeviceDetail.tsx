@@ -5,6 +5,7 @@ import { db, type Photo } from "../db/schema";
 import { getAreaName, getFloorForArea, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
+import { apiDelete } from "../api/client";
 
 interface DeviceDetailProps {
   uuid?: string;
@@ -85,6 +86,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
     if (!confirm(t("detail.confirmDelete"))) return;
     await db.devices.delete(device.uuid);
     await db.photos.where("device_uuid").equals(device.uuid).delete();
+    await apiDelete(`/devices/${device.uuid}`, "device", device.uuid);
     route("/devices");
   };
 
