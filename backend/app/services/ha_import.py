@@ -234,6 +234,17 @@ async def import_ha_devices() -> dict[str, Any]:
             # Network type
             network = _guess_network(integration_domain)
 
+            # Safely convert fields that might be lists
+            sw_version = dev.get("sw_version")
+            if isinstance(sw_version, list):
+                sw_version = ", ".join(str(v) for v in sw_version) if sw_version else None
+            model = dev.get("model")
+            if isinstance(model, list):
+                model = ", ".join(str(m) for m in model) if model else None
+            manufacturer = dev.get("manufacturer")
+            if isinstance(manufacturer, list):
+                manufacturer = ", ".join(str(m) for m in manufacturer) if manufacturer else None
+
             # Build device record
             uuid = uuid4().hex
             conn.execute(
@@ -246,18 +257,18 @@ async def import_ha_devices() -> dict[str, Any]:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
                 (
                     uuid,
-                    device_type,
-                    name,
-                    dev.get("model") or None,
-                    dev.get("manufacturer") or None,
-                    area_id,
-                    area_name,
-                    floor_id,
-                    dev.get("sw_version") or None,
-                    integration_domain or "Sonstiges",
-                    network,
-                    device_id,
-                    primary_entity,
+                    str(device_type),
+                    str(name),
+                    str(model) if model else None,
+                    str(manufacturer) if manufacturer else None,
+                    str(area_id) if area_id else None,
+                    str(area_name) if area_name else None,
+                    str(floor_id) if floor_id else None,
+                    str(sw_version) if sw_version else None,
+                    str(integration_domain) if integration_domain else "Sonstiges",
+                    str(network) if network else None,
+                    str(device_id),
+                    str(primary_entity) if primary_entity else None,
                 ),
             )
             imported += 1
