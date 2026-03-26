@@ -70,7 +70,11 @@ export function DeviceList() {
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(t("bulk.deleteConfirm", { count: selected.size }))) return;
+    const mqttActive = localStorage.getItem("gv_mqtt_enabled") === "true";
+    const msg = mqttActive
+      ? t("bulk.deleteConfirmMqtt", { count: selected.size })
+      : t("bulk.deleteConfirm", { count: selected.size });
+    if (!confirm(msg)) return;
     setBulkBusy(true);
     try {
       await apiPost("/devices/bulk/delete", { uuids: [...selected] });

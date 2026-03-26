@@ -89,7 +89,11 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
     : undefined;
 
   const handleDelete = async () => {
-    if (!confirm(t("detail.confirmDelete"))) return;
+    const mqttEnabled = localStorage.getItem("gv_mqtt_enabled") === "true";
+    const msg = mqttEnabled
+      ? t("detail.confirmDeleteMqtt")
+      : t("detail.confirmDelete");
+    if (!confirm(msg)) return;
     await db.devices.delete(device.uuid);
     await db.photos.where("device_uuid").equals(device.uuid).delete();
     await apiDelete(`/devices/${device.uuid}`, "device", device.uuid);
