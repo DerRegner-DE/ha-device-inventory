@@ -135,6 +135,7 @@
   "settings.export": "Export Data",
   "settings.exportDesc": "Download all devices as JSON file",
   "settings.exportButton": "JSON Export",
+  "settings.pdfExportButton": "PDF Export",
   "settings.clearData": "Clear Local Data",
   "settings.clearDataDesc": "Remove all locally stored device data",
   "settings.clearButton": "Delete all data",
