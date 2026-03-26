@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     LS_STORE_ID: int = int(os.environ.get("GV_LS_STORE_ID", "326895"))
     LS_PRODUCT_ID: int = int(os.environ.get("GV_LS_PRODUCT_ID", "921643"))
 
+    # MQTT broker for HA discovery
+    MQTT_HOST: str = os.environ.get("GV_MQTT_HOST", "localhost")
+    MQTT_PORT: int = int(os.environ.get("GV_MQTT_PORT", "1883"))
+    MQTT_USER: str = os.environ.get("GV_MQTT_USER", "")
+    MQTT_PASSWORD: str = os.environ.get("GV_MQTT_PASSWORD", "")
+    MQTT_DISCOVERY_ENABLED: bool = os.environ.get("GV_MQTT_DISCOVERY", "false").lower() == "true"
+
     class Config:
         env_prefix = "GV_"
         env_file = ".env"

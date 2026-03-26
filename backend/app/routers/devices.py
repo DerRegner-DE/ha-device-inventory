@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
+import asyncio
 import math
 from typing import Any
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
 from app.database import get_db, dict_from_row, dicts_from_rows
 from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo
+from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -117,7 +119,7 @@ def get_device(uuid: str):
 
 
 @router.post("", response_model=Device, status_code=201)
-def create_device(body: DeviceCreate):
+def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
     device_uuid = body.uuid or uuid4().hex
 
     fields = {
@@ -148,11 +150,15 @@ def create_device(body: DeviceCreate):
         row = dict_from_row(
             conn.execute("SELECT * FROM devices WHERE uuid = ?", (device_uuid,)).fetchone()
         )
-        return _build_device_response(row, conn)
+        result = _build_device_response(row, conn)
+
+    # Publish to HA via MQTT discovery (non-blocking)
+    background_tasks.add_task(asyncio.create_task, publish_device(result))
+    return result
 
 
 @router.put("/{uuid}", response_model=Device)
-def update_device(uuid: str, body: DeviceUpdate):
+def update_device(uuid: str, body: DeviceUpdate, background_tasks: BackgroundTasks):
     update_data = body.model_dump(exclude_unset=True)
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
@@ -178,11 +184,15 @@ def update_device(uuid: str, body: DeviceUpdate):
         row = dict_from_row(
             conn.execute("SELECT * FROM devices WHERE uuid = ?", (uuid,)).fetchone()
         )
-        return _build_device_response(row, conn)
+        result = _build_device_response(row, conn)
+
+    # Re-publish to HA via MQTT discovery (non-blocking)
+    background_tasks.add_task(asyncio.create_task, publish_device(result))
+    return result
 
 
 @router.delete("/{uuid}", status_code=204)
-def delete_device(uuid: str):
+def delete_device(uuid: str, background_tasks: BackgroundTasks):
     with get_db() as conn:
         cursor = conn.execute(
             "UPDATE devices SET deleted_at = datetime('now'), sync_version = sync_version + 1 "
@@ -198,3 +208,6 @@ def delete_device(uuid: str):
             "WHERE device_id = (SELECT id FROM devices WHERE uuid = ?)",
             (uuid,),
         )
+
+    # Remove from HA via MQTT discovery (non-blocking)
+    background_tasks.add_task(asyncio.create_task, mqtt_remove_device(uuid))

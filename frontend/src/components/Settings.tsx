@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { db } from "../db/schema";
-import { syncPendingQueue, getPendingCount, apiPost, syncFromServer } from "../api/client";
+import { syncPendingQueue, getPendingCount, apiPost, apiGet, syncFromServer } from "../api/client";
 import { t, setLanguage, getLanguage, getAvailableLanguages } from "../i18n";
 import { useLanguage } from "../i18n";
 import { LicenseSettings } from "./LicenseSettings";
@@ -20,6 +20,18 @@ export function Settings() {
   const hasHaSync = hasFeature("ha_sync");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+  const [mqttEnabled, setMqttEnabled] = useState(false);
+  const [mqttSyncing, setMqttSyncing] = useState(false);
+  const [mqttResult, setMqttResult] = useState<string | null>(null);
+  const [mqttLoaded, setMqttLoaded] = useState(false);
+
+  // Load MQTT status on mount
+  if (!mqttLoaded) {
+    setMqttLoaded(true);
+    apiGet<any>("/mqtt/status")
+      .then((data) => { if (data) setMqttEnabled(data.enabled); })
+      .catch(() => {});
+  }
 
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
@@ -76,6 +88,36 @@ export function Settings() {
       setImportResult(t("settings.haImportFailed"));
     }
     setImporting(false);
+  };
+
+  const handleMqttToggle = async () => {
+    const newVal = !mqttEnabled;
+    try {
+      await apiPost("/mqtt/settings", { enabled: newVal });
+      setMqttEnabled(newVal);
+      setMqttResult(null);
+    } catch {
+      // revert
+    }
+  };
+
+  const handleMqttSync = async () => {
+    setMqttSyncing(true);
+    setMqttResult(null);
+    try {
+      const result = await apiPost<any>("/mqtt/sync", {});
+      if (result) {
+        setMqttResult(
+          t("settings.mqttSyncResult", {
+            published: result.published || 0,
+            total: result.total || 0,
+          })
+        );
+      }
+    } catch {
+      setMqttResult(t("settings.mqttSyncFailed"));
+    }
+    setMqttSyncing(false);
   };
 
   const handleExport = async () => {
@@ -169,6 +211,41 @@ export function Settings() {
           </button>
           {importResult && (
             <p class="text-xs text-gray-500 mt-2 text-center">{importResult}</p>
+          )}
+        </div>
+
+        {/* MQTT Discovery section */}
+        <div class="p-4">
+          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.mqttTitle")}</h3>
+          <p class="text-xs text-gray-400 mb-3">
+            {t("settings.mqttDesc")}
+          </p>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm text-gray-600">{t("settings.mqttPublish")}</span>
+            <button
+              onClick={handleMqttToggle}
+              class={`relative w-11 h-6 rounded-full transition-colors ${
+                mqttEnabled ? "bg-[#4CAF50]" : "bg-gray-300"
+              }`}
+            >
+              <span
+                class={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  mqttEnabled ? "translate-x-5" : ""
+                }`}
+              />
+            </button>
+          </div>
+          {mqttEnabled && (
+            <button
+              onClick={handleMqttSync}
+              disabled={mqttSyncing}
+              class="w-full py-2.5 rounded-xl bg-[#FF9800] text-white text-sm font-medium hover:bg-[#F57C00] disabled:opacity-50"
+            >
+              {mqttSyncing ? t("settings.mqttSyncing") : t("settings.mqttSyncButton")}
+            </button>
+          )}
+          {mqttResult && (
+            <p class="text-xs text-gray-500 mt-2 text-center">{mqttResult}</p>
           )}
         </div>
 
