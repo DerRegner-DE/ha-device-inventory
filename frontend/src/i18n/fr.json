@@ -105,6 +105,7 @@
   "detail.deviceId": "Device ID",
   "detail.function": "Fonction",
   "detail.notes": "Remarques",
+  "detail.setupInHA": "Configurer dans Home Assistant →",
   "detail.created": "Créé",
   "detail.updated": "Mis à jour",
   "bulk.select": "Sélectionner",

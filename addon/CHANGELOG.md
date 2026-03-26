@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.0
+
+- **Dashboard Charts**: Donut charts for device type, network, power source, warranty status
+- **Dark Mode**: Toggle in settings, full dark theme across all components
+- **PDF Export**: Insurance documentation with device table and detail pages
+- **Bulk Editing**: Select multiple devices, change type/integration, bulk delete
+- **MQTT Discovery**: Publish inventory devices as HA entities (warranty sensors, location etc.)
+- **Onboarding**: "Set up in Home Assistant" button with deep-links to integrations
+- MQTT safety: Confirmation dialogs for enable, delete warnings when HA entities affected
+- Dark mode fixes: Form labels, inputs, navigation, feature list visibility
+- Chart.js integration with responsive layout
+
 ## 1.5.0
 
 - Lemon Squeezy integration for Pro license purchases (automatic key delivery)
