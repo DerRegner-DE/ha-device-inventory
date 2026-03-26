@@ -70,7 +70,7 @@ export function LicenseSettings() {
 
       {/* Key input */}
       <div>
-        <label class="block text-xs font-medium text-gray-500 mb-1">
+        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
           {t("license.keyLabel")}
         </label>
         <input
@@ -80,7 +80,7 @@ export function LicenseSettings() {
             setKeyInput((e.target as HTMLInputElement).value);
             setError(null);
           }}
-          class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79]"
+          class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-mono text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79]"
           placeholder={t("license.keyPlaceholder")}
           disabled={isPro}
         />
@@ -109,7 +109,7 @@ export function LicenseSettings() {
 
       {/* Feature list */}
       <div>
-        <p class="text-xs font-medium text-gray-500 mb-2">
+        <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
           {t("license.featuresTitle")}
         </p>
         <div class="space-y-1.5">
@@ -132,7 +132,7 @@ export function LicenseSettings() {
                   </svg>
                 )}
                 <span
-                  class={`text-xs ${unlocked ? "text-gray-700" : "text-gray-400"}`}
+                  class={`text-xs ${unlocked ? "text-gray-700 dark:text-gray-200" : "text-gray-400 dark:text-gray-500"}`}
                 >
                   {t(`license.feature.${feat}`)}
                 </span>
