@@ -307,7 +307,7 @@ Please open an issue first for larger changes to discuss the approach.
 
 - [Home Assistant](https://www.home-assistant.io/)
 - [Report Issues](https://github.com/DerRegner-DE/ha-device-inventory/issues)
-- [Buy Pro License](mailto:support@derregner.de?subject=Ger%C3%A4teverwaltung%20Pro%20License)
+- [Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)
 
 ---
 
