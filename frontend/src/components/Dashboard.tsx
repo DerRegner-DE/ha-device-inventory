@@ -232,7 +232,7 @@ export function Dashboard() {
 
       {/* Donut charts grid */}
       {total > 0 && (
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
           {typeCounts.length > 0 && (
             <DonutChart title={t("dashboard.byType")} data={typeChartData} />
           )}
