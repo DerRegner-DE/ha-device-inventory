@@ -91,6 +91,16 @@ export function Settings() {
     URL.revokeObjectURL(url);
   };
 
+  const handlePdfExport = () => {
+    // Detect API base URL for HA Ingress compatibility
+    const path = window.location.pathname;
+    const ingressMatch = path.match(/^(\/api\/hassio_ingress\/[^/]+)/);
+    const appMatch = path.match(/^(\/app\/[0-9a-f]{8}_[^/]+)/);
+    const slugMatch = path.match(/^(\/[0-9a-f]{8}_[^/]+)/);
+    const base = ingressMatch?.[1] || appMatch?.[1] || slugMatch?.[1] || "";
+    window.open(`${base}/api/export/pdf`, "_blank");
+  };
+
   // Free tier: only English.  Pro: all languages.
   const allLanguages = getAvailableLanguages();
   const languages = hasMultilingual
@@ -177,12 +187,20 @@ export function Settings() {
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.exportDesc")}
           </p>
-          <button
-            onClick={handleExport}
-            class="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {t("settings.exportButton")}
-          </button>
+          <div class="flex gap-2">
+            <button
+              onClick={handleExport}
+              class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            >
+              {t("settings.exportButton")}
+            </button>
+            <button
+              onClick={handlePdfExport}
+              class="flex-1 py-2.5 rounded-xl bg-[#e74c3c] text-white text-sm font-medium hover:bg-[#c0392b]"
+            >
+              {t("settings.pdfExportButton")}
+            </button>
+          </div>
         </div>
 
         <div class="p-4">
