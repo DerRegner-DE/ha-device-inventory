@@ -6,10 +6,12 @@ import { useLanguage } from "../i18n";
 import { LicenseSettings } from "./LicenseSettings";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
+import { useDarkMode } from "../hooks/useDarkMode";
 
 export function Settings() {
   useLanguage();
   const license = useLicense();
+  const [darkMode, toggleDarkMode] = useDarkMode();
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [clearing, setClearing] = useState(false);
@@ -146,25 +148,25 @@ export function Settings() {
 
   return (
     <div class="p-4 space-y-6">
-      <h2 class="text-lg font-semibold text-gray-800">{t("settings.title")}</h2>
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{t("settings.title")}</h2>
 
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50 dark:divide-gray-700">
         {/* License section */}
         <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-3">{t("license.title")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{t("license.title")}</h3>
           <LicenseSettings />
         </div>
 
         {/* Language section */}
         <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.language")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.language")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.languageDesc")}
           </p>
           <select
             value={currentLang}
             onChange={(e) => handleLanguageChange((e.target as HTMLSelectElement).value)}
-            class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none"
+            class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none"
           >
             {languages.map((lang) => (
               <option key={lang.code} value={lang.code}>
@@ -179,8 +181,31 @@ export function Settings() {
           )}
         </div>
 
+        {/* Dark Mode section */}
         <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.sync")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.darkMode")}</h3>
+          <p class="text-xs text-gray-400 mb-3">
+            {t("settings.darkModeDesc")}
+          </p>
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600 dark:text-gray-400">{t("settings.darkModeToggle")}</span>
+            <button
+              onClick={toggleDarkMode}
+              class={`relative w-11 h-6 rounded-full transition-colors ${
+                darkMode ? "bg-[#1F4E79]" : "bg-gray-300"
+              }`}
+            >
+              <span
+                class={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  darkMode ? "translate-x-5" : ""
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div class="p-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.sync")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.syncDesc")}
           </p>
@@ -197,7 +222,7 @@ export function Settings() {
         </div>
 
         <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.haImport")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.haImport")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.haImportDesc")}
           </p>
@@ -250,13 +275,13 @@ export function Settings() {
         </div>
 
         <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.export")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.export")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.exportDesc")}
           </p>
           <button
             onClick={handleExport}
-            class="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            class="w-full py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             {t("settings.exportButton")}
           </button>
