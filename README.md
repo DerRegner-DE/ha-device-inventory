@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.1-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-1.5.0-blue.svg" />
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-41BDF5?logo=homeassistant&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-Source%20Available-orange.svg" />
   <img alt="GitHub Stars" src="https://img.shields.io/github/stars/DerRegner-DE/ha-device-inventory?style=social" />
@@ -174,7 +174,7 @@ The import is safe to run repeatedly -- existing devices are detected and skippe
 | Photo Gallery | -- | Yes |
 | Cross-device Sync | -- | Yes |
 
-**Purchase:** Email [support@derregner.de](mailto:support@derregner.de?subject=Ger%C3%A4teverwaltung%20Pro%20License) with the subject "Geraeteverwaltung Pro License". You will receive your license key via email.
+**[Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)** -- Instant delivery. Your license key will be included in the purchase confirmation email. You can activate it on up to 3 installations.
 
 ---
 

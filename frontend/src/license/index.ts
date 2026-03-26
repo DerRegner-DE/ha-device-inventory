@@ -2,6 +2,7 @@ export {
   getLicense,
   setLicenseKey,
   removeLicense,
+  lsDeactivate,
   hasFeature,
   canAddDevice,
   getDeviceLimit,

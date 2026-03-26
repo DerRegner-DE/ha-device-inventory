@@ -28,6 +28,10 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: list[str] = ["*"]  # Allow all since behind Ingress auth
 
+    # Lemon Squeezy license validation
+    LS_STORE_ID: int = int(os.environ.get("GV_LS_STORE_ID", "326895"))
+    LS_PRODUCT_ID: int = int(os.environ.get("GV_LS_PRODUCT_ID", "921643"))
+
     class Config:
         env_prefix = "GV_"
         env_file = ".env"
