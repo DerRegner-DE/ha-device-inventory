@@ -43,6 +43,16 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database at %s", settings.DB_PATH)
     init_db()
     logger.info("Database initialized")
+
+    # Load MQTT settings from persistent file
+    mqtt_settings_file = Path(settings.DB_PATH).parent / "mqtt_settings.json"
+    if mqtt_settings_file.exists():
+        try:
+            mqtt_data = json.loads(mqtt_settings_file.read_text(encoding="utf-8"))
+            settings.MQTT_DISCOVERY_ENABLED = mqtt_data.get("enabled", False)
+            logger.info("MQTT Discovery: %s", "enabled" if settings.MQTT_DISCOVERY_ENABLED else "disabled")
+        except Exception:
+            pass
     logger.info("Photos directory: %s", settings.PHOTOS_DIR)
 
     # Start HA sync in background (non-blocking)
@@ -100,6 +110,55 @@ def health_check():
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
     }
+
+
+# ----- MQTT Discovery endpoints ------------------------------------------------
+
+from app.services.mqtt_discovery import sync_all_devices as mqtt_sync_all, publish_device as mqtt_publish
+
+
+class MqttSettingsBody(BaseModel):
+    enabled: bool
+
+
+@app.get("/api/mqtt/status")
+def mqtt_status():
+    return {
+        "enabled": settings.MQTT_DISCOVERY_ENABLED,
+        "host": settings.MQTT_HOST,
+        "port": settings.MQTT_PORT,
+    }
+
+
+@app.post("/api/mqtt/settings")
+def mqtt_settings(body: MqttSettingsBody):
+    # Toggle is stored as environment variable override in a settings file
+    settings_file = Path(settings.DB_PATH).parent / "mqtt_settings.json"
+    data = {}
+    if settings_file.exists():
+        try:
+            data = json.loads(settings_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+    data["enabled"] = body.enabled
+    settings_file.parent.mkdir(parents=True, exist_ok=True)
+    settings_file.write_text(json.dumps(data), encoding="utf-8")
+    # Update runtime setting
+    settings.MQTT_DISCOVERY_ENABLED = body.enabled
+    return {"ok": True, "enabled": body.enabled}
+
+
+@app.post("/api/mqtt/sync")
+async def mqtt_sync():
+    """Publish all inventory devices to HA via MQTT discovery."""
+    from app.database import get_db, dicts_from_rows
+
+    with get_db() as conn:
+        rows = dicts_from_rows(
+            conn.execute("SELECT * FROM devices WHERE deleted_at IS NULL").fetchall()
+        )
+    result = await mqtt_sync_all(rows)
+    return result
 
 
 # ----- License storage & validation endpoints --------------------------------
