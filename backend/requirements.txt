@@ -6,3 +6,4 @@ python-multipart==0.0.20
 aiofiles==24.1.0
 pydantic==2.10.4
 pydantic-settings==2.7.1
+fpdf2==2.8.6
