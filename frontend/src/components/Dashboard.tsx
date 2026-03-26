@@ -7,12 +7,48 @@ import { t } from "../i18n";
 import { useLanguage } from "../i18n";
 import { getDeviceLimit } from "../license";
 import { useLicense } from "../license/useLicense";
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Doughnut } from "react-chartjs-2";
+
+ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface CountItem {
   label: string;
   count: number;
   filterKey: string;
   filterValue: string;
+}
+
+// Color palette based on the app's design (#1F4E79)
+const CHART_COLORS = [
+  "#1F4E79", "#2d6da3", "#4a90c4", "#7ab5d6", "#a8d4ea",
+  "#3d7a5f", "#5a9e7c", "#7bc29e", "#f59e0b", "#ef4444",
+  "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1",
+  "#84cc16", "#06b6d4", "#e11d48", "#a855f7", "#22c55e",
+  "#64748b", "#d97706",
+];
+
+const WARRANTY_COLORS = {
+  ok: "#22c55e",
+  warning: "#f59e0b",
+  expired: "#ef4444",
+  none: "#d1d5db",
+};
+
+function warrantyDays(garantieBis: string | undefined | null): number | null {
+  if (!garantieBis) return null;
+  try {
+    const exp = new Date(garantieBis);
+    const now = new Date();
+    return Math.ceil((exp.getTime() - now.getTime()) / 86400000);
+  } catch {
+    return null;
+  }
 }
 
 export function Dashboard() {
@@ -43,9 +79,17 @@ export function Dashboard() {
 
   const total = devices.length;
 
+  // --- Aggregations ---
   const byType = new Map<string, number>();
   const byArea = new Map<string, number>();
   const byIntegration = new Map<string, number>();
+  const byNetwork = new Map<string, number>();
+  const byPower = new Map<string, number>();
+  const byManufacturer = new Map<string, number>();
+  let warrantyOk = 0;
+  let warrantyWarning = 0;
+  let warrantyExpired = 0;
+  let warrantyNone = 0;
 
   for (const d of devices) {
     byType.set(d.typ, (byType.get(d.typ) ?? 0) + 1);
@@ -54,6 +98,26 @@ export function Dashboard() {
     }
     if (d.integration) {
       byIntegration.set(d.integration, (byIntegration.get(d.integration) ?? 0) + 1);
+    }
+    if (d.netzwerk) {
+      byNetwork.set(d.netzwerk, (byNetwork.get(d.netzwerk) ?? 0) + 1);
+    }
+    if (d.stromversorgung) {
+      byPower.set(d.stromversorgung, (byPower.get(d.stromversorgung) ?? 0) + 1);
+    }
+    if (d.hersteller) {
+      byManufacturer.set(d.hersteller, (byManufacturer.get(d.hersteller) ?? 0) + 1);
+    }
+
+    const days = warrantyDays(d.garantie_bis);
+    if (days === null) {
+      warrantyNone++;
+    } else if (days < 0) {
+      warrantyExpired++;
+    } else if (days < 30) {
+      warrantyWarning++;
+    } else {
+      warrantyOk++;
     }
   }
 
@@ -85,12 +149,49 @@ export function Dashboard() {
       filterValue: label,
     }));
 
+  const manufacturerCounts: CountItem[] = [...byManufacturer.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([label, count]) => ({
+      label,
+      count,
+      filterKey: "manufacturer",
+      filterValue: label,
+    }));
+
   const recentDevices = [...devices]
     .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
     .slice(0, 5);
 
+  // --- Chart data ---
+  const typeChartData = mapToChartData(byType, (k) => t(getDeviceTypeLabel(k)));
+  const networkChartData = mapToChartData(byNetwork);
+  const powerChartData = mapToChartData(byPower);
+
+  const warrantyChartData = {
+    labels: [
+      t("dashboard.warrantyOk"),
+      t("dashboard.warrantyWarning"),
+      t("dashboard.warrantyExpired"),
+      t("dashboard.warrantyNone"),
+    ],
+    datasets: [{
+      data: [warrantyOk, warrantyWarning, warrantyExpired, warrantyNone],
+      backgroundColor: [
+        WARRANTY_COLORS.ok,
+        WARRANTY_COLORS.warning,
+        WARRANTY_COLORS.expired,
+        WARRANTY_COLORS.none,
+      ],
+      borderWidth: 0,
+    }],
+  };
+
+  const hasWarrantyData = warrantyOk + warrantyWarning + warrantyExpired + warrantyNone > 0;
+
   return (
     <div class="p-4 space-y-6">
+      {/* Total count header */}
       <div class="bg-gradient-to-br from-[#1F4E79] to-[#2d6da3] rounded-2xl p-5 text-white">
         <p class="text-white/70 text-xs font-medium uppercase tracking-wider">{t("dashboard.total")}</p>
         <p class="text-4xl font-bold mt-1">{total}</p>
@@ -129,18 +230,38 @@ export function Dashboard() {
         </div>
       )}
 
-      {typeCounts.length > 0 && (
-        <CountSection title={t("dashboard.byType")} items={typeCounts} />
+      {/* Donut charts grid */}
+      {total > 0 && (
+        <div class="grid grid-cols-2 gap-4">
+          {typeCounts.length > 0 && (
+            <DonutChart title={t("dashboard.byType")} data={typeChartData} />
+          )}
+          {byNetwork.size > 0 && (
+            <DonutChart title={t("dashboard.byNetwork")} data={networkChartData} />
+          )}
+          {byPower.size > 0 && (
+            <DonutChart title={t("dashboard.byPower")} data={powerChartData} />
+          )}
+          {hasWarrantyData && (
+            <DonutChart title={t("dashboard.warrantyStatus")} data={warrantyChartData} />
+          )}
+        </div>
       )}
 
+      {/* Bar chart sections */}
       {areaCounts.length > 0 && (
         <CountSection title={t("dashboard.byLocation")} items={areaCounts} />
+      )}
+
+      {manufacturerCounts.length > 0 && (
+        <CountSection title={t("dashboard.byManufacturer")} items={manufacturerCounts} />
       )}
 
       {integrationCounts.length > 0 && (
         <CountSection title={t("dashboard.byIntegration")} items={integrationCounts} />
       )}
 
+      {/* Recently edited */}
       {recentDevices.length > 0 && (
         <div>
           <h3 class="text-sm font-semibold text-gray-700 mb-3">{t("dashboard.recentlyEdited")}</h3>
@@ -169,6 +290,65 @@ export function Dashboard() {
   );
 }
 
+// --- Helper: Convert Map to Chart.js data ---
+function mapToChartData(
+  map: Map<string, number>,
+  labelFn?: (key: string) => string,
+) {
+  const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]);
+  return {
+    labels: sorted.map(([k]) => labelFn ? labelFn(k) : k),
+    datasets: [{
+      data: sorted.map(([, v]) => v),
+      backgroundColor: sorted.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+      borderWidth: 0,
+    }],
+  };
+}
+
+// --- Donut Chart Component ---
+const DONUT_OPTIONS = {
+  responsive: true,
+  maintainAspectRatio: true,
+  cutout: "60%",
+  plugins: {
+    legend: {
+      position: "bottom" as const,
+      labels: {
+        boxWidth: 10,
+        padding: 8,
+        font: { size: 10 },
+        color: "#6b7280",
+      },
+    },
+    tooltip: {
+      callbacks: {
+        label: (ctx: any) => {
+          const total = ctx.dataset.data.reduce((a: number, b: number) => a + b, 0);
+          const pct = total > 0 ? Math.round((ctx.parsed / total) * 100) : 0;
+          return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+        },
+      },
+    },
+  },
+};
+
+function DonutChart({
+  title,
+  data,
+}: {
+  title: string;
+  data: any;
+}) {
+  return (
+    <div class="bg-white rounded-xl border border-gray-100 p-3">
+      <h4 class="text-xs font-semibold text-gray-700 mb-2 text-center">{title}</h4>
+      <Doughnut data={data} options={DONUT_OPTIONS} />
+    </div>
+  );
+}
+
+// --- Horizontal Bar Section (existing pattern) ---
 function CountSection({
   title,
   items,
