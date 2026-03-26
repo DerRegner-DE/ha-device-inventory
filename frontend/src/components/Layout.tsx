@@ -13,7 +13,7 @@ export function Layout({ children, activeRoute }: LayoutProps) {
   useLanguage();
   const isInIframe = window.self !== window.top;
   return (
-    <div class="min-h-screen flex flex-col bg-gray-50">
+    <div class="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {!isInIframe && (
         <header class="bg-[#1F4E79] text-white px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
           <h1 class="text-lg font-semibold tracking-tight">{t("app.title")}</h1>
@@ -21,7 +21,7 @@ export function Layout({ children, activeRoute }: LayoutProps) {
         </header>
       )}
       {isInIframe && (
-        <div class="flex justify-end px-2 py-1 bg-gray-50">
+        <div class="flex justify-end px-2 py-1 bg-gray-50 dark:bg-gray-900">
           <SyncStatus />
         </div>
       )}

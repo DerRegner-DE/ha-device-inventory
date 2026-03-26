@@ -66,7 +66,7 @@ export function BottomNav({ activeRoute }: BottomNavProps) {
   useLanguage();
   return (
     <nav
-      class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50"
+      class="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 z-50"
       style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);"
     >
       <div class="flex justify-around items-center h-16 max-w-lg mx-auto">
