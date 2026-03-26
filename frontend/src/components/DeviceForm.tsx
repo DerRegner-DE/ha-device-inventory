@@ -36,11 +36,11 @@ interface SectionProps {
 
 function Section({ title, open, onToggle, children }: SectionProps) {
   return (
-    <div class="border border-gray-200 rounded-xl overflow-hidden">
+    <div class="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 text-sm font-medium text-gray-700"
+        class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300"
       >
         {title}
         <svg
@@ -52,7 +52,7 @@ function Section({ title, open, onToggle, children }: SectionProps) {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {open && <div class="p-4 space-y-4">{children}</div>}
+      {open && <div class="p-4 space-y-4 dark:bg-gray-800">{children}</div>}
     </div>
   );
 }
@@ -66,17 +66,17 @@ function Field({
 }) {
   return (
     <div>
-      <label class="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>
       {children}
     </div>
   );
 }
 
 const inputClass =
-  "w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79]";
+  "w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79]";
 
 const selectClass =
-  "w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none";
+  "w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none";
 
 export function DeviceForm({ device }: DeviceFormProps) {
   useLanguage();
