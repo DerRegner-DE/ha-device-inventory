@@ -264,21 +264,21 @@ export function Dashboard() {
       {/* Recently edited */}
       {recentDevices.length > 0 && (
         <div>
-          <h3 class="text-sm font-semibold text-gray-700 mb-3">{t("dashboard.recentlyEdited")}</h3>
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{t("dashboard.recentlyEdited")}</h3>
           <div class="space-y-2">
             {recentDevices.map((d) => (
               <div
                 key={d.uuid}
                 onClick={() => route(`/devices/${d.uuid}`)}
-                class="flex items-center justify-between bg-white rounded-xl border border-gray-100 px-4 py-3 cursor-pointer hover:bg-gray-50"
+                class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <div class="min-w-0">
-                  <p class="text-sm font-medium text-gray-800 truncate">{d.bezeichnung}</p>
+                  <p class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{d.bezeichnung}</p>
                   <p class="text-[10px] text-gray-400">
                     {new Date(d.updated_at).toLocaleString("de-DE")}
                   </p>
                 </div>
-                <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 shrink-0 ml-2">
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 shrink-0 ml-2">
                   {t(getDeviceTypeLabel(d.typ))}
                 </span>
               </div>
@@ -360,18 +360,18 @@ function CountSection({
 
   return (
     <div>
-      <h3 class="text-sm font-semibold text-gray-700 mb-3">{title}</h3>
-      <div class="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50">
+      <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{title}</h3>
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700">
         {items.map((item) => (
           <div key={item.label} class="flex items-center gap-3 px-4 py-2.5">
-            <span class="text-xs text-gray-600 w-28 truncate shrink-0">{item.label}</span>
-            <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <span class="text-xs text-gray-600 dark:text-gray-400 w-28 truncate shrink-0">{item.label}</span>
+            <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
               <div
-                class="h-full bg-[#1F4E79] rounded-full transition-all"
+                class="h-full bg-[#1F4E79] dark:bg-[#4a90c4] rounded-full transition-all"
                 style={{ width: `${(item.count / maxCount) * 100}%` }}
               />
             </div>
-            <span class="text-xs font-semibold text-gray-700 w-8 text-right">{item.count}</span>
+            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 w-8 text-right">{item.count}</span>
           </div>
         ))}
       </div>

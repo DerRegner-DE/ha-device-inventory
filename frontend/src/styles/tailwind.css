@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode: class-based toggle */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Safe area support for mobile devices (notch, home indicator, etc.) */
 @supports (padding: env(safe-area-inset-bottom)) {
   html {
