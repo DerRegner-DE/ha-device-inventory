@@ -251,12 +251,12 @@ export function Settings() {
 
         {/* MQTT Discovery section */}
         <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 mb-1">{t("settings.mqttTitle")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.mqttTitle")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.mqttDesc")}
           </p>
           <div class="flex items-center justify-between mb-3">
-            <span class="text-sm text-gray-600">{t("settings.mqttPublish")}</span>
+            <span class="text-sm text-gray-600 dark:text-gray-300">{t("settings.mqttPublish")}</span>
             <button
               onClick={handleMqttToggle}
               class={`relative w-11 h-6 rounded-full transition-colors ${
