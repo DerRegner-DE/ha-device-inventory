@@ -7,6 +7,49 @@ import { t } from "../i18n";
 import { useLanguage } from "../i18n";
 import { apiDelete, getPhotoUrl } from "../api/client";
 
+/** Map device integration/type to HA setup URL */
+function getHaSetupUrl(device: { integration?: string; typ?: string; hersteller?: string }): string | null {
+  const i = device.integration?.toLowerCase() ?? "";
+  const h = device.hersteller?.toLowerCase() ?? "";
+  const t = device.typ?.toLowerCase() ?? "";
+
+  // Integration-based mapping
+  const integrationMap: Record<string, string> = {
+    fritz: "/config/integrations/integration/fritz",
+    fritzbox: "/config/integrations/integration/fritz",
+    tuya: "/config/integrations/integration/tuya",
+    localtuya: "/config/integrations/integration/tuya",
+    tplink: "/config/integrations/integration/tplink",
+    boschshc: "/config/integrations/integration/bosch_shc",
+    homematicip_cloud: "/config/integrations/integration/homematicip_cloud",
+    ring: "/config/integrations/integration/ring",
+    blink: "/config/integrations/integration/blink",
+    alexa_devices: "/config/integrations/integration/alexa_devices",
+    tasmota: "/config/integrations/integration/tasmota",
+    mqtt: "/config/integrations/integration/mqtt",
+    zigbee2mqtt: "/hassio/addon/45df7312_zigbee2mqtt",
+    landroid_cloud: "/config/integrations/integration/landroid_cloud",
+    mobile_app: "/config/integrations/integration/mobile_app",
+    playstation_network: "/config/integrations/integration/playstation_network",
+  };
+
+  if (i && integrationMap[i]) return integrationMap[i];
+
+  // Manufacturer-based fallback
+  if (h.includes("amazon") || h.includes("alexa")) return "/config/integrations/integration/alexa_devices";
+  if (h.includes("ring")) return "/config/integrations/integration/ring";
+  if (h.includes("blink")) return "/config/integrations/integration/blink";
+  if (h.includes("bosch")) return "/config/integrations/integration/bosch_shc";
+  if (h.includes("homematic")) return "/config/integrations/integration/homematicip_cloud";
+  if (h.includes("tp-link") || h.includes("tapo")) return "/config/integrations/integration/tplink";
+  if (h.includes("avm") || h.includes("fritz")) return "/config/integrations/integration/fritz";
+
+  // Generic: link to integrations page
+  if (i || t) return "/config/integrations";
+
+  return null;
+}
+
 interface DeviceDetailProps {
   uuid?: string;
 }
@@ -189,6 +232,29 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
             </div>
           )}
         </div>
+      )}
+
+      {/* Onboarding: Link to HA integration setup */}
+      {getHaSetupUrl(device) && (
+        <button
+          onClick={() => {
+            const url = getHaSetupUrl(device);
+            if (url) {
+              // Navigate in parent frame (HA) or new tab
+              try {
+                window.top?.location.assign(url);
+              } catch {
+                window.open(url, "_blank");
+              }
+            }
+          }}
+          class="w-full py-3 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          {t("detail.setupInHA")}
+        </button>
       )}
 
       <div class="text-center text-[10px] text-gray-300 py-2">
