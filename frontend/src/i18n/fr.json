@@ -139,6 +139,7 @@
   "settings.mqttTitle": "Intégration Home Assistant",
   "settings.mqttDesc": "Publier les appareils de l'inventaire comme entités HA (capteurs de garantie, emplacement, etc.)",
   "settings.mqttPublish": "Publier les appareils dans HA",
+  "settings.mqttEnableConfirm": "Publier les appareils dans Home Assistant ? Des entités HA seront créées pour chaque appareil de l'inventaire.",
   "settings.mqttSyncButton": "Synchroniser tous les appareils maintenant",
   "settings.mqttSyncing": "Synchronisation...",
   "settings.mqttSyncResult": "{published} sur {total} appareils publiés",

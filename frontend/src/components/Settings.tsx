@@ -94,6 +94,7 @@ export function Settings() {
 
   const handleMqttToggle = async () => {
     const newVal = !mqttEnabled;
+    if (newVal && !confirm(t("settings.mqttEnableConfirm"))) return;
     try {
       await apiPost("/mqtt/settings", { enabled: newVal });
       setMqttEnabled(newVal);
