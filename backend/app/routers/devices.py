@@ -9,7 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, HTTPException, Query
 
 from app.database import get_db, dict_from_row, dicts_from_rows
-from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo
+from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -198,3 +198,54 @@ def delete_device(uuid: str):
             "WHERE device_id = (SELECT id FROM devices WHERE uuid = ?)",
             (uuid,),
         )
+
+
+@router.put("/bulk/update")
+def bulk_update_devices(body: BulkUpdateBody):
+    """Update multiple devices with the same field values."""
+    if not body.uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+
+    update_data = body.updates.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    sets = []
+    params: list[Any] = []
+    for k, v in update_data.items():
+        sets.append(f"{k} = ?")
+        params.append(v)
+    sets.append("updated_at = datetime('now')")
+    sets.append("sync_version = sync_version + 1")
+
+    placeholders = ", ".join(["?"] * len(body.uuids))
+
+    with get_db() as conn:
+        cursor = conn.execute(
+            f"UPDATE devices SET {', '.join(sets)} WHERE uuid IN ({placeholders}) AND deleted_at IS NULL",
+            params + body.uuids,
+        )
+        return {"updated": cursor.rowcount, "total": len(body.uuids)}
+
+
+@router.post("/bulk/delete")
+def bulk_delete_devices(body: BulkDeleteBody):
+    """Soft-delete multiple devices."""
+    if not body.uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+
+    placeholders = ", ".join(["?"] * len(body.uuids))
+
+    with get_db() as conn:
+        cursor = conn.execute(
+            f"UPDATE devices SET deleted_at = datetime('now'), sync_version = sync_version + 1 "
+            f"WHERE uuid IN ({placeholders}) AND deleted_at IS NULL",
+            body.uuids,
+        )
+        # Soft-delete photos
+        conn.execute(
+            f"UPDATE photos SET deleted_at = datetime('now') "
+            f"WHERE device_id IN (SELECT id FROM devices WHERE uuid IN ({placeholders}))",
+            body.uuids,
+        )
+        return {"deleted": cursor.rowcount, "total": len(body.uuids)}
