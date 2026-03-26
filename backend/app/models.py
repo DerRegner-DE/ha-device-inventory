@@ -74,6 +74,15 @@ class Device(DeviceBase):
     photos: list[Photo] = []
 
 
+class BulkUpdateBody(BaseModel):
+    uuids: list[str]
+    updates: DeviceUpdate
+
+
+class BulkDeleteBody(BaseModel):
+    uuids: list[str]
+
+
 class DeviceListResponse(BaseModel):
     items: list[Device]
     total: int
