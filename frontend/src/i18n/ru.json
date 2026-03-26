@@ -139,6 +139,7 @@
   "settings.mqttTitle": "Интеграция Home Assistant",
   "settings.mqttDesc": "Публикация устройств инвентаря как объектов HA (датчики гарантии, местоположение и т.д.)",
   "settings.mqttPublish": "Публиковать устройства в HA",
+  "settings.mqttEnableConfirm": "Опубликовать устройства в Home Assistant? Для каждого устройства инвентаря будут созданы объекты HA.",
   "settings.mqttSyncButton": "Синхронизировать все устройства сейчас",
   "settings.mqttSyncing": "Синхронизация...",
   "settings.mqttSyncResult": "{published} из {total} устройств опубликовано",

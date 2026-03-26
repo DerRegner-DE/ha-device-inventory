@@ -139,6 +139,7 @@
   "settings.mqttTitle": "Home Assistant Integration",
   "settings.mqttDesc": "Publish inventory devices as HA entities (warranty sensors, location, etc.)",
   "settings.mqttPublish": "Publish devices to HA",
+  "settings.mqttEnableConfirm": "Publish devices to Home Assistant? This will create HA entities for each inventory device (warranty sensors, location, etc.).",
   "settings.mqttSyncButton": "Sync all devices now",
   "settings.mqttSyncing": "Syncing...",
   "settings.mqttSyncResult": "{published} of {total} devices published",
