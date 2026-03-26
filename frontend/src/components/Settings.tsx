@@ -31,7 +31,7 @@ export function Settings() {
   if (!mqttLoaded) {
     setMqttLoaded(true);
     apiGet<any>("/mqtt/status")
-      .then((data) => { if (data) setMqttEnabled(data.enabled); })
+      .then((data) => { if (data) { setMqttEnabled(data.enabled); localStorage.setItem("gv_mqtt_enabled", String(data.enabled)); } })
       .catch(() => {});
   }
 
@@ -56,7 +56,11 @@ export function Settings() {
   };
 
   const handleClearData = async () => {
-    if (!confirm(t("settings.clearConfirm"))) {
+    const mqttActive = localStorage.getItem("gv_mqtt_enabled") === "true";
+    const msg = mqttActive
+      ? t("settings.clearConfirmMqtt")
+      : t("settings.clearConfirm");
+    if (!confirm(msg)) {
       return;
     }
     setClearing(true);
@@ -98,6 +102,7 @@ export function Settings() {
     try {
       await apiPost("/mqtt/settings", { enabled: newVal });
       setMqttEnabled(newVal);
+      localStorage.setItem("gv_mqtt_enabled", String(newVal));
       setMqttResult(null);
     } catch {
       // revert
