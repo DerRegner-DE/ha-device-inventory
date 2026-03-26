@@ -13,6 +13,7 @@
 // ----- constants ----------------------------------------------------------------
 
 const STORAGE_KEY = "gv_license_key";
+const STORAGE_CACHED_LICENSE = "gv_license_cached";
 const FREE_DEVICE_LIMIT = 50;
 
 /** All possible Pro features */
@@ -47,6 +48,12 @@ export interface LicenseInfo {
   email?: string;
   expiresAt?: Date;
   features: string[];
+  /** "hmac" for legacy keys, "ls" for Lemon Squeezy keys */
+  keyType?: "hmac" | "ls";
+  /** Lemon Squeezy instance ID (needed for deactivation) */
+  instanceId?: string;
+  /** Error message from activation attempt */
+  error?: string;
 }
 
 const FREE_LICENSE: LicenseInfo = {
@@ -166,6 +173,104 @@ async function validateKeyViaBackend(key: string): Promise<LicenseInfo> {
   }
 }
 
+// ----- Lemon Squeezy license API (via backend proxy) -------------------------
+
+async function lsActivate(key: string): Promise<LicenseInfo> {
+  try {
+    const res = await fetch(`${getApiBase()}/license/ls-activate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+      signal: AbortSignal.timeout(15000),
+    });
+    const data = await res.json();
+    if (!data.valid) {
+      return {
+        valid: false,
+        tier: "free",
+        features: [],
+        keyType: "ls",
+        error: data.error || "Invalid license key",
+      };
+    }
+    return {
+      valid: true,
+      tier: "pro",
+      email: data.email,
+      features: data.features ?? [...PRO_FEATURES],
+      keyType: "ls",
+      instanceId: data.instance_id,
+    };
+  } catch {
+    return { ...FREE_LICENSE, error: "Network error - check your connection" };
+  }
+}
+
+async function lsValidate(key: string): Promise<LicenseInfo> {
+  try {
+    const res = await fetch(`${getApiBase()}/license/ls-validate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    if (!data.valid) {
+      return { ...FREE_LICENSE, keyType: "ls" };
+    }
+    return {
+      valid: true,
+      tier: "pro",
+      email: data.email,
+      features: data.features ?? [...PRO_FEATURES],
+      keyType: "ls",
+      instanceId: data.instance_id,
+    };
+  } catch {
+    // Network error - check localStorage cache
+    const cached = localStorage.getItem(STORAGE_CACHED_LICENSE);
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch { /* ignore */ }
+    }
+    return FREE_LICENSE;
+  }
+}
+
+export async function lsDeactivate(): Promise<boolean> {
+  const key = localStorage.getItem(STORAGE_KEY) ?? "";
+  if (!key) return false;
+  try {
+    const res = await fetch(`${getApiBase()}/license/ls-deactivate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    return data.deactivated === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Detect whether a key is a legacy HMAC key (contains a dot with base64url segments)
+ * or a Lemon Squeezy key (typically alphanumeric/UUID format).
+ */
+function isHmacKey(key: string): boolean {
+  if (!key.includes(".")) return false;
+  const [payload] = key.split(".");
+  try {
+    const decoded = base64urlDecode(payload);
+    const parsed = JSON.parse(decoded);
+    return parsed.tier === "pro" && typeof parsed.exp === "number";
+  } catch {
+    return false;
+  }
+}
+
 // ----- validation --------------------------------------------------------------
 
 async function validateKey(key: string): Promise<LicenseInfo> {
@@ -237,7 +342,15 @@ export async function initLicense(): Promise<LicenseInfo> {
 
   const keyToUse = serverKey || localKey;
   if (keyToUse) {
-    cachedLicense = await validateKey(keyToUse);
+    if (isHmacKey(keyToUse)) {
+      cachedLicense = await validateKey(keyToUse);
+    } else {
+      // LS key - validate via backend (falls back to cache if offline)
+      cachedLicense = await lsValidate(keyToUse);
+      if (cachedLicense.valid) {
+        localStorage.setItem(STORAGE_CACHED_LICENSE, JSON.stringify(cachedLicense));
+      }
+    }
   } else {
     cachedLicense = FREE_LICENSE;
   }
@@ -251,12 +364,13 @@ export async function initLicense(): Promise<LicenseInfo> {
 /** Get current license info (synchronous, uses cache). */
 export function getLicense(): LicenseInfo {
   if (!cacheReady) {
-    // Fallback: try synchronous parse (no signature check) so UI doesn't flash.
+    // Fallback: try synchronous parse so UI doesn't flash.
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      try {
-        const dotIdx = stored.indexOf(".");
-        if (dotIdx !== -1) {
+      // Try HMAC key first
+      if (isHmacKey(stored)) {
+        try {
+          const dotIdx = stored.indexOf(".");
           const payload: LicensePayload = JSON.parse(
             base64urlDecode(stored.slice(0, dotIdx)),
           );
@@ -267,11 +381,20 @@ export function getLicense(): LicenseInfo {
               email: payload.email,
               expiresAt: new Date(payload.exp * 1000),
               features: payload.features ?? [...PRO_FEATURES],
+              keyType: "hmac",
             };
           }
+        } catch {
+          // ignore
         }
-      } catch {
-        // ignore
+      } else {
+        // LS key - check localStorage cache
+        const cached = localStorage.getItem(STORAGE_CACHED_LICENSE);
+        if (cached) {
+          try {
+            return JSON.parse(cached);
+          } catch { /* ignore */ }
+        }
       }
     }
     return FREE_LICENSE;
@@ -286,18 +409,35 @@ export async function setLicenseKey(key: string): Promise<LicenseInfo> {
     removeLicense();
     return FREE_LICENSE;
   }
-  localStorage.setItem(STORAGE_KEY, trimmed);
-  // Also save to server for cross-browser/cross-device persistence
-  await saveLicenseToServer(trimmed);
-  cachedLicense = await validateKey(trimmed);
+
+  if (isHmacKey(trimmed)) {
+    // Legacy HMAC key - validate locally
+    localStorage.setItem(STORAGE_KEY, trimmed);
+    await saveLicenseToServer(trimmed);
+    cachedLicense = await validateKey(trimmed);
+  } else {
+    // Lemon Squeezy key - activate via backend proxy
+    cachedLicense = await lsActivate(trimmed);
+    if (cachedLicense.valid) {
+      localStorage.setItem(STORAGE_KEY, trimmed);
+      localStorage.setItem(STORAGE_CACHED_LICENSE, JSON.stringify(cachedLicense));
+      await saveLicenseToServer(trimmed);
+    }
+  }
+
   cacheReady = true;
   window.dispatchEvent(new CustomEvent("licensechange"));
   return cachedLicense;
 }
 
 /** Remove stored license and revert to Free tier. */
-export function removeLicense(): void {
+export async function removeLicense(): Promise<void> {
+  // If this is an LS key, deactivate the instance first (frees up activation slot)
+  if (cachedLicense.keyType === "ls") {
+    await lsDeactivate();
+  }
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(STORAGE_CACHED_LICENSE);
   // Also clear on server
   saveLicenseToServer("").catch(() => {});
   cachedLicense = FREE_LICENSE;

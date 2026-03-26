@@ -22,14 +22,16 @@ export function LicenseSettings() {
     const result = await setLicenseKey(keyInput);
     setActivating(false);
     if (!result.valid) {
-      setError(t("license.invalidKey"));
+      setError(result.error || t("license.invalidKey"));
     }
   };
 
-  const handleDeactivate = () => {
-    removeLicense();
-    setKeyInput("");
+  const handleDeactivate = async () => {
+    setActivating(true);
     setError(null);
+    await removeLicense();
+    setKeyInput("");
+    setActivating(false);
   };
 
   const isPro = license.valid && license.tier === "pro";

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.0
+
+- Lemon Squeezy integration for Pro license purchases (automatic key delivery)
+- License activation now supports both legacy keys and Lemon Squeezy keys
+- Deactivation frees up activation slot for device transfers
+- Offline fallback: cached license works without internet after initial activation
+- Backend proxy for secure license validation (store/product ID verification)
+
 ## 1.3.11
 n## 1.3.12
 
