@@ -79,7 +79,7 @@ export function BottomNav({ activeRoute }: BottomNavProps) {
               key={item.path}
               onClick={() => route(item.path)}
               class={`flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors ${
-                isActive ? "text-[#1F4E79]" : "text-gray-500"
+                isActive ? "text-[#1F4E79] dark:text-[#7ab5d6]" : "text-gray-500 dark:text-gray-400"
               }`}
             >
               <NavIcon icon={item.icon} active={isActive} />
