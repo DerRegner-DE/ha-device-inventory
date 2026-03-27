@@ -33,6 +33,7 @@ export GV_HA_URL="http://supervisor/core"
 export GV_DB_PATH="/data/db/geraeteverwaltung.db"
 export GV_PHOTOS_DIR="/data/photos"
 export GV_LANGUAGE="$LANGUAGE"
+export GV_MQTT_HOST="${GV_MQTT_HOST:-core-mosquitto}"
 
 echo "HA URL: $GV_HA_URL"
 echo "HA Token configured: $([ -n "$GV_HA_TOKEN" ] && echo 'yes' || echo 'no')"
