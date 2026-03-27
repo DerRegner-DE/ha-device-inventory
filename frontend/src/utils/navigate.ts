@@ -7,12 +7,9 @@
  *   /app/<addon_slug>/              (alternate Nabu Casa path)
  *   /<addon_slug>/                  (direct addon slug path)
  *
- * preact-router matches against window.location.pathname, which includes
- * the prefix.  This module detects the prefix once at startup so that
- * the Router paths and all navigate() calls include it automatically.
+ * This module detects the prefix once at startup so that
+ * all navigate() calls and API URLs include it automatically.
  */
-
-import { route as preactRoute } from "preact-router";
 
 let basePath = "";
 
@@ -34,7 +31,7 @@ export function getBasePath(): string {
 
 /** Navigate to an app-relative path (e.g. "/devices"). Prepends the base path. */
 export function navigate(appPath: string): void {
-  preactRoute(basePath + appPath);
+  history.pushState(null, "", basePath + appPath);
 }
 
 /** Strip the Ingress base path from a full URL to get the app-relative path. */
@@ -43,11 +40,6 @@ export function stripBasePath(url: string): string {
     return url.slice(basePath.length) || "/";
   }
   return url;
-}
-
-/** Build a full router path by prepending the base path. */
-export function routePath(appPath: string): string {
-  return basePath + appPath;
 }
 
 /** Build the API base URL for fetch calls. */

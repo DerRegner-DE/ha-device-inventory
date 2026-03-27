@@ -1,5 +1,4 @@
 import { useState, useEffect } from "preact/hooks";
-import Router, { route, type RoutableProps } from "preact-router";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./components/Dashboard";
 import { DeviceList } from "./components/DeviceList";
@@ -9,27 +8,11 @@ import { Settings } from "./components/Settings";
 import { useDevice } from "./hooks/useDevices";
 import { t } from "./i18n";
 import { useLanguage } from "./i18n";
-import { getBasePath, stripBasePath } from "./utils/navigate";
+import { getBasePath, stripBasePath, navigate } from "./utils/navigate";
 
-function DashboardPage(_props: RoutableProps) {
-  return <Dashboard />;
-}
-
-function DevicesPage(_props: RoutableProps) {
-  return <DeviceList />;
-}
-
-function DeviceDetailPage(props: RoutableProps & { uuid?: string }) {
-  return <DeviceDetail uuid={props.uuid} />;
-}
-
-function AddDevicePage(_props: RoutableProps) {
-  return <DeviceForm />;
-}
-
-function EditDevicePage(props: RoutableProps & { uuid?: string }) {
+function EditDeviceLoader({ uuid }: { uuid: string }) {
   useLanguage();
-  const { device, loading } = useDevice(props.uuid);
+  const { device, loading } = useDevice(uuid);
 
   if (loading) {
     return (
@@ -46,39 +29,87 @@ function EditDevicePage(props: RoutableProps & { uuid?: string }) {
   return <DeviceForm device={device} />;
 }
 
-function SettingsPage(_props: RoutableProps) {
-  return <Settings />;
+function matchRoute(path: string): { route: string; params: Record<string, string> } {
+  // Normalize: remove trailing slash except for root
+  const p = path === "/" ? "/" : path.replace(/\/$/, "");
+
+  if (p === "/" || p === "") return { route: "dashboard", params: {} };
+  if (p === "/devices") return { route: "devices", params: {} };
+  if (p === "/add") return { route: "add", params: {} };
+  if (p === "/settings") return { route: "settings", params: {} };
+
+  // /devices/:uuid/edit
+  const editMatch = p.match(/^\/devices\/([^/]+)\/edit$/);
+  if (editMatch) return { route: "edit", params: { uuid: editMatch[1] } };
+
+  // /devices/:uuid
+  const detailMatch = p.match(/^\/devices\/([^/]+)$/);
+  if (detailMatch) return { route: "detail", params: { uuid: detailMatch[1] } };
+
+  return { route: "dashboard", params: {} };
 }
 
 export function App() {
-  const [activeRoute, setActiveRoute] = useState(
-    stripBasePath(window.location.pathname) || "/"
+  const [currentPath, setCurrentPath] = useState(
+    stripBasePath(window.location.pathname)
   );
 
-  const handleRoute = (e: { url: string }) => {
-    setActiveRoute(stripBasePath(e.url));
-  };
-
-  // Force Router to re-evaluate on mount when running inside HA Ingress
   useEffect(() => {
-    if (getBasePath()) {
-      route(window.location.pathname + window.location.search, true);
-    }
+    // Listen for popstate (browser back/forward)
+    const onPopState = () => {
+      setCurrentPath(stripBasePath(window.location.pathname));
+    };
+    window.addEventListener("popstate", onPopState);
+
+    // Intercept pushState so navigate() triggers re-render
+    const origPush = history.pushState.bind(history);
+    const origReplace = history.replaceState.bind(history);
+
+    history.pushState = function (...args) {
+      origPush(...args);
+      setCurrentPath(stripBasePath(window.location.pathname));
+    };
+    history.replaceState = function (...args) {
+      origReplace(...args);
+      setCurrentPath(stripBasePath(window.location.pathname));
+    };
+
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      history.pushState = origPush;
+      history.replaceState = origReplace;
+    };
   }, []);
 
-  const bp = getBasePath();
+  const { route, params } = matchRoute(currentPath);
+
+  let content;
+  switch (route) {
+    case "dashboard":
+      content = <Dashboard />;
+      break;
+    case "devices":
+      content = <DeviceList />;
+      break;
+    case "detail":
+      content = <DeviceDetail uuid={params.uuid} />;
+      break;
+    case "edit":
+      content = <EditDeviceLoader uuid={params.uuid} />;
+      break;
+    case "add":
+      content = <DeviceForm />;
+      break;
+    case "settings":
+      content = <Settings />;
+      break;
+    default:
+      content = <Dashboard />;
+  }
 
   return (
-    <Layout activeRoute={activeRoute}>
-      <Router onChange={handleRoute}>
-        <DashboardPage path={bp + "/"} />
-        <DevicesPage path={bp + "/devices"} />
-        <DeviceDetailPage path={bp + "/devices/:uuid"} />
-        <EditDevicePage path={bp + "/devices/:uuid/edit"} />
-        <AddDevicePage path={bp + "/add"} />
-        <SettingsPage path={bp + "/settings"} />
-        <DashboardPage default />
-      </Router>
+    <Layout activeRoute={currentPath || "/"}>
+      {content}
     </Layout>
   );
 }
