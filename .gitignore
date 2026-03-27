@@ -14,3 +14,4 @@ create_docs.py
 create_testplan.js
 docs/build_*_doc.cjs
 docs/Mockup_*
+*.docx
