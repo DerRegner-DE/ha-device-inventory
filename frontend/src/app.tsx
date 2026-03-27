@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
-import Router, { type RoutableProps } from "preact-router";
+import { useState, useEffect } from "preact/hooks";
+import Router, { route, type RoutableProps } from "preact-router";
 import { Layout } from "./components/Layout";
 import { Dashboard } from "./components/Dashboard";
 import { DeviceList } from "./components/DeviceList";
@@ -9,7 +9,7 @@ import { Settings } from "./components/Settings";
 import { useDevice } from "./hooks/useDevices";
 import { t } from "./i18n";
 import { useLanguage } from "./i18n";
-import { routePath, stripBasePath } from "./utils/navigate";
+import { getBasePath, stripBasePath } from "./utils/navigate";
 
 function DashboardPage(_props: RoutableProps) {
   return <Dashboard />;
@@ -51,24 +51,33 @@ function SettingsPage(_props: RoutableProps) {
 }
 
 export function App() {
-  const [activeRoute, setActiveRoute] = useState("/");
+  const [activeRoute, setActiveRoute] = useState(
+    stripBasePath(window.location.pathname) || "/"
+  );
 
   const handleRoute = (e: { url: string }) => {
-    console.log("[GV] Router onChange:", e.url, "→ stripped:", stripBasePath(e.url));
     setActiveRoute(stripBasePath(e.url));
   };
 
-  console.log("[GV] App render. routePath('/'):", routePath("/"), "pathname:", window.location.pathname);
+  // Force Router to re-evaluate on mount when running inside HA Ingress
+  useEffect(() => {
+    if (getBasePath()) {
+      route(window.location.pathname + window.location.search, true);
+    }
+  }, []);
+
+  const bp = getBasePath();
 
   return (
     <Layout activeRoute={activeRoute}>
       <Router onChange={handleRoute}>
-        <DashboardPage path={routePath("/")} />
-        <DevicesPage path={routePath("/devices")} />
-        <DeviceDetailPage path={routePath("/devices/:uuid")} />
-        <EditDevicePage path={routePath("/devices/:uuid/edit")} />
-        <AddDevicePage path={routePath("/add")} />
-        <SettingsPage path={routePath("/settings")} />
+        <DashboardPage path={bp + "/"} />
+        <DevicesPage path={bp + "/devices"} />
+        <DeviceDetailPage path={bp + "/devices/:uuid"} />
+        <EditDevicePage path={bp + "/devices/:uuid/edit"} />
+        <AddDevicePage path={bp + "/add"} />
+        <SettingsPage path={bp + "/settings"} />
+        <DashboardPage default />
       </Router>
     </Layout>
   );
