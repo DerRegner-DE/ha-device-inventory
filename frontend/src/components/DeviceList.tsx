@@ -192,7 +192,7 @@ export function DeviceList() {
       {/* Bulk action bar */}
       {selectMode && selected.size > 0 && (
         <div
-          class="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 px-4 py-3"
+          class="fixed bottom-20 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 px-4 py-3"
           style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);"
         >
           {!bulkAction ? (
