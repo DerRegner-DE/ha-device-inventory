@@ -137,7 +137,7 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
 
             pdf.set_font("Helvetica", "B", 9)
             pdf.set_text_color(31, 78, 121)
-            pdf.cell(0, 7, f"{idx}. {device.get('bezeichnung', 'Unknown')}", new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(0, 7, f"{idx}. {_safe_text(device.get('bezeichnung', 'Unknown'))}", new_x="LMARGIN", new_y="NEXT")
 
             pdf.set_font("Helvetica", "", 8)
             pdf.set_text_color(0)
@@ -164,13 +164,13 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
                     pdf.set_font("Helvetica", "B", 8)
                     pdf.cell(30, 5, f"{label}:")
                     pdf.set_font("Helvetica", "", 8)
-                    pdf.cell(0, 5, str(value), new_x="LMARGIN", new_y="NEXT")
+                    pdf.cell(0, 5, _safe_text(str(value)), new_x="LMARGIN", new_y="NEXT")
 
             if device.get("anmerkungen"):
                 pdf.set_font("Helvetica", "B", 8)
                 pdf.cell(30, 5, "Notes:")
                 pdf.set_font("Helvetica", "", 8)
-                pdf.multi_cell(0, 5, device["anmerkungen"])
+                pdf.multi_cell(0, 5, _safe_text(device["anmerkungen"]))
 
             pdf.ln(3)
             pdf.set_draw_color(200)
@@ -183,9 +183,15 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
     return buf.getvalue()
 
 
+def _safe_text(text: str) -> str:
+    """Remove characters not supported by Latin-1 (e.g. emojis)."""
+    return "".join(c for c in text if ord(c) < 256)
+
+
 def _truncate(text: str, max_len: int) -> str:
     if not text:
         return ""
+    text = _safe_text(text)
     if len(text) <= max_len:
         return text
     return text[:max_len - 1] + "."
