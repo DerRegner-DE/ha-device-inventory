@@ -9,6 +9,7 @@ import { Settings } from "./components/Settings";
 import { useDevice } from "./hooks/useDevices";
 import { t } from "./i18n";
 import { useLanguage } from "./i18n";
+import { routePath, stripBasePath } from "./utils/navigate";
 
 function DashboardPage(_props: RoutableProps) {
   return <Dashboard />;
@@ -53,18 +54,18 @@ export function App() {
   const [activeRoute, setActiveRoute] = useState("/");
 
   const handleRoute = (e: { url: string }) => {
-    setActiveRoute(e.url);
+    setActiveRoute(stripBasePath(e.url));
   };
 
   return (
     <Layout activeRoute={activeRoute}>
       <Router onChange={handleRoute}>
-        <DashboardPage path="/" />
-        <DevicesPage path="/devices" />
-        <DeviceDetailPage path="/devices/:uuid" />
-        <EditDevicePage path="/devices/:uuid/edit" />
-        <AddDevicePage path="/add" />
-        <SettingsPage path="/settings" />
+        <DashboardPage path={routePath("/")} />
+        <DevicesPage path={routePath("/devices")} />
+        <DeviceDetailPage path={routePath("/devices/:uuid")} />
+        <EditDevicePage path={routePath("/devices/:uuid/edit")} />
+        <AddDevicePage path={routePath("/add")} />
+        <SettingsPage path={routePath("/settings")} />
       </Router>
     </Layout>
   );

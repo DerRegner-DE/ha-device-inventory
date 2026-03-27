@@ -7,6 +7,7 @@ import { LicenseSettings } from "./LicenseSettings";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
+import { getApiBase } from "../utils/navigate";
 
 export function Settings() {
   useLanguage();
@@ -142,13 +143,7 @@ export function Settings() {
   };
 
   const handlePdfExport = () => {
-    // Detect API base URL for HA Ingress compatibility
-    const path = window.location.pathname;
-    const ingressMatch = path.match(/^(\/api\/hassio_ingress\/[^/]+)/);
-    const appMatch = path.match(/^(\/app\/[0-9a-f]{8}_[^/]+)/);
-    const slugMatch = path.match(/^(\/[0-9a-f]{8}_[^/]+)/);
-    const base = ingressMatch?.[1] || appMatch?.[1] || slugMatch?.[1] || "";
-    window.open(`${base}/api/export/pdf`, "_blank");
+    window.open(`${getApiBase()}/export/pdf`, "_blank");
   };
 
   // Free tier: only English.  Pro: all languages.
