@@ -10,10 +10,18 @@ OPTIONS_FILE="/data/options.json"
 if [ -f "$OPTIONS_FILE" ]; then
     LANGUAGE=$(jq -r '.language // "de"' "$OPTIONS_FILE")
     LICENSE_KEY=$(jq -r '.license_key // ""' "$OPTIONS_FILE")
+    MQTT_HOST_OPT=$(jq -r '.mqtt_host // "core-mosquitto"' "$OPTIONS_FILE")
+    MQTT_PORT_OPT=$(jq -r '.mqtt_port // 1883' "$OPTIONS_FILE")
+    MQTT_USER_OPT=$(jq -r '.mqtt_user // ""' "$OPTIONS_FILE")
+    MQTT_PASS_OPT=$(jq -r '.mqtt_password // ""' "$OPTIONS_FILE")
     echo "Language from options: $LANGUAGE"
 else
     LANGUAGE="de"
     LICENSE_KEY=""
+    MQTT_HOST_OPT="core-mosquitto"
+    MQTT_PORT_OPT="1883"
+    MQTT_USER_OPT=""
+    MQTT_PASS_OPT=""
     echo "No options.json found, using defaults"
 fi
 
@@ -33,12 +41,10 @@ export GV_HA_URL="http://supervisor/core"
 export GV_DB_PATH="/data/db/geraeteverwaltung.db"
 export GV_PHOTOS_DIR="/data/photos"
 export GV_LANGUAGE="$LANGUAGE"
-# MQTT credentials from Supervisor (set via services: mqtt:need_credentials in config.yaml)
-# Supervisor provides: MQTT_HOST, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD, MQTT_SSL
-export GV_MQTT_HOST="${MQTT_HOST:-${GV_MQTT_HOST:-core-mosquitto}}"
-export GV_MQTT_PORT="${MQTT_PORT:-${GV_MQTT_PORT:-1883}}"
-export GV_MQTT_USER="${MQTT_USERNAME:-${GV_MQTT_USER:-}}"
-export GV_MQTT_PASSWORD="${MQTT_PASSWORD:-${GV_MQTT_PASSWORD:-}}"
+export GV_MQTT_HOST="${MQTT_HOST_OPT:-core-mosquitto}"
+export GV_MQTT_PORT="${MQTT_PORT_OPT:-1883}"
+export GV_MQTT_USER="${MQTT_USER_OPT:-}"
+export GV_MQTT_PASSWORD="${MQTT_PASS_OPT:-}"
 echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous})"
 
 echo "HA URL: $GV_HA_URL"
