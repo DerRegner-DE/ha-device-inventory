@@ -33,7 +33,13 @@ export GV_HA_URL="http://supervisor/core"
 export GV_DB_PATH="/data/db/geraeteverwaltung.db"
 export GV_PHOTOS_DIR="/data/photos"
 export GV_LANGUAGE="$LANGUAGE"
-export GV_MQTT_HOST="${GV_MQTT_HOST:-core-mosquitto}"
+# MQTT credentials from Supervisor (set via services: mqtt:need_credentials in config.yaml)
+# Supervisor provides: MQTT_HOST, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD, MQTT_SSL
+export GV_MQTT_HOST="${MQTT_HOST:-${GV_MQTT_HOST:-core-mosquitto}}"
+export GV_MQTT_PORT="${MQTT_PORT:-${GV_MQTT_PORT:-1883}}"
+export GV_MQTT_USER="${MQTT_USERNAME:-${GV_MQTT_USER:-}}"
+export GV_MQTT_PASSWORD="${MQTT_PASSWORD:-${GV_MQTT_PASSWORD:-}}"
+echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous})"
 
 echo "HA URL: $GV_HA_URL"
 echo "HA Token configured: $([ -n "$GV_HA_TOKEN" ] && echo 'yes' || echo 'no')"
