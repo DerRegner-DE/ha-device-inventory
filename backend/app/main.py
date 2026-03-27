@@ -106,7 +106,7 @@ app.include_router(ha_proxy.router, prefix="/api")
 def health_check():
     return {
         "status": "ok",
-        "version": "2.0.0-beta.10",
+        "version": "2.0.0",
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
     }
