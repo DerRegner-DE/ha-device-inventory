@@ -41,10 +41,28 @@ export GV_HA_URL="http://supervisor/core"
 export GV_DB_PATH="/data/db/geraeteverwaltung.db"
 export GV_PHOTOS_DIR="/data/photos"
 export GV_LANGUAGE="$LANGUAGE"
-export GV_MQTT_HOST="${MQTT_HOST_OPT:-core-mosquitto}"
-export GV_MQTT_PORT="${MQTT_PORT_OPT:-1883}"
-export GV_MQTT_USER="${MQTT_USER_OPT:-}"
-export GV_MQTT_PASSWORD="${MQTT_PASS_OPT:-}"
+
+# Try Supervisor MQTT service discovery (automatic credentials)
+SUP_MQTT_JSON=$(curl -sf -H "Authorization: Bearer ${SUPERVISOR_TOKEN}" \
+    http://supervisor/services/mqtt 2>/dev/null || echo "{}")
+SUP_MQTT_HOST=$(echo "$SUP_MQTT_JSON" | jq -r '.data.host // ""' 2>/dev/null || echo "")
+SUP_MQTT_PORT=$(echo "$SUP_MQTT_JSON" | jq -r '.data.port // 1883' 2>/dev/null || echo "1883")
+SUP_MQTT_USER=$(echo "$SUP_MQTT_JSON" | jq -r '.data.username // ""' 2>/dev/null || echo "")
+SUP_MQTT_PASS=$(echo "$SUP_MQTT_JSON" | jq -r '.data.password // ""' 2>/dev/null || echo "")
+if [ -n "$SUP_MQTT_HOST" ]; then
+    echo "MQTT credentials from Supervisor discovery: $SUP_MQTT_HOST:$SUP_MQTT_PORT"
+fi
+
+# User options override Supervisor discovery; Supervisor discovery overrides defaults
+export GV_MQTT_HOST="${MQTT_HOST_OPT:-${SUP_MQTT_HOST:-core-mosquitto}}"
+export GV_MQTT_PORT="${MQTT_PORT_OPT:-${SUP_MQTT_PORT:-1883}}"
+if [ -n "$MQTT_USER_OPT" ]; then
+    export GV_MQTT_USER="$MQTT_USER_OPT"
+    export GV_MQTT_PASSWORD="$MQTT_PASS_OPT"
+else
+    export GV_MQTT_USER="$SUP_MQTT_USER"
+    export GV_MQTT_PASSWORD="$SUP_MQTT_PASS"
+fi
 echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous})"
 
 echo "HA URL: $GV_HA_URL"
