@@ -2,10 +2,10 @@
  * Navigation utility for HA Ingress compatibility.
  *
  * HA Ingress serves add-ons behind a path prefix like:
- *   /api/hassio_ingress/<token>/
- * or via Nabu Casa:
- *   /app/<addon_slug>/
- *   /<addon_slug>/
+ *   /api/hassio_ingress/<token>/    (local HA access)
+ *   /hassio/ingress/<slug>/         (Nabu Casa cloud access)
+ *   /app/<addon_slug>/              (alternate Nabu Casa path)
+ *   /<addon_slug>/                  (direct addon slug path)
  *
  * preact-router matches against window.location.pathname, which includes
  * the prefix.  This module detects the prefix once at startup so that
@@ -21,6 +21,7 @@ export function initBasePath(): void {
   const path = window.location.pathname;
   const m =
     path.match(/^(\/api\/hassio_ingress\/[^/]+)/) ||
+    path.match(/^(\/hassio\/ingress\/[^/]+)/) ||
     path.match(/^(\/app\/[0-9a-f]{8}_[^/]+)/) ||
     path.match(/^(\/[0-9a-f]{8}_[^/]+)/);
   if (m) basePath = m[1];
