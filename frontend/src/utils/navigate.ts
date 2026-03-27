@@ -25,10 +25,6 @@ export function initBasePath(): void {
     path.match(/^(\/app\/[0-9a-f]{8}_[^/]+)/) ||
     path.match(/^(\/[0-9a-f]{8}_[^/]+)/);
   if (m) basePath = m[1];
-  // Debug: expose basePath for troubleshooting
-  (window as any).__gvBasePath = basePath;
-  (window as any).__gvPathname = path;
-  console.log("[GV] initBasePath:", { path, basePath, matched: !!m });
 }
 
 /** Return the detected Ingress base path (empty string when running standalone). */
