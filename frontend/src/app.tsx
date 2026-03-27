@@ -54,8 +54,11 @@ export function App() {
   const [activeRoute, setActiveRoute] = useState("/");
 
   const handleRoute = (e: { url: string }) => {
+    console.log("[GV] Router onChange:", e.url, "→ stripped:", stripBasePath(e.url));
     setActiveRoute(stripBasePath(e.url));
   };
+
+  console.log("[GV] App render. routePath('/'):", routePath("/"), "pathname:", window.location.pathname);
 
   return (
     <Layout activeRoute={activeRoute}>
