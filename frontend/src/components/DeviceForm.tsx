@@ -1,5 +1,5 @@
 import { useState, useRef } from "preact/hooks";
-import { route } from "preact-router";
+import { navigate } from "../utils/navigate";
 import { db, type Device, type Photo } from "../db/schema";
 import { apiPost, apiPut, uploadPhoto, getPhotoUrl } from "../api/client";
 import {
@@ -254,7 +254,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
     }
 
     setSaving(false);
-    route(`/devices/${uuid}`);
+    navigate(`/devices/${uuid}`);
   };
 
   return (

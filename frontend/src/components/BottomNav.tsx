@@ -1,4 +1,4 @@
-import { route } from "preact-router";
+import { navigate } from "../utils/navigate";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
 
@@ -77,7 +77,7 @@ export function BottomNav({ activeRoute }: BottomNavProps) {
           return (
             <button
               key={item.path}
-              onClick={() => route(item.path)}
+              onClick={() => navigate(item.path)}
               class={`flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors ${
                 isActive ? "text-[#1F4E79] dark:text-[#7ab5d6]" : "text-gray-500 dark:text-gray-400"
               }`}

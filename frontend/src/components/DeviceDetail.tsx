@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "preact/hooks";
-import { route } from "preact-router";
+import { navigate } from "../utils/navigate";
 import { useDevice } from "../hooks/useDevices";
 import { db, type Photo } from "../db/schema";
 import { getAreaName, getFloorForArea, getDeviceTypeLabel } from "../utils/constants";
@@ -118,7 +118,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
       <div class="text-center py-20 px-4">
         <p class="text-gray-400 mb-4">{t("detail.notFound")}</p>
         <button
-          onClick={() => route("/devices")}
+          onClick={() => navigate("/devices")}
           class="text-[#1F4E79] text-sm font-medium"
         >
           {t("detail.backToList")}
@@ -140,14 +140,14 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
     await db.devices.delete(device.uuid);
     await db.photos.where("device_uuid").equals(device.uuid).delete();
     await apiDelete(`/devices/${device.uuid}`, "device", device.uuid);
-    route("/devices");
+    navigate("/devices");
   };
 
   return (
     <div class="p-4 pt-2 space-y-4 pb-24">
       <div class="flex items-center justify-between">
         <button
-          onClick={() => route("/devices")}
+          onClick={() => navigate("/devices")}
           class="flex items-center gap-1 text-sm text-gray-500"
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -157,7 +157,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         </button>
         <div class="flex gap-2">
           <button
-            onClick={() => route(`/devices/${device.uuid}/edit`)}
+            onClick={() => navigate(`/devices/${device.uuid}/edit`)}
             class="px-3 py-1.5 rounded-lg bg-[#1F4E79] text-white text-xs font-medium"
           >
             {t("common.edit")}
@@ -265,13 +265,13 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
 
       <div class="fixed bottom-16 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex gap-3 z-30">
         <button
-          onClick={() => route("/devices")}
+          onClick={() => navigate("/devices")}
           class="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
         >
           {t("common.back")}
         </button>
         <button
-          onClick={() => route(`/devices/${device.uuid}/edit`)}
+          onClick={() => navigate(`/devices/${device.uuid}/edit`)}
           class="flex-1 py-2.5 rounded-xl bg-[#1F4E79] text-white text-sm font-medium"
         >
           {t("common.edit")}

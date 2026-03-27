@@ -1,5 +1,5 @@
 import { useState, useEffect } from "preact/hooks";
-import { route } from "preact-router";
+import { navigate } from "../utils/navigate";
 import { liveQuery } from "dexie";
 import { db, type Device } from "../db/schema";
 import { FLOORS, getAreaName, getDeviceTypeLabel } from "../utils/constants";
@@ -222,7 +222,7 @@ export function Dashboard() {
         <div class="text-center py-8">
           <p class="text-gray-400 text-sm mb-3">{t("dashboard.noDevices")}</p>
           <button
-            onClick={() => route("/add")}
+            onClick={() => navigate("/add")}
             class="px-4 py-2 bg-[#1F4E79] text-white rounded-xl text-sm font-medium"
           >
             {t("dashboard.addFirst")}
@@ -269,7 +269,7 @@ export function Dashboard() {
             {recentDevices.map((d) => (
               <div
                 key={d.uuid}
-                onClick={() => route(`/devices/${d.uuid}`)}
+                onClick={() => navigate(`/devices/${d.uuid}`)}
                 class="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 <div class="min-w-0">

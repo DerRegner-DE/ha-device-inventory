@@ -1,4 +1,4 @@
-import { route } from "preact-router";
+import { navigate } from "../utils/navigate";
 import { type Device } from "../db/schema";
 import { getAreaName, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
@@ -12,7 +12,7 @@ export function DeviceCard({ device }: DeviceCardProps) {
   useLanguage();
   return (
     <div
-      onClick={() => route(`/devices/${device.uuid}`)}
+      onClick={() => navigate(`/devices/${device.uuid}`)}
       class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex gap-3 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer transition-colors"
     >
       <div class="w-14 h-14 rounded-lg bg-[#1F4E79]/10 dark:bg-[#1F4E79]/20 flex items-center justify-center shrink-0">
