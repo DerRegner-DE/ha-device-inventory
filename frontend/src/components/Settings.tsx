@@ -77,7 +77,15 @@ export function Settings() {
     setImporting(true);
     setImportResult(null);
     try {
-      const result = await apiPost<any>("/ha/import-devices", {});
+      // Use longer timeout for import (can take 60s+ for large device registries)
+      const res = await fetch(`${getApiBase()}/ha/import-devices`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(120000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
       if (result) {
         // Pull imported devices into local IndexedDB
         await syncFromServer();
