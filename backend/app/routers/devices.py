@@ -44,7 +44,7 @@ def list_devices(
     sort: str = Query("nr", description="Sort field"),
     order: str = Query("asc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(50, ge=1, le=500, description="Items per page"),
+    per_page: int = Query(50, ge=1, le=10000, description="Items per page"),
 ):
     where_clauses = ["deleted_at IS NULL"]
     params: list[Any] = []
