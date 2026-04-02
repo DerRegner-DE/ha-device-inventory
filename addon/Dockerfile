@@ -1,5 +1,16 @@
 # ==============================================================================
-# Runtime image - frontend is pre-built in CI pipeline
+# Stage 1: Build frontend
+# ==============================================================================
+FROM node:20-alpine AS frontend-build
+
+WORKDIR /build
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ==============================================================================
+# Stage 2: Runtime image
 # ==============================================================================
 FROM python:3.12-alpine
 
@@ -19,8 +30,8 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 
-# Copy pre-built frontend (built in CI before docker build)
-COPY frontend/dist/ /app/frontend/
+# Copy frontend from build stage (always fresh, never cached stale)
+COPY --from=frontend-build /build/dist/ /app/frontend/
 
 # Copy backend
 COPY backend/ /app/backend/
