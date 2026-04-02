@@ -1,12 +1,17 @@
 import { db, type SyncQueueItem } from "../db/schema";
 import { getApiBase } from "../utils/navigate";
 
-const BASE_URL = getApiBase();
+// NOTE: Do NOT cache getApiBase() at module level!
+// Module-level code runs BEFORE initBasePath() in index.tsx,
+// so basePath would still be empty → wrong API URL → 404.
+function getBaseUrl(): string {
+  return getApiBase();
+}
 
 async function isOnline(): Promise<boolean> {
   if (!navigator.onLine) return false;
   try {
-    const res = await fetch(`${BASE_URL}/health`, {
+    const res = await fetch(`${getBaseUrl()}/health`, {
       method: "GET",
       signal: AbortSignal.timeout(3000),
     });
@@ -33,7 +38,7 @@ async function queueRequest(
 
 export async function apiGet<T>(path: string, timeoutMs = 30000): Promise<T | null> {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${getBaseUrl()}${path}`, {
       headers: { "Content-Type": "application/json" },
       signal: AbortSignal.timeout(timeoutMs),
     });
@@ -58,7 +63,7 @@ export async function apiPost<T>(
     return null;
   }
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${getBaseUrl()}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -88,7 +93,7 @@ export async function apiPut<T>(
     return null;
   }
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${getBaseUrl()}${path}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -116,7 +121,7 @@ export async function apiDelete(
     return false;
   }
   try {
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const res = await fetch(`${getBaseUrl()}${path}`, {
       method: "DELETE",
       signal: AbortSignal.timeout(10000),
     });
@@ -142,21 +147,21 @@ export async function syncPendingQueue(): Promise<number> {
       let ok = false;
 
       if (item.action === "create") {
-        const res = await fetch(`${BASE_URL}/${item.entity_type}s/${item.entity_uuid}`, {
+        const res = await fetch(`${getBaseUrl()}/${item.entity_type}s/${item.entity_uuid}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         ok = res.ok;
       } else if (item.action === "update") {
-        const res = await fetch(`${BASE_URL}${path}`, {
+        const res = await fetch(`${getBaseUrl()}${path}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         ok = res.ok;
       } else if (item.action === "delete") {
-        const res = await fetch(`${BASE_URL}${path}`, { method: "DELETE" });
+        const res = await fetch(`${getBaseUrl()}${path}`, { method: "DELETE" });
         ok = res.ok;
       }
 
@@ -190,7 +195,7 @@ export async function uploadPhoto(
     formData.append("file", blob, `photo${ext}`);
     formData.append("is_primary", isPrimary ? "true" : "false");
 
-    const res = await fetch(`${BASE_URL}/devices/${deviceUuid}/photos`, {
+    const res = await fetch(`${getBaseUrl()}/devices/${deviceUuid}/photos`, {
       method: "POST",
       body: formData,
       signal: AbortSignal.timeout(30000),
@@ -205,7 +210,7 @@ export async function uploadPhoto(
 
 /** Build the full URL to fetch a photo from the server */
 export function getPhotoUrl(photoUuid: string): string {
-  return `${BASE_URL}/photos/${photoUuid}`;
+  return `${getBaseUrl()}/photos/${photoUuid}`;
 }
 
 /**
