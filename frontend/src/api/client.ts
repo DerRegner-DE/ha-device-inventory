@@ -31,11 +31,11 @@ async function queueRequest(
   });
 }
 
-export async function apiGet<T>(path: string): Promise<T | null> {
+export async function apiGet<T>(path: string, timeoutMs = 30000): Promise<T | null> {
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
       headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
@@ -213,7 +213,7 @@ export function getPhotoUrl(photoUuid: string): string {
  */
 export async function syncFromServer(): Promise<number> {
   try {
-    const data = await apiGet<{ items: any[] }>("/devices?per_page=500");
+    const data = await apiGet<{ items: any[] }>("/devices?per_page=10000", 60000);
     if (!data || !data.items) return 0;
 
     const serverDevices = data.items;
