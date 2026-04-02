@@ -49,7 +49,8 @@ export async function apiPost<T>(
   path: string,
   body: unknown,
   entityType?: string,
-  entityUuid?: string
+  entityUuid?: string,
+  timeoutMs = 30000
 ): Promise<T | null> {
   const online = await isOnline();
   if (!online && entityType && entityUuid) {
@@ -61,7 +62,7 @@ export async function apiPost<T>(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;
@@ -78,7 +79,8 @@ export async function apiPut<T>(
   path: string,
   body: unknown,
   entityType?: string,
-  entityUuid?: string
+  entityUuid?: string,
+  timeoutMs = 30000
 ): Promise<T | null> {
   const online = await isOnline();
   if (!online && entityType && entityUuid) {
@@ -90,7 +92,7 @@ export async function apiPut<T>(
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as T;

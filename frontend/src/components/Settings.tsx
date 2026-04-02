@@ -122,7 +122,7 @@ export function Settings() {
     setMqttSyncing(true);
     setMqttResult(null);
     try {
-      const result = await apiPost<any>("/mqtt/sync", {});
+      const result = await apiPost<any>("/mqtt/sync", {}, undefined, undefined, 60000);
       if (result) {
         setMqttResult(
           t("settings.mqttSyncResult", {
