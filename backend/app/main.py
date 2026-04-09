@@ -20,6 +20,8 @@ from app.database import init_db
 from app.routers import devices, photos, sync, export, import_data, ha_proxy
 from app.services.device_sync import sync_ha_areas
 
+APP_VERSION = "2.0.0"
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -71,7 +73,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Geraeteverwaltung API",
     description="Device inventory management for Home Assistant",
-    version="2.0.0-beta.10",
+    version=APP_VERSION,
     lifespan=lifespan,
 )
 
@@ -106,7 +108,7 @@ app.include_router(ha_proxy.router, prefix="/api")
 def health_check():
     return {
         "status": "ok",
-        "version": "1.0.0",
+        "version": APP_VERSION,
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
     }

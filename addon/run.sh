@@ -28,7 +28,12 @@ fi
 # Write license key to license.json if provided in options
 if [ -n "$LICENSE_KEY" ]; then
     mkdir -p /data/db
-    echo "{\"key\":\"$LICENSE_KEY\"}" > /data/db/license.json
+    # Detect key type: HMAC keys contain a dot ("."), Lemon Squeezy keys don't
+    if echo "$LICENSE_KEY" | grep -q '\.'; then
+        echo "{\"key\":\"$LICENSE_KEY\"}" > /data/db/license.json
+    else
+        echo "{\"key\":\"$LICENSE_KEY\",\"type\":\"ls\"}" > /data/db/license.json
+    fi
     echo "License key loaded from add-on configuration"
 fi
 

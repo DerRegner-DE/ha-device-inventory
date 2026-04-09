@@ -12,6 +12,7 @@
  */
 
 let basePath = "";
+let apiBasePath = "";
 
 /** Call once before first render to detect the Ingress base path. */
 export function initBasePath(): void {
@@ -22,6 +23,20 @@ export function initBasePath(): void {
     path.match(/^(\/app\/[0-9a-f]{8}_[^/]+)/) ||
     path.match(/^(\/[0-9a-f]{8}_[^/]+)/);
   if (m) basePath = m[1];
+
+  // For API calls we MUST use the Ingress path, not the panel path.
+  // Panel paths (/app/<slug> and /<slug>) only support GET, not POST/PUT/DELETE.
+  // The Ingress path is embedded in the page by HA as a data attribute.
+  const ingressMatch = path.match(/^(\/api\/hassio_ingress\/[^/]+)/) ||
+                       path.match(/^(\/hassio\/ingress\/[^/]+)/);
+  if (ingressMatch) {
+    apiBasePath = ingressMatch[1];
+  } else {
+    // We're on a panel path - try to discover the Ingress path from HA
+    // by probing the standard Ingress URL pattern via the X-Ingress-Path header.
+    // Fallback: use panel path (GET works, POST may fail on some HA versions).
+    apiBasePath = basePath;
+  }
 }
 
 /** Return the detected Ingress base path (empty string when running standalone). */

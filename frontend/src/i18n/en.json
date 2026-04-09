@@ -1,6 +1,6 @@
 {
   "app.title": "Device Management",
-  "app.version": "Device Management v1.0.0",
+  "app.version": "Device Management v2.0.0",
   "app.api": "API: auto-detected",
   "nav.dashboard": "Dashboard",
   "nav.devices": "Devices",
@@ -77,6 +77,7 @@
   "form.notes": "Notes",
   "form.notesPlaceholder": "Additional notes...",
   "common.cancel": "Cancel",
+  "common.confirm": "Confirm?",
   "common.save": "Save",
   "common.saving": "Saving...",
   "common.update": "Update",
@@ -236,6 +237,10 @@
   "license.deviceLimit": "{count}/{limit} devices",
   "license.deviceLimitReached": "Device limit reached (Free: {limit}). Upgrade to Pro for unlimited devices.",
   "license.languageProOnly": "Additional languages available with Pro license",
+  "license.buyPro": "Buy Pro – €9.99",
+  "license.buyProHint": "One-time purchase · license key delivered instantly by email",
+  "license.showKey": "Show",
+  "license.hideKey": "Hide",
   "camera.starting": "Starting camera...",
   "camera.chooseImage": "Choose Image",
   "areas.other": "Other"

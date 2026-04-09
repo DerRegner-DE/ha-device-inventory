@@ -23,6 +23,9 @@ export function Settings() {
   const hasHaSync = hasFeature("ha_sync");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
+  const [confirmImport, setConfirmImport] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmMqtt, setConfirmMqtt] = useState(false);
   const [mqttEnabled, setMqttEnabled] = useState(false);
   const [mqttSyncing, setMqttSyncing] = useState(false);
   const [mqttResult, setMqttResult] = useState<string | null>(null);
@@ -57,23 +60,24 @@ export function Settings() {
   };
 
   const handleClearData = async () => {
-    const mqttActive = localStorage.getItem("gv_mqtt_enabled") === "true";
-    const msg = mqttActive
-      ? t("settings.clearConfirmMqtt")
-      : t("settings.clearConfirm");
-    if (!confirm(msg)) {
+    if (!confirmClear) {
+      setConfirmClear(true);
       return;
     }
+    setConfirmClear(false);
     setClearing(true);
     await db.devices.clear();
     await db.photos.clear();
     await db.syncQueue.clear();
     setClearing(false);
-    alert(t("settings.clearDone"));
   };
 
   const handleImportHA = async () => {
-    if (!confirm(t("settings.haImportConfirm"))) return;
+    if (!confirmImport) {
+      setConfirmImport(true);
+      return;
+    }
+    setConfirmImport(false);
     setImporting(true);
     setImportResult(null);
     try {
@@ -107,7 +111,11 @@ export function Settings() {
 
   const handleMqttToggle = async () => {
     const newVal = !mqttEnabled;
-    if (newVal && !confirm(t("settings.mqttEnableConfirm"))) return;
+    if (newVal && !confirmMqtt) {
+      setConfirmMqtt(true);
+      return;
+    }
+    setConfirmMqtt(false);
     try {
       await apiPost("/mqtt/settings", { enabled: newVal });
       setMqttEnabled(newVal);
@@ -248,11 +256,25 @@ export function Settings() {
           <button
             onClick={handleImportHA}
             disabled={importing || !hasHaSync}
-            class="w-full py-2.5 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] disabled:opacity-50"
+            class={`w-full py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-50 ${
+              confirmImport ? "bg-amber-500 hover:bg-amber-600" : "bg-[#4CAF50] hover:bg-[#43A047]"
+            }`}
           >
-            {importing ? t("settings.haImporting") : t("settings.haImportButton")}
+            {importing
+              ? t("settings.haImporting")
+              : confirmImport
+              ? t("common.confirm")
+              : t("settings.haImportButton")}
             {!hasHaSync && " (Pro)"}
           </button>
+          {confirmImport && (
+            <button
+              onClick={() => setConfirmImport(false)}
+              class="w-full mt-1 text-xs text-gray-400 hover:text-gray-600 text-center"
+            >
+              {t("common.cancel")}
+            </button>
+          )}
           {importResult && (
             <p class="text-xs text-gray-500 mt-2 text-center">{importResult}</p>
           )}
@@ -266,18 +288,29 @@ export function Settings() {
           </p>
           <div class="flex items-center justify-between mb-3">
             <span class="text-sm text-gray-600 dark:text-gray-300">{t("settings.mqttPublish")}</span>
-            <button
-              onClick={handleMqttToggle}
-              class={`relative w-11 h-6 rounded-full transition-colors ${
-                mqttEnabled ? "bg-[#4CAF50]" : "bg-gray-300"
-              }`}
-            >
-              <span
-                class={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  mqttEnabled ? "translate-x-5" : ""
+            <div class="flex items-center gap-2">
+              {confirmMqtt && (
+                <button
+                  onClick={() => setConfirmMqtt(false)}
+                  class="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  {t("common.cancel")}
+                </button>
+              )}
+              <button
+                onClick={handleMqttToggle}
+                class={`relative w-11 h-6 rounded-full transition-colors ${
+                  confirmMqtt ? "bg-amber-400" : mqttEnabled ? "bg-[#4CAF50]" : "bg-gray-300"
                 }`}
-              />
-            </button>
+                title={confirmMqtt ? t("common.confirm") : undefined}
+              >
+                <span
+                  class={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    mqttEnabled ? "translate-x-5" : ""
+                  }`}
+                />
+              </button>
+            </div>
           </div>
           {mqttEnabled && (
             <button
@@ -322,10 +355,26 @@ export function Settings() {
           <button
             onClick={handleClearData}
             disabled={clearing}
-            class="w-full py-2.5 rounded-xl border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            class={`w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 ${
+              confirmClear
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "border border-red-200 text-red-600 hover:bg-red-50"
+            }`}
           >
-            {clearing ? t("settings.clearing") : t("settings.clearButton")}
+            {clearing
+              ? t("settings.clearing")
+              : confirmClear
+              ? t("common.confirm")
+              : t("settings.clearButton")}
           </button>
+          {confirmClear && (
+            <button
+              onClick={() => setConfirmClear(false)}
+              class="w-full mt-1 text-xs text-gray-400 hover:text-gray-600 text-center"
+            >
+              {t("common.cancel")}
+            </button>
+          )}
         </div>
       </div>
 

@@ -2,15 +2,17 @@
 
 ## 2.0.0
 
-- **Dashboard Charts**: Donut charts for device type, network, power source, warranty status
-- **Dark Mode**: Toggle in settings, full dark theme across all components
-- **PDF Export**: Insurance documentation with device table and detail pages
-- **Bulk Editing**: Select multiple devices, change type/integration, bulk delete
-- **MQTT Discovery**: Publish inventory devices as HA entities (warranty sensors, location etc.)
-- **Onboarding**: "Set up in Home Assistant" button with deep-links to integrations
-- MQTT safety: Confirmation dialogs for enable, delete warnings when HA entities affected
-- Dark mode fixes: Form labels, inputs, navigation, feature list visibility
-- Chart.js integration with responsive layout
+- **Lemon Squeezy Store**: Pro-Lizenz jetzt über derregner.lemonsqueezy.com erhältlich (9,99 € Einmalkauf, sofortige Schlüssel-Lieferung per E-Mail)
+- **Kaufen-Button**: Direktlink zum Checkout in der Lizenz-Sektion (Einstellungen)
+- **Passwort-Toggle**: Lizenzschlüssel wird standardmäßig verborgen angezeigt, per Klick einblendbar
+- **Inline-Bestätigung**: Kritische Aktionen (Daten löschen, HA-Import, MQTT aktivieren) erfordern jetzt einen zweiten Klick statt browser-nativer Dialoge (blockierten HA Ingress)
+- **Add-on Optionen**: Lemon Squeezy Keys in `license_key` werden korrekt erkannt (kein Punkt → LS-Typ)
+- **Dashboard Charts**: Donut-Diagramme für Gerätetyp, Netzwerk, Stromversorgung, Garantiestatus
+- **Dark Mode**: Umschalter in den Einstellungen, vollständiges Dark Theme
+- **PDF Export**: Versicherungsdokumentation mit Gerätetabelle und Detailseiten
+- **Bulk-Bearbeitung**: Mehrere Geräte auswählen, Typ/Integration ändern, Bulk-Löschen
+- **MQTT Discovery**: Inventar-Geräte als HA-Entities veröffentlichen (Garantie-Sensoren, Standort usw.)
+- **Onboarding**: „In Home Assistant einrichten"-Button mit Deep-Links zu Integrationen
 
 ## 1.5.0
 
