@@ -343,10 +343,11 @@ def _ls_response_to_license_info(data: dict, instance_id: str | None = None) -> 
     valid = status in ("active", "inactive")
 
     # Verify this key belongs to our store/product
+    # Compare as int to handle API returning str or int
     if valid:
-        if license_key.get("store_id") != settings.LS_STORE_ID:
+        if int(license_key.get("store_id", 0)) != settings.LS_STORE_ID:
             valid = False
-        if license_key.get("product_id") != settings.LS_PRODUCT_ID:
+        if int(license_key.get("product_id", 0)) != settings.LS_PRODUCT_ID:
             valid = False
 
     result = {
