@@ -37,7 +37,7 @@ export function FilterBar({
           placeholder={t("filter.search")}
           value={search}
           onInput={(e) => onSearchChange((e.target as HTMLInputElement).value)}
-          class="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79]"
+          class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79]"
         />
         {search && (
           <button
@@ -56,7 +56,7 @@ export function FilterBar({
           class={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
             activeType === ""
               ? "bg-[#1F4E79] text-white"
-              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
           }`}
         >
           {t("filter.all")}
@@ -68,7 +68,7 @@ export function FilterBar({
             class={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               activeType === typ.id
                 ? "bg-[#1F4E79] text-white"
-                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
             {t(typ.labelKey)}

@@ -24,6 +24,7 @@ export interface Device {
   ha_device_id?: string;
   ain_artikelnr?: string;
   standort_floor_id?: string;
+  reviewed?: number;
   created_at: string;
   updated_at: string;
   sync_version: number;

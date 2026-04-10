@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS devices (
     ha_entity_id TEXT,
     ha_device_id TEXT,
     ain_artikelnr TEXT,
+    reviewed INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     deleted_at TEXT,
@@ -55,6 +56,19 @@ CREATE TABLE IF NOT EXISTS ha_areas (
     floor_name TEXT,
     icon TEXT,
     last_synced TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    uuid TEXT UNIQUE NOT NULL,
+    device_id INTEGER NOT NULL REFERENCES devices(id),
+    filename TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    file_size INTEGER,
+    caption TEXT,
+    url TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS sync_log (

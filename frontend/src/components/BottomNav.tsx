@@ -78,7 +78,7 @@ export function BottomNav({ activeRoute }: BottomNavProps) {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              class={`flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors ${
+              class={`flex flex-col items-center justify-center w-full h-full gap-0.5 transition-colors cursor-pointer ${
                 isActive ? "text-[#1F4E79] dark:text-[#7ab5d6]" : "text-gray-500 dark:text-gray-400"
               }`}
             >

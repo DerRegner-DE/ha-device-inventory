@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useState, useCallback } from "preact/hooks";
 import { useDevices } from "../hooks/useDevices";
 import { DeviceCard } from "./DeviceCard";
 import { FilterBar } from "./FilterBar";
@@ -8,13 +8,15 @@ import { getDeviceLimit } from "../license";
 import { useLicense } from "../license/useLicense";
 import { apiPost } from "../api/client";
 import { db } from "../db/schema";
-import { DEVICE_TYPES } from "../utils/constants";
+import { DEVICE_TYPES, INTEGRATIONS } from "../utils/constants";
 
 export function DeviceList() {
   useLanguage();
   const license = useLicense();
-  const [search, setSearch] = useState("");
-  const [activeType, setActiveType] = useState("");
+  const [search, _setSearch] = useState(() => sessionStorage.getItem("gv_filter_search") || "");
+  const [activeType, _setActiveType] = useState(() => sessionStorage.getItem("gv_filter_type") || "");
+  const setSearch = useCallback((v: string) => { sessionStorage.setItem("gv_filter_search", v); _setSearch(v); }, []);
+  const setActiveType = useCallback((v: string) => { sessionStorage.setItem("gv_filter_type", v); _setActiveType(v); }, []);
   const deviceLimit = getDeviceLimit();
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -192,27 +194,27 @@ export function DeviceList() {
       {/* Bulk action bar */}
       {selectMode && selected.size > 0 && (
         <div
-          class="fixed bottom-24 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40 px-4 py-3"
+          class="fixed bottom-24 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 px-4 py-3"
           style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);"
         >
           {!bulkAction ? (
             <div class="flex gap-2 justify-center">
               <button
                 onClick={() => setBulkAction("typ")}
-                class="px-4 py-2 rounded-lg bg-[#1F4E79] text-white text-xs font-medium"
+                class="px-4 py-2 rounded-lg bg-[#1F4E79] text-white text-xs font-medium hover:bg-[#1a4268] cursor-pointer"
               >
                 {t("bulk.changeType")}
               </button>
               <button
                 onClick={() => setBulkAction("integration")}
-                class="px-4 py-2 rounded-lg bg-[#2d6da3] text-white text-xs font-medium"
+                class="px-4 py-2 rounded-lg bg-[#2d6da3] text-white text-xs font-medium hover:bg-[#245d8e] cursor-pointer"
               >
                 {t("bulk.changeIntegration")}
               </button>
               <button
                 onClick={handleBulkDelete}
                 disabled={bulkBusy}
-                class="px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-medium disabled:opacity-50"
+                class="px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-medium hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t("bulk.delete")}
               </button>
@@ -222,7 +224,7 @@ export function DeviceList() {
               <select
                 value={bulkValue}
                 onChange={(e) => setBulkValue((e.target as HTMLSelectElement).value)}
-                class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm"
+                class="flex-1 px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-800 dark:text-gray-200"
               >
                 <option value="">{t("bulk.selectValue")}</option>
                 {bulkAction === "typ" &&
@@ -232,8 +234,8 @@ export function DeviceList() {
                     </option>
                   ))}
                 {bulkAction === "integration" &&
-                  ["fritz", "zigbee2mqtt", "localtuya", "tuya", "boschshc", "homematicip_cloud", "ring", "blink", "alexa_devices", "tplink", "tasmota", "mqtt"].map((i) => (
-                    <option key={i} value={i}>{i}</option>
+                  INTEGRATIONS.map((i) => (
+                    <option key={i.id} value={i.id}>{i.id}</option>
                   ))}
               </select>
               <button

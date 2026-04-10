@@ -213,6 +213,82 @@ export function getPhotoUrl(photoUuid: string): string {
   return `${getBaseUrl()}/photos/${photoUuid}`;
 }
 
+// ----- Document API (manuals, datasheets) ------------------------------------
+
+export interface DocumentItem {
+  uuid: string;
+  filename: string;
+  mime_type: string;
+  file_size: number;
+  caption: string | null;
+  url: string | null;
+  created_at: string;
+}
+
+export async function getDocuments(deviceUuid: string): Promise<DocumentItem[]> {
+  const data = await apiGet<DocumentItem[]>(`/devices/${deviceUuid}/documents`);
+  return data || [];
+}
+
+export async function uploadDocument(
+  deviceUuid: string,
+  file: File,
+  caption?: string,
+): Promise<DocumentItem | null> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+    if (caption) formData.append("caption", caption);
+
+    const res = await fetch(`${getBaseUrl()}/devices/${deviceUuid}/documents`, {
+      method: "POST",
+      body: formData,
+      signal: AbortSignal.timeout(60000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Document upload failed:", err);
+    return null;
+  }
+}
+
+export async function addDocumentLink(
+  deviceUuid: string,
+  url: string,
+  caption?: string,
+): Promise<DocumentItem | null> {
+  try {
+    const res = await fetch(`${getBaseUrl()}/devices/${deviceUuid}/documents/link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, caption }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn("Document link failed:", err);
+    return null;
+  }
+}
+
+export function getDocumentUrl(docUuid: string): string {
+  return `${getBaseUrl()}/documents/${docUuid}`;
+}
+
+export async function deleteDocument(docUuid: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${getBaseUrl()}/documents/${docUuid}`, {
+      method: "DELETE",
+      signal: AbortSignal.timeout(10000),
+    });
+    return res.ok || res.status === 204;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Pull devices from server and merge into local IndexedDB.
  * Server wins if sync_version is higher. Local wins if local is higher (pending upload).

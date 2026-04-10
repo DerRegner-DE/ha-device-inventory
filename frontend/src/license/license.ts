@@ -340,7 +340,12 @@ export async function initLicense(): Promise<LicenseInfo> {
       }
     }
   } else {
-    cachedLicense = FREE_LICENSE;
+    // No key - check if trial is active via backend
+    cachedLicense = await validateKeyViaBackend("");
+    if (cachedLicense.valid) {
+      // Trial is active - mark it
+      (cachedLicense as any).trial = true;
+    }
   }
   cacheReady = true;
   window.dispatchEvent(new CustomEvent("licensechange"));

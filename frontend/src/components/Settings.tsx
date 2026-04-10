@@ -93,13 +93,17 @@ export function Settings() {
       if (result) {
         // Pull imported devices into local IndexedDB
         await syncFromServer();
-        setImportResult(
-          t("settings.haImportResult", {
+        let resultText = t("settings.haImportResult", {
             imported: result.imported || 0,
             duplicates: result.skipped_duplicates || 0,
             total: result.total_ha_devices || 0,
-          })
-        );
+          });
+        if (result.skipped_non_physical > 0) {
+          resultText += t("settings.haImportSkippedNonPhysical", {
+            nonPhysical: result.skipped_non_physical,
+          });
+        }
+        setImportResult(resultText);
       } else {
         setImportResult(t("settings.haImportFailed"));
       }

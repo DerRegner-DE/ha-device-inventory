@@ -273,7 +273,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
       )}
       <form onSubmit={handleSubmit} class="p-4 space-y-4 pb-8">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-gray-800">
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
             {isEdit ? t("form.editDevice") : t("form.newDevice")}
           </h2>
           <div class="flex gap-2">
@@ -293,7 +293,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
                 onClick={() => {
                   setShowCamera(true);
                 }}
-                class="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
+                class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
                 title={t("form.photoTitle")}
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -319,7 +319,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
               <button
                 type="button"
                 onClick={() => setShowScanner(true)}
-                class="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200"
+                class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer"
                 title={t("form.scanTitle")}
               >
                 <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -364,7 +364,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
         <Section title={t("form.sectionBasic")} open={sections.basic} onToggle={() => toggleSection("basic")}>
           <Field label={t("form.deviceType")}>
             <select
-              value={form.typ}
+              value={DEVICE_TYPES.some(dt => dt.id === form.typ) ? form.typ : (form.typ ? "Sonstiges" : "")}
               onChange={(e) => updateField("typ", (e.target as HTMLSelectElement).value)}
               class={selectClass}
               required
@@ -374,6 +374,17 @@ export function DeviceForm({ device }: DeviceFormProps) {
                 <option key={dt.id} value={dt.id}>{t(dt.labelKey)}</option>
               ))}
             </select>
+            {form.typ === "Sonstiges" && (
+              <input
+                type="text"
+                onInput={(e) => {
+                  const v = (e.target as HTMLInputElement).value;
+                  if (v) updateField("typ", v);
+                }}
+                class={inputClass + " mt-2"}
+                placeholder="z.B. Wallbox, NAS, Wetterstation..."
+              />
+            )}
           </Field>
           <Field label={t("form.name")}>
             <input
@@ -565,7 +576,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
           <button
             type="button"
             onClick={() => history.back()}
-            class="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50"
+            class="flex-1 py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
           >
             {t("common.cancel")}
           </button>

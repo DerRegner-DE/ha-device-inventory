@@ -232,7 +232,7 @@ export function Dashboard() {
 
       {/* Donut charts grid */}
       {total > 0 && (
-        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
           {typeCounts.length > 0 && (
             <DonutChart title={t("dashboard.byType")} data={typeChartData} />
           )}
@@ -341,8 +341,8 @@ function DonutChart({
   data: any;
 }) {
   return (
-    <div class="bg-white rounded-xl border border-gray-100 p-3">
-      <h4 class="text-xs font-semibold text-gray-700 mb-2 text-center">{title}</h4>
+    <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
+      <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">{title}</h4>
       <Doughnut data={data} options={DONUT_OPTIONS} />
     </div>
   );

@@ -8,6 +8,7 @@ import { Settings } from "./components/Settings";
 import { useDevice } from "./hooks/useDevices";
 import { t } from "./i18n";
 import { useLanguage } from "./i18n";
+import { useDarkMode } from "./hooks/useDarkMode";
 import { getBasePath, stripBasePath, navigate } from "./utils/navigate";
 
 function EditDeviceLoader({ uuid }: { uuid: string }) {
@@ -50,6 +51,9 @@ function matchRoute(path: string): { route: string; params: Record<string, strin
 }
 
 export function App() {
+  // Dark mode must be at App level so the class persists across all routes
+  useDarkMode();
+
   const [currentPath, setCurrentPath] = useState(
     stripBasePath(window.location.pathname)
   );

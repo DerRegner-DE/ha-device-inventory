@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.database import init_db
-from app.routers import devices, photos, sync, export, import_data, ha_proxy
+from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy
 from app.services.device_sync import sync_ha_areas
 
 APP_VERSION = "2.0.0"
@@ -98,6 +98,7 @@ app.add_middleware(
 # Mount routers under /api prefix
 app.include_router(devices.router, prefix="/api")
 app.include_router(photos.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
 app.include_router(sync.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
 app.include_router(import_data.router, prefix="/api")
@@ -191,10 +192,44 @@ def _write_license_file(data: dict) -> None:
     LICENSE_FILE.write_text(json.dumps(data), encoding="utf-8")
 
 
+TRIAL_DURATION_DAYS = 180  # 6 months
+TRIAL_ENABLED = False  # Disabled during beta testing phase - enable later
+
+
+def _get_trial_info() -> dict:
+    """Get trial status. Auto-initializes trial_start on first call."""
+    if not TRIAL_ENABLED:
+        return {"trial_active": False, "trial_remaining_days": 0, "trial_start": 0}
+
+    data = _read_license_file()
+    import time
+
+    # If no trial_start yet, set it now (first install)
+    if "trial_start" not in data:
+        data["trial_start"] = time.time()
+        _write_license_file(data)
+
+    trial_start = data["trial_start"]
+    elapsed_days = (time.time() - trial_start) / 86400
+    remaining_days = max(0, TRIAL_DURATION_DAYS - elapsed_days)
+    trial_active = remaining_days > 0
+
+    return {
+        "trial_active": trial_active,
+        "trial_remaining_days": int(remaining_days),
+        "trial_start": trial_start,
+    }
+
+
 @app.get("/api/license")
 def get_license():
     data = _read_license_file()
-    return {"key": data.get("key", "")}
+    trial = _get_trial_info()
+    return {
+        "key": data.get("key", ""),
+        "trial_active": trial["trial_active"],
+        "trial_remaining_days": trial["trial_remaining_days"],
+    }
 
 
 @app.post("/api/license")
@@ -226,9 +261,28 @@ def _base64url_decode(s: str) -> str:
 
 @app.post("/api/license/validate")
 def validate_license(body: LicenseValidateBody):
-    """Validate a license key server-side (for HTTP contexts without crypto.subtle)."""
+    """Validate a license key server-side (for HTTP contexts without crypto.subtle).
+    Also supports trial mode: if key is empty but trial is active, return Pro."""
     try:
         key = body.key.strip()
+
+        # Trial mode: no key but trial is active
+        if not key:
+            trial = _get_trial_info()
+            if trial["trial_active"]:
+                return {
+                    "valid": True,
+                    "tier": "pro",
+                    "email": "trial",
+                    "exp": trial["trial_start"] + TRIAL_DURATION_DAYS * 86400,
+                    "features": [
+                        "unlimited_devices", "multilingual", "excel",
+                        "ha_sync", "camera", "barcode",
+                    ],
+                    "trial": True,
+                    "trial_remaining_days": trial["trial_remaining_days"],
+                }
+            return {"valid": False, "tier": "free", "features": []}
         dot_idx = key.index(".")
         payload_b64 = key[:dot_idx]
         sig_b64 = key[dot_idx + 1:]

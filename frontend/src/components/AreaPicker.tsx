@@ -114,7 +114,7 @@ export function AreaPicker({ value, onChange }: AreaPickerProps) {
     <select
       value={value}
       onChange={handleChange}
-      class="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none"
+      class="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none"
     >
       <option value="">{t("form.selectArea")}</option>
       {displayFloors.map((floor) => (
