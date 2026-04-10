@@ -5,48 +5,15 @@ import { db, type Photo } from "../db/schema";
 import { getAreaName, getFloorForArea, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
-import { apiDelete, getPhotoUrl, getDocuments, getDocumentUrl, deleteDocument, uploadDocument, addDocumentLink, type DocumentItem } from "../api/client";
+import { apiDelete, apiPut, getPhotoUrl, getDocuments, getDocumentUrl, deleteDocument, uploadDocument, addDocumentLink, type DocumentItem } from "../api/client";
 import { hasFeature } from "../license";
 
 /** Map device integration/type to HA setup URL */
-function getHaSetupUrl(device: { integration?: string; typ?: string; hersteller?: string }): string | null {
-  const i = device.integration?.toLowerCase() ?? "";
-  const h = device.hersteller?.toLowerCase() ?? "";
-  const t = device.typ?.toLowerCase() ?? "";
-
-  // Integration-based mapping
-  const integrationMap: Record<string, string> = {
-    fritz: "/config/integrations/integration/fritz",
-    fritzbox: "/config/integrations/integration/fritz",
-    tuya: "/config/integrations/integration/tuya",
-    localtuya: "/config/integrations/integration/tuya",
-    tplink: "/config/integrations/integration/tplink",
-    boschshc: "/config/integrations/integration/bosch_shc",
-    homematicip_cloud: "/config/integrations/integration/homematicip_cloud",
-    ring: "/config/integrations/integration/ring",
-    blink: "/config/integrations/integration/blink",
-    alexa_devices: "/config/integrations/integration/alexa_devices",
-    tasmota: "/config/integrations/integration/tasmota",
-    mqtt: "/config/integrations/integration/mqtt",
-    zigbee2mqtt: "/hassio/addon/45df7312_zigbee2mqtt",
-    landroid_cloud: "/config/integrations/integration/landroid_cloud",
-    mobile_app: "/config/integrations/integration/mobile_app",
-    playstation_network: "/config/integrations/integration/playstation_network",
-  };
-
-  if (i && integrationMap[i]) return integrationMap[i];
-
-  // Manufacturer-based fallback
-  if (h.includes("amazon") || h.includes("alexa")) return "/config/integrations/integration/alexa_devices";
-  if (h.includes("ring")) return "/config/integrations/integration/ring";
-  if (h.includes("blink")) return "/config/integrations/integration/blink";
-  if (h.includes("bosch")) return "/config/integrations/integration/bosch_shc";
-  if (h.includes("homematic")) return "/config/integrations/integration/homematicip_cloud";
-  if (h.includes("tp-link") || h.includes("tapo")) return "/config/integrations/integration/tplink";
-  if (h.includes("avm") || h.includes("fritz")) return "/config/integrations/integration/fritz";
-
-  // Generic: link to integrations page
-  if (i || t) return "/config/integrations";
+function getHaSetupUrl(device: { ha_device_id?: string; integration?: string; typ?: string; hersteller?: string }): string | null {
+  // If we have a HA device ID, link directly to the device page
+  if (device.ha_device_id) {
+    return `/config/devices/device/${device.ha_device_id}`;
+  }
 
   return null;
 }
@@ -176,6 +143,28 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#1F4E79]/10 dark:bg-[#1F4E79]/20 text-[#1F4E79] dark:text-[#7ab5d6]">
               {t(getDeviceTypeLabel(device.typ))}
             </span>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                const newVal = (device as any).reviewed === 1 ? 0 : 1;
+                await db.devices.update(device.uuid, { reviewed: newVal } as any);
+                await apiPut(`/devices/${device.uuid}`, { reviewed: newVal }, "device", device.uuid);
+                window.location.reload();
+              }}
+              class={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                (device as any).reviewed === 1
+                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+              }`}
+              title={(device as any).reviewed === 1 ? "Als ungeprüft markieren" : "Als geprüft markieren"}
+            >
+              {(device as any).reviewed === 1 ? (
+                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+              ) : (
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 20 20" stroke="currentColor"><circle cx="10" cy="10" r="7" stroke-width="1.5" /></svg>
+              )}
+              {(device as any).reviewed === 1 ? "✓" : "○"}
+            </button>
           </div>
         </div>
 
@@ -253,7 +242,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         {t("detail.updated")}: {new Date(device.updated_at).toLocaleString("de-DE")}
       </div>
 
-      <div class="fixed bottom-16 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex gap-3 z-30">
+      <div class="fixed left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex gap-3 z-30" style="bottom: calc(4rem + max(env(safe-area-inset-bottom, 0px), 12px));">
         <button
           onClick={() => navigate("/devices")}
           class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
