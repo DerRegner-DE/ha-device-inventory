@@ -35,6 +35,7 @@ function InfoRow({ label, value }: { label: string; value?: string }) {
 export function DeviceDetail({ uuid }: DeviceDetailProps) {
   useLanguage();
   const { device, loading } = useDevice(uuid);
+  const [reviewedLocal, setReviewedLocal] = useState<number | null>(null);
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const blobUrlRef = useRef<string | null>(null);
@@ -143,28 +144,35 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[#1F4E79]/10 dark:bg-[#1F4E79]/20 text-[#1F4E79] dark:text-[#7ab5d6]">
               {t(getDeviceTypeLabel(device.typ))}
             </span>
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                const newVal = (device as any).reviewed === 1 ? 0 : 1;
-                await db.devices.update(device.uuid, { reviewed: newVal } as any);
-                await apiPut(`/devices/${device.uuid}`, { reviewed: newVal }, "device", device.uuid);
-                window.location.reload();
-              }}
-              class={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
-                (device as any).reviewed === 1
-                  ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
-              }`}
-              title={(device as any).reviewed === 1 ? "Als ungeprüft markieren" : "Als geprüft markieren"}
-            >
-              {(device as any).reviewed === 1 ? (
-                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
-              ) : (
-                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 20 20" stroke="currentColor"><circle cx="10" cy="10" r="7" stroke-width="1.5" /></svg>
-              )}
-              {(device as any).reviewed === 1 ? "✓" : "○"}
-            </button>
+            {(() => {
+              const isReviewed = reviewedLocal !== null ? reviewedLocal === 1 : (device as any).reviewed === 1;
+              return (
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const newVal = isReviewed ? 0 : 1;
+                    setReviewedLocal(newVal);
+                    await db.devices.update(device.uuid, { reviewed: newVal } as any);
+                    try {
+                      await apiPut(`/devices/${device.uuid}`, { reviewed: newVal }, "device", device.uuid);
+                    } catch { /* queued offline */ }
+                  }}
+                  class={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors ${
+                    isReviewed
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                      : "bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-yellow-100 dark:hover:bg-yellow-900/30"
+                  }`}
+                  title={isReviewed ? "Als ungeprüft markieren" : "Als geprüft markieren"}
+                >
+                  {isReviewed ? (
+                    <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                  ) : (
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 20 20" stroke="currentColor"><circle cx="10" cy="10" r="7" stroke-width="1.5" /></svg>
+                  )}
+                  {isReviewed ? "✓" : "○"}
+                </button>
+              );
+            })()}
           </div>
         </div>
 

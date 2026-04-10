@@ -110,10 +110,39 @@ def get_db():
         conn.close()
 
 
+def _migrate_db(conn: sqlite3.Connection) -> None:
+    """Run schema migrations for existing databases."""
+    # Check existing columns in devices table
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(devices)").fetchall()}
+
+    # v2.1.0: Add reviewed column
+    if "reviewed" not in cols:
+        conn.execute("ALTER TABLE devices ADD COLUMN reviewed INTEGER NOT NULL DEFAULT 0")
+
+    # v2.1.0: Create documents table if missing
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    if "documents" not in tables:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                device_id INTEGER NOT NULL REFERENCES devices(id),
+                filename TEXT NOT NULL,
+                mime_type TEXT NOT NULL,
+                file_size INTEGER,
+                caption TEXT,
+                url TEXT,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                deleted_at TEXT
+            )
+        """)
+
+
 def init_db() -> None:
     _ensure_dirs()
     with get_db() as conn:
         conn.executescript(SCHEMA_SQL)
+        _migrate_db(conn)
 
 
 def dict_from_row(row: sqlite3.Row | None) -> dict | None:
