@@ -1,5 +1,8 @@
+import { useState } from "preact/hooks";
 import { navigate } from "../utils/navigate";
 import { type Device } from "../db/schema";
+import { db } from "../db/schema";
+import { apiPut } from "../api/client";
 import { getAreaName, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
@@ -10,6 +13,19 @@ interface DeviceCardProps {
 
 export function DeviceCard({ device }: DeviceCardProps) {
   useLanguage();
+  const [reviewed, setReviewed] = useState<number>((device as any).reviewed ?? 0);
+
+  const toggleReviewed = async (e: Event) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const newVal = reviewed === 1 ? 0 : 1;
+    setReviewed(newVal);
+    await db.devices.update(device.uuid, { reviewed: newVal } as any);
+    try {
+      await apiPut(`/devices/${device.uuid}`, { reviewed: newVal }, "device", device.uuid);
+    } catch { /* queued offline */ }
+  };
+
   return (
     <div
       onClick={() => navigate(`/devices/${device.uuid}`)}
@@ -21,13 +37,23 @@ export function DeviceCard({ device }: DeviceCardProps) {
             {device.bezeichnung.charAt(0).toUpperCase()}
           </span>
         </div>
-        {(device as any).reviewed === 1 && (
-          <span class="absolute -bottom-1 -left-1 text-green-500 bg-white dark:bg-gray-800 rounded-full">
+        <button
+          onClick={toggleReviewed}
+          class={`absolute -bottom-1 -left-1 rounded-full bg-white dark:bg-gray-800 cursor-pointer transition-colors ${
+            reviewed === 1 ? "text-green-500" : "text-gray-300 dark:text-gray-600 hover:text-green-400"
+          }`}
+          title={reviewed === 1 ? "Als ungeprüft markieren" : "Als geprüft markieren"}
+        >
+          {reviewed === 1 ? (
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
             </svg>
-          </span>
-        )}
+          ) : (
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.5">
+              <circle cx="10" cy="10" r="7" />
+            </svg>
+          )}
+        </button>
       </div>
       <div class="flex-1 min-w-0">
         <h3 class="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
