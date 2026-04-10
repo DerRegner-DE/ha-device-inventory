@@ -15,3 +15,5 @@ create_testplan.js
 docs/build_*_doc.cjs
 docs/Mockup_*
 *.docx
+promo_keys.txt
+community_post_simon42.md
