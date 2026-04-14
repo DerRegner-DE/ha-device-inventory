@@ -16,15 +16,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         jq \
         curl \
         ca-certificates \
+        libjpeg62-turbo \
+        zlib1g \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory structure
 RUN mkdir -p /app/frontend /app/backend /data/db /data/photos
 
-# Install Python dependencies
+# Install Python dependencies.
+# Some C-extension packages (aiohttp, Pillow) lack prebuilt armv7l+cp312
+# wheels, so we install build tooling, compile, then purge it to keep the
+# image small. On amd64/aarch64 wheels exist and the compile path is skipped.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libffi-dev \
+        libjpeg-dev \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
+RUN apt-get purge -y --auto-remove \
+        build-essential \
+        libffi-dev \
+        libjpeg-dev \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy pre-built frontend (built natively in CI or locally before docker build)
 COPY frontend/dist/ /app/frontend/

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.3
+
+- **Fix armv7-Build (Teil 2)**: Für armv7 fehlen Prebuilt-Wheels einiger C-Extension-Pakete (`aiohttp`, `Pillow`). Dockerfile installiert daher Build-Tools (`build-essential`, `libffi-dev`, `libjpeg-dev`, `zlib1g-dev`), führt den pip-Install durch und purged die Build-Tools danach wieder — Runtime-Libs (`libjpeg62-turbo`, `zlib1g`) bleiben. `uvicorn[standard]` → `uvicorn` (entfernt `uvloop`/`httptools` komplett, die sich auf armv7 ebenfalls nicht bauen ließen und für unseren Use-Case nicht benötigt werden).
+
 ## 2.2.2
 
 - **Fix armv7-Build**: Base-Image von `python:3.12-alpine` auf `python:3.12-slim` (Debian) umgestellt. Alpine/musllinux hat keine vorgebauten Wheels für Rust-basierte Abhängigkeiten (z. B. `pydantic-core`), was den armv7-Release-Build unter QEMU brechen ließ. Mit Debian-Base existieren manylinux-Wheels für alle drei Architekturen.
