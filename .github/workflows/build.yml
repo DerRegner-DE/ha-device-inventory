@@ -8,7 +8,8 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  # Build frontend once on native amd64 — shared by all Docker jobs below.
+  frontend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,6 +23,25 @@ jobs:
       - name: Build frontend
         run: cd frontend && npm ci && npm run build
 
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          retention-days: 1
+
+  build:
+    needs: frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
       - name: Build Docker image
         run: docker build -f addon/Dockerfile -t geraeteverwaltung:test .
 
@@ -33,7 +53,7 @@ jobs:
           docker stop gv-test
 
   dev-release:
-    needs: build
+    needs: [frontend, build]
     if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     permissions:
@@ -51,14 +71,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Build frontend
-        run: cd frontend && npm ci && npm run build
+          name: frontend-dist
+          path: frontend/dist/
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -86,7 +103,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 
   release:
-    needs: build
+    needs: [frontend, build]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
@@ -104,14 +121,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
         with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Build frontend
-        run: cd frontend && npm ci && npm run build
+          name: frontend-dist
+          path: frontend/dist/
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3

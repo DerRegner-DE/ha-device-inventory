@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1
+
+- **Build-Pipeline**: Frontend wird in CI jetzt einmalig nativ gebaut und als Artifact zwischen den Architektur-Jobs geteilt. Der bisherige doppelte (und unter QEMU emulierte) Frontend-Build im Dockerfile entfällt — Release-Builds sind damit deutlich schneller. Lokaler Build benötigt jetzt `cd frontend && npm ci && npm run build` vor `docker build` (bisher implizit).
+
 ## 2.2.0
 
 - **Multi-Architektur**: Add-on unterstützt jetzt `amd64`, `aarch64` und `armv7` (vorher nur `amd64`). Damit wird der Install-Button in Home Assistant auch auf Raspberry Pi 3/4/5 und ARM-basierten NAS aktiv.

@@ -1,17 +1,10 @@
 # ==============================================================================
-# Stage 1: Build frontend
+# Runtime image
 # ==============================================================================
-FROM node:20-alpine AS frontend-build
-
-WORKDIR /build
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-# ==============================================================================
-# Stage 2: Runtime image
-# ==============================================================================
+# NOTE: Frontend is expected to be pre-built into frontend/dist/ before
+# `docker build` is invoked (CI does this once on a native amd64 runner and
+# shares the artifact across all architectures — avoids slow emulated builds
+# under QEMU). Locally: run `cd frontend && npm ci && npm run build` first.
 FROM python:3.12-alpine
 
 # Install nginx and runtime dependencies
@@ -30,8 +23,8 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 
-# Copy frontend from build stage (always fresh, never cached stale)
-COPY --from=frontend-build /build/dist/ /app/frontend/
+# Copy pre-built frontend (built natively in CI or locally before docker build)
+COPY frontend/dist/ /app/frontend/
 
 # Copy backend
 COPY backend/ /app/backend/
