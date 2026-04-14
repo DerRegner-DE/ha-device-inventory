@@ -39,6 +39,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
     steps:
       - uses: actions/checkout@v4
 
@@ -64,17 +73,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push dev image
+      - name: Build and push dev image (${{ matrix.arch }})
         uses: docker/build-push-action@v5
         with:
           context: .
           file: addon/Dockerfile
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/derregner-de/ha-device-inventory:dev
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:dev
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 
   release:
     needs: build
@@ -83,6 +92,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            platform: linux/amd64
+          - arch: aarch64
+            platform: linux/arm64
+          - arch: armv7
+            platform: linux/arm/v7
     steps:
       - uses: actions/checkout@v4
 
@@ -108,25 +126,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version and repo
+      - name: Extract version
         id: meta
         run: |
           VERSION="${GITHUB_REF_NAME}"
           VERSION_BARE="${VERSION#v}"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "version_bare=${VERSION_BARE}" >> "$GITHUB_OUTPUT"
-          echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push image
+      - name: Build and push image (${{ matrix.arch }})
         uses: docker/build-push-action@v5
         with:
           context: .
           file: addon/Dockerfile
-          platforms: linux/amd64
+          platforms: ${{ matrix.platform }}
           push: true
           tags: |
-            ghcr.io/${{ steps.meta.outputs.repo }}:${{ steps.meta.outputs.version }}
-            ghcr.io/${{ steps.meta.outputs.repo }}:${{ steps.meta.outputs.version_bare }}
-            ghcr.io/${{ steps.meta.outputs.repo }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:${{ steps.meta.outputs.version }}
+            ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:${{ steps.meta.outputs.version_bare }}
+            ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:latest
+          cache-from: type=gha,scope=${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.arch }}

@@ -2,11 +2,12 @@
 
 Publishes MQTT auto-discovery messages so that HA creates entities
 for each inventory device (warranty sensor, purchase date, etc.).
-Requires Mosquitto broker (HA add-on).
+Works with any MQTT broker (HA core-mosquitto add-on or external broker).
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from datetime import date, datetime
@@ -20,8 +21,47 @@ logger = logging.getLogger(__name__)
 DISCOVERY_PREFIX = "homeassistant"
 STATE_PREFIX = "geraeteverwaltung"
 
-# Shared MQTT client (initialized at startup)
-_mqtt_client: aiomqtt.Client | None = None
+
+def _connect_kwargs() -> dict:
+    """Build aiomqtt connect kwargs from current settings."""
+    kwargs: dict = {
+        "hostname": settings.MQTT_HOST,
+        "port": settings.MQTT_PORT,
+    }
+    if settings.MQTT_USER:
+        kwargs["username"] = settings.MQTT_USER
+        kwargs["password"] = settings.MQTT_PASSWORD
+    return kwargs
+
+
+def _broker_descr() -> str:
+    user = settings.MQTT_USER or "anonymous"
+    return f"{settings.MQTT_HOST}:{settings.MQTT_PORT} (user={user})"
+
+
+async def test_connection(timeout: float = 5.0) -> dict:
+    """Attempt an MQTT connect and return diagnostic info.
+
+    Returns a dict {ok: bool, broker: str, error?: str, error_type?: str}.
+    """
+    descr = _broker_descr()
+    try:
+        async def _connect():
+            async with aiomqtt.Client(**_connect_kwargs()):
+                return True
+
+        await asyncio.wait_for(_connect(), timeout=timeout)
+        logger.info("MQTT connect OK: %s", descr)
+        return {"ok": True, "broker": descr}
+    except asyncio.TimeoutError:
+        msg = f"timeout after {timeout:.0f}s"
+        logger.warning("MQTT connect FAILED (%s): %s", descr, msg)
+        return {"ok": False, "broker": descr, "error": msg, "error_type": "TimeoutError"}
+    except Exception as e:
+        err_type = type(e).__name__
+        msg = str(e) or repr(e)
+        logger.warning("MQTT connect FAILED (%s): %s: %s", descr, err_type, msg)
+        return {"ok": False, "broker": descr, "error": msg, "error_type": err_type}
 
 
 def _slugify(text: str) -> str:
@@ -188,15 +228,7 @@ async def publish_device(device: dict) -> bool:
         return False
 
     try:
-        connect_kwargs: dict = {
-            "hostname": settings.MQTT_HOST,
-            "port": settings.MQTT_PORT,
-        }
-        if settings.MQTT_USER:
-            connect_kwargs["username"] = settings.MQTT_USER
-            connect_kwargs["password"] = settings.MQTT_PASSWORD
-
-        async with aiomqtt.Client(**connect_kwargs) as client:
+        async with aiomqtt.Client(**_connect_kwargs()) as client:
             # Publish discovery configs (retained)
             for topic, payload in _build_discovery_messages(device):
                 await client.publish(
@@ -217,7 +249,10 @@ async def publish_device(device: dict) -> bool:
         return True
 
     except Exception as e:
-        logger.warning("MQTT publish failed for %s: %s", device.get("uuid"), e)
+        logger.warning(
+            "MQTT publish failed for %s @ %s: %s: %s",
+            device.get("uuid"), _broker_descr(), type(e).__name__, e,
+        )
         return False
 
 
@@ -227,14 +262,6 @@ async def remove_device(device_uuid: str) -> bool:
         return False
 
     try:
-        connect_kwargs: dict = {
-            "hostname": settings.MQTT_HOST,
-            "port": settings.MQTT_PORT,
-        }
-        if settings.MQTT_USER:
-            connect_kwargs["username"] = settings.MQTT_USER
-            connect_kwargs["password"] = settings.MQTT_PASSWORD
-
         # All possible entity suffixes
         suffixes = [
             ("sensor", "warranty"),
@@ -245,7 +272,7 @@ async def remove_device(device_uuid: str) -> bool:
             ("binary_sensor", "warranty_active"),
         ]
 
-        async with aiomqtt.Client(**connect_kwargs) as client:
+        async with aiomqtt.Client(**_connect_kwargs()) as client:
             for component, suffix in suffixes:
                 topic = f"{DISCOVERY_PREFIX}/{component}/geraeteverwaltung/{device_uuid}_{suffix}/config"
                 await client.publish(topic, b"", retain=True)
@@ -259,7 +286,10 @@ async def remove_device(device_uuid: str) -> bool:
         return True
 
     except Exception as e:
-        logger.warning("MQTT remove failed for %s: %s", device_uuid, e)
+        logger.warning(
+            "MQTT remove failed for %s @ %s: %s: %s",
+            device_uuid, _broker_descr(), type(e).__name__, e,
+        )
         return False
 
 

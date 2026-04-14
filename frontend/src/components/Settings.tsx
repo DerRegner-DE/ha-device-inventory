@@ -30,12 +30,13 @@ export function Settings() {
   const [mqttSyncing, setMqttSyncing] = useState(false);
   const [mqttResult, setMqttResult] = useState<string | null>(null);
   const [mqttLoaded, setMqttLoaded] = useState(false);
+  const [mqttTesting, setMqttTesting] = useState(false);
 
-  // Load MQTT status on mount
+  // Load MQTT status on mount (backend is source of truth, not localStorage)
   if (!mqttLoaded) {
     setMqttLoaded(true);
     apiGet<any>("/mqtt/status")
-      .then((data) => { if (data) { setMqttEnabled(data.enabled); localStorage.setItem("gv_mqtt_enabled", String(data.enabled)); } })
+      .then((data) => { if (data) setMqttEnabled(!!data.enabled); })
       .catch(() => {});
   }
 
@@ -120,14 +121,34 @@ export function Settings() {
       return;
     }
     setConfirmMqtt(false);
-    try {
-      await apiPost("/mqtt/settings", { enabled: newVal });
-      setMqttEnabled(newVal);
-      localStorage.setItem("gv_mqtt_enabled", String(newVal));
+    // apiPost returns null on failure (no throw). Use server response as source of truth.
+    const result = await apiPost<{ ok?: boolean; enabled?: boolean }>(
+      "/mqtt/settings",
+      { enabled: newVal }
+    );
+    if (result && result.ok) {
+      setMqttEnabled(!!result.enabled);
       setMqttResult(null);
-    } catch {
-      // revert
+    } else {
+      // Backend did not persist — re-sync from server and show error.
+      const status = await apiGet<{ enabled?: boolean }>("/mqtt/status");
+      setMqttEnabled(!!(status && status.enabled));
+      setMqttResult(t("settings.mqttToggleFailed") || "MQTT toggle could not be saved");
     }
+  };
+
+  const handleMqttTest = async () => {
+    setMqttTesting(true);
+    setMqttResult(null);
+    const result = await apiPost<any>("/mqtt/test", {});
+    if (result && result.ok) {
+      setMqttResult(`OK: ${result.broker}`);
+    } else if (result) {
+      setMqttResult(`FAIL: ${result.broker} — ${result.error_type || ""} ${result.error || ""}`.trim());
+    } else {
+      setMqttResult(t("settings.mqttSyncFailed"));
+    }
+    setMqttTesting(false);
   };
 
   const handleMqttSync = async () => {
@@ -316,6 +337,13 @@ export function Settings() {
               </button>
             </div>
           </div>
+          <button
+            onClick={handleMqttTest}
+            disabled={mqttTesting}
+            class="w-full py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 mb-2"
+          >
+            {mqttTesting ? "…" : (t("settings.mqttTestButton") || "Test MQTT connection")}
+          </button>
           {mqttEnabled && (
             <button
               onClick={handleMqttSync}

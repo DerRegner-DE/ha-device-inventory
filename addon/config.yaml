@@ -1,11 +1,13 @@
 name: "Geräteverwaltung"
 description: "Smart Home Device Inventory Management - Offline-First PWA"
-version: "2.1.4"
+version: "2.2.0"
 slug: "geraeteverwaltung"
 url: "https://github.com/DerRegner-DE/ha-device-inventory"
 arch:
   - amd64
-image: "ghcr.io/derregner-de/ha-device-inventory"
+  - aarch64
+  - armv7
+image: "ghcr.io/derregner-de/{arch}-ha-device-inventory"
 homeassistant_api: true
 ingress: true
 ingress_port: 3001

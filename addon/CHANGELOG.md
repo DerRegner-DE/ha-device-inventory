@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.2.0
+
+- **Multi-Architektur**: Add-on unterstützt jetzt `amd64`, `aarch64` und `armv7` (vorher nur `amd64`). Damit wird der Install-Button in Home Assistant auch auf Raspberry Pi 3/4/5 und ARM-basierten NAS aktiv.
+- **MQTT Discovery Toggle persistiert zuverlässig**: Das „HA Assistant Integration"-Flag wurde bisher nach einem View-Wechsel wieder auf AUS gesetzt, wenn das Speichern serverseitig fehlschlug. Jetzt ist der Backend-Zustand Source-of-Truth; Fehler beim Speichern werden als Hinweis in der UI angezeigt.
+- **Externer MQTT-Broker**: Verbindungsaufbau zu externen Brokern (nicht nur `core-mosquitto`) funktioniert zuverlässig. Einstellungen `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_password` aus den Add-on-Optionen werden sauber übernommen.
+- **Diagnose-Logs beim Start**: Add-on-Log enthält jetzt TCP-Reachability-Check und – bei aktiver Discovery – einen expliziten `MQTT connect OK/FAILED`-Eintrag mit Fehlertyp (z. B. `AuthenticationError`, `ConnectionRefusedError`, `TimeoutError`). Ersetzt die bisher stumme Fehlerbehandlung.
+- **„Test MQTT connection"-Button** in den Einstellungen: Prüft Broker-Verbindung auf Knopfdruck und zeigt Ergebnis direkt in der UI.
+- **Aufgeräumtes Error-Logging**: MQTT-Fehler (publish/remove) enthalten jetzt Broker-Host und Exception-Typ, nicht nur eine Kurzmeldung.
+
 ## 2.0.0
 
 - **Lemon Squeezy Store**: Pro-Lizenz jetzt über derregner.lemonsqueezy.com erhältlich (9,99 € Einmalkauf, sofortige Schlüssel-Lieferung per E-Mail)

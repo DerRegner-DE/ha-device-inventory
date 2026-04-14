@@ -70,6 +70,14 @@ else
 fi
 echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous})"
 
+# Quick TCP reachability check (does not verify auth, only network path).
+# Helps distinguish "broker unreachable" from "auth failed" in logs.
+if timeout 3 bash -c "exec 3<>/dev/tcp/$GV_MQTT_HOST/$GV_MQTT_PORT" 2>/dev/null; then
+    echo "MQTT TCP reachable at $GV_MQTT_HOST:$GV_MQTT_PORT"
+else
+    echo "WARNING: MQTT TCP NOT reachable at $GV_MQTT_HOST:$GV_MQTT_PORT (check host/port/firewall)"
+fi
+
 echo "HA URL: $GV_HA_URL"
 echo "HA Token configured: $([ -n "$GV_HA_TOKEN" ] && echo 'yes' || echo 'no')"
 echo "DB Path: $GV_DB_PATH"

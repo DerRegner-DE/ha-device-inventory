@@ -20,7 +20,7 @@ from app.database import init_db
 from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy
 from app.services.device_sync import sync_ha_areas
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.2.0"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,6 +56,14 @@ async def lifespan(app: FastAPI):
         except Exception:
             pass
     logger.info("Photos directory: %s", settings.PHOTOS_DIR)
+
+    # Run MQTT connectivity test at startup (diagnostic only; does not block startup)
+    if settings.MQTT_DISCOVERY_ENABLED:
+        try:
+            from app.services.mqtt_discovery import test_connection as mqtt_test
+            asyncio.create_task(mqtt_test())
+        except Exception as e:
+            logger.warning("MQTT startup test could not be scheduled: %s", e)
 
     # Start HA sync in background (non-blocking)
     if settings.HA_TOKEN:
@@ -117,7 +125,11 @@ def health_check():
 
 # ----- MQTT Discovery endpoints ------------------------------------------------
 
-from app.services.mqtt_discovery import sync_all_devices as mqtt_sync_all, publish_device as mqtt_publish
+from app.services.mqtt_discovery import (
+    sync_all_devices as mqtt_sync_all,
+    publish_device as mqtt_publish,
+    test_connection as mqtt_test_connection,
+)
 
 
 class MqttSettingsBody(BaseModel):
@@ -149,6 +161,16 @@ def mqtt_settings(body: MqttSettingsBody):
     # Update runtime setting
     settings.MQTT_DISCOVERY_ENABLED = body.enabled
     return {"ok": True, "enabled": body.enabled}
+
+
+@app.post("/api/mqtt/test")
+async def mqtt_test():
+    """Try to connect to the configured MQTT broker and return diagnostic info.
+
+    Useful when the add-on log does not show a clear connection error
+    (e.g. external broker with auth or network issue).
+    """
+    return await mqtt_test_connection()
 
 
 @app.post("/api/mqtt/sync")
