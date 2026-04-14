@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # Lemon Squeezy license validation
     LS_STORE_ID: int = int(os.environ.get("GV_LS_STORE_ID", "326895"))
-    LS_PRODUCT_ID: int = int(os.environ.get("GV_LS_PRODUCT_ID", "921643"))
+    LS_PRODUCT_ID: int = int(os.environ.get("GV_LS_PRODUCT_ID", "974758"))
 
     # MQTT broker for HA discovery
     MQTT_HOST: str = os.environ.get("GV_MQTT_HOST", "localhost")

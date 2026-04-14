@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.4
+
+- **Lemon Squeezy Live-Store**: Pro-Lizenz wird jetzt über den Live-Store ausgeliefert (vorher Test-Modus). Neue Produkt-ID und neuer Checkout-Link. Lizenzschlüssel werden automatisch per E-Mail verschickt.
+
 ## 2.2.3
 
 - **Fix armv7-Build (Teil 2)**: Für armv7 fehlen Prebuilt-Wheels einiger C-Extension-Pakete (`aiohttp`, `Pillow`). Dockerfile installiert daher Build-Tools (`build-essential`, `libffi-dev`, `libjpeg-dev`, `zlib1g-dev`), führt den pip-Install durch und purged die Build-Tools danach wieder — Runtime-Libs (`libjpeg62-turbo`, `zlib1g`) bleiben. `uvicorn[standard]` → `uvicorn` (entfernt `uvloop`/`httptools` komplett, die sich auf armv7 ebenfalls nicht bauen ließen und für unseren Use-Case nicht benötigt werden).

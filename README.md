@@ -153,7 +153,7 @@ The import is safe to run repeatedly -- existing devices are detected and skippe
 | Bulk Edit | -- | Yes |
 | MQTT Discovery | -- | Yes |
 
-**[Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)** -- Instant delivery. Your license key will be included in the purchase confirmation email. You can activate it on up to 3 installations.
+**[Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Instant delivery. Your license key will be included in the purchase confirmation email. You can activate it on up to 3 installations.
 
 ### Supported Device Types
 
@@ -294,7 +294,7 @@ Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automat
 | Massenbearbeitung | -- | Ja |
 | MQTT Discovery | -- | Ja |
 
-**[Pro-Lizenz kaufen](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)** -- Sofortige Auslieferung. Der Lizenzschlüssel ist in der Kaufbestätigungs-E-Mail enthalten. Auf bis zu 3 Installationen aktivierbar.
+**[Pro-Lizenz kaufen](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Sofortige Auslieferung. Der Lizenzschlüssel ist in der Kaufbestätigungs-E-Mail enthalten. Auf bis zu 3 Installationen aktivierbar.
 
 ### Unterstützte Gerätetypen
 
@@ -435,7 +435,7 @@ L'import peut être exécuté plusieurs fois -- les doublons sont détectés et 
 | Édition en masse | -- | Oui |
 | MQTT Discovery | -- | Oui |
 
-**[Acheter la licence Pro](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)** -- Livraison instantanée par e-mail. Activable sur 3 installations maximum.
+**[Acheter la licence Pro](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Livraison instantanée par e-mail. Activable sur 3 installations maximum.
 
 ### Types d'appareils pris en charge
 
@@ -576,7 +576,7 @@ La importación se puede ejecutar varias veces -- los duplicados se detectan y o
 | Edición masiva | -- | Sí |
 | MQTT Discovery | -- | Sí |
 
-**[Comprar licencia Pro](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)** -- Entrega instantánea por correo electrónico. Activable en hasta 3 instalaciones.
+**[Comprar licencia Pro](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Entrega instantánea por correo electrónico. Activable en hasta 3 instalaciones.
 
 ### Tipos de dispositivos
 
@@ -717,7 +717,7 @@ Cada dispositivo también puede registrar:
 | Массовое редактирование | -- | Да |
 | MQTT Discovery | -- | Да |
 
-**[Купить лицензию Pro](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)** -- Мгновенная доставка на e-mail. Активация на 3 установки.
+**[Купить лицензию Pro](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Мгновенная доставка на e-mail. Активация на 3 установки.
 
 ### Поддерживаемые типы устройств
 
@@ -830,7 +830,7 @@ Please open an issue first for larger changes to discuss the approach.
 
 - [Home Assistant](https://www.home-assistant.io/)
 - [Report Issues](https://github.com/DerRegner-DE/ha-device-inventory/issues)
-- [Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39)
+- [Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)
 
 ---
 

@@ -10,7 +10,7 @@ import { t } from "../i18n";
 import { useLanguage } from "../i18n";
 
 const LS_CHECKOUT_URL =
-  "https://derregner.lemonsqueezy.com/checkout/buy/a3809409-6ce4-467d-a399-750150f65c39";
+  "https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904";
 
 export function LicenseSettings() {
   useLanguage();
