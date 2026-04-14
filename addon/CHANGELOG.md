@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.2
+
+- **Fix armv7-Build**: Base-Image von `python:3.12-alpine` auf `python:3.12-slim` (Debian) umgestellt. Alpine/musllinux hat keine vorgebauten Wheels für Rust-basierte Abhängigkeiten (z. B. `pydantic-core`), was den armv7-Release-Build unter QEMU brechen ließ. Mit Debian-Base existieren manylinux-Wheels für alle drei Architekturen.
+
 ## 2.2.1
 
 - **Build-Pipeline**: Frontend wird in CI jetzt einmalig nativ gebaut und als Artifact zwischen den Architektur-Jobs geteilt. Der bisherige doppelte (und unter QEMU emulierte) Frontend-Build im Dockerfile entfällt — Release-Builds sind damit deutlich schneller. Lokaler Build benötigt jetzt `cd frontend && npm ci && npm run build` vor `docker build` (bisher implizit).
