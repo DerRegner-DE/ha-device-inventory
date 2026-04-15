@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.7
+
+- **Fix: Lemon-Squeezy-Aktivierung meldete fälschlich „invalid license key"**: Der Backend-Proxy hat `store_id` und `product_id` im falschen Objekt der LS-API-Antwort gesucht (`license_key` statt `meta`). Die Felder waren dort nicht vorhanden (→ 0), der anschließende Store-/Product-Check schlug daher immer fehl und das Add-on zeigte „invalid license key". Auf LS-Seite war die Aktivierung aber bereits erfolgt und hat einen Slot belegt — Nutzer liefen nach wenigen Versuchen ins Activation-Limit. Fix: korrekt aus `meta` lesen.
+
 ## 2.2.6
 
 - **Support & Diagnose-Sektion in den Einstellungen**: Neuer Abschnitt am Ende der Einstellungen erzeugt auf Knopfdruck einen Diagnose-Bericht (Version, Architektur, MQTT-Status, DB-Zählung, die letzten ~200 Log-Zeilen eines In-Memory-Ringbuffers). Passwörter, Tokens, Bearer/JWT-Strings, IP-Adressen (letzte zwei Oktette maskiert), E-Mail-Adressen und Lizenzschlüssel werden automatisch redigiert. Optional lassen sich Gerätenamen in Logs durch „Gerät-001" usw. ersetzen. Zwei Abgabewege: „Problem auf GitHub melden" (öffnet Issue mit vorausgefülltem Body) und „In Zwischenablage kopieren" (für Forum/Mail). Vorschau vor dem Absenden. Bei fehlgeschlagenem HA-Import erscheint zusätzlich ein „Problem melden →"-Link, der direkt zur Diagnose-Sektion scrollt.

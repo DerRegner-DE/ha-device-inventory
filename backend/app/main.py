@@ -388,12 +388,18 @@ def _ls_response_to_license_info(data: dict, instance_id: str | None = None) -> 
     status = license_key.get("status", "")
     valid = status in ("active", "inactive")
 
-    # Verify this key belongs to our store/product
-    # Compare as int to handle API returning str or int
+    # Verify this key belongs to our store/product.
+    # NOTE: store_id and product_id live in `meta`, NOT in `license_key`.
+    # (Prior versions looked them up in license_key and therefore got 0, which
+    #  caused every LS activation to be reported as "invalid" client-side even
+    #  though the LS API had already consumed an activation slot.)
     if valid:
-        if int(license_key.get("store_id", 0)) != settings.LS_STORE_ID:
-            valid = False
-        if int(license_key.get("product_id", 0)) != settings.LS_PRODUCT_ID:
+        try:
+            if int(meta.get("store_id", 0)) != settings.LS_STORE_ID:
+                valid = False
+            if int(meta.get("product_id", 0)) != settings.LS_PRODUCT_ID:
+                valid = False
+        except (TypeError, ValueError):
             valid = False
 
     result = {
