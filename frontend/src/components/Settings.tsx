@@ -4,6 +4,7 @@ import { syncPendingQueue, getPendingCount, apiPost, apiGet, syncFromServer } fr
 import { t, setLanguage, getLanguage, getAvailableLanguages } from "../i18n";
 import { useLanguage } from "../i18n";
 import { LicenseSettings } from "./LicenseSettings";
+import { DiagnosticPanel } from "./DiagnosticPanel";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -301,7 +302,22 @@ export function Settings() {
             </button>
           )}
           {importResult && (
-            <p class="text-xs text-gray-500 mt-2 text-center">{importResult}</p>
+            <div class="mt-2 text-center">
+              <p class="text-xs text-gray-500">{importResult}</p>
+              {importResult === t("settings.haImportFailed") && (
+                <a
+                  href="#diagnostic-panel"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const el = document.getElementById("diagnostic-panel");
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  class="inline-block mt-1 text-xs text-[#1F4E79] dark:text-blue-300 underline"
+                >
+                  🐛 {t("settings.reportProblem") || "Problem melden →"}
+                </a>
+              )}
+            </div>
           )}
         </div>
 
@@ -378,6 +394,9 @@ export function Settings() {
             </button>
           </div>
         </div>
+
+        {/* Support & Diagnose section */}
+        <DiagnosticPanel />
 
         <div class="p-4">
           <h3 class="text-sm font-medium text-red-600 mb-1">{t("settings.clearData")}</h3>

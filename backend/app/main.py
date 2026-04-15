@@ -7,6 +7,10 @@ import hashlib
 import hmac
 import json
 import logging
+import platform
+import re
+import time
+from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -20,12 +24,32 @@ from app.database import init_db
 from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy
 from app.services.device_sync import sync_ha_areas
 
-APP_VERSION = "2.2.5"
+APP_VERSION = "2.2.6"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
+# In-memory ring buffer for the diagnostic report.
+# Captures the last 300 log lines across all loggers so users can include
+# recent activity when reporting a problem, without needing host-level log access.
+_LOG_RING: deque[str] = deque(maxlen=300)
+
+
+class _RingBufferHandler(logging.Handler):
+    """Appends formatted log records to the ring buffer."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            _LOG_RING.append(self.format(record))
+        except Exception:
+            pass
+
+
+_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+logging.basicConfig(level=logging.INFO, format=_LOG_FORMAT)
+
+_ring_handler = _RingBufferHandler()
+_ring_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
+logging.getLogger().addHandler(_ring_handler)
+
 logger = logging.getLogger(__name__)
 
 
@@ -516,3 +540,109 @@ async def ls_deactivate(body: LicenseKeyBody):
     except Exception as e:
         logger.error("LS deactivate error: %s", e)
         return {"deactivated": False, "error": str(e)}
+
+
+# ----- Diagnostic report ------------------------------------------------------
+
+# Regex patterns to redact sensitive data from the diagnostic report.
+# Applied to both config values and log lines before the report leaves the backend.
+_REDACT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    # Passwords / tokens / secrets in "key=value", "key: value", "key":"value" form
+    (re.compile(r'(?i)(password|passwd|pwd|secret|token|api[_-]?key|auth)([\'"]?\s*[:=]\s*[\'"]?)([^\s\'",}]+)'),
+     r'\1\2[REDACTED]'),
+    # Bearer tokens
+    (re.compile(r'(?i)bearer\s+[A-Za-z0-9._\-]+'), 'Bearer [REDACTED]'),
+    # JWT-like tokens (three base64url segments separated by dots)
+    (re.compile(r'\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\b'), '[REDACTED_JWT]'),
+    # Email addresses
+    (re.compile(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'), '[REDACTED_EMAIL]'),
+    # IPv4 addresses (mask last two octets)
+    (re.compile(r'\b(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}\b'), r'\1.\2.***.***'),
+    # License keys (payload.signature, base64url with a dot separator, >=40 chars)
+    (re.compile(r'\b[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\b'), '[REDACTED_LICENSE]'),
+]
+
+
+def _sanitize_text(text: str) -> str:
+    """Strip secrets, emails, IPs, and license keys from arbitrary text."""
+    for pattern, replacement in _REDACT_PATTERNS:
+        text = pattern.sub(replacement, text)
+    return text
+
+
+class DiagnosticBody(BaseModel):
+    anonymize_devices: bool = False
+
+
+@app.post("/api/diagnostic")
+def diagnostic_report(body: DiagnosticBody):
+    """Build a sanitized markdown diagnostic report for support / bug reports.
+
+    The frontend shows this to the user in a preview before they choose to
+    send it via GitHub Issue or copy it to the clipboard. Nothing leaves the
+    backend unless the user clicks one of those buttons.
+    """
+    from app.database import get_db
+
+    lines: list[str] = []
+    lines.append(f"## Diagnose-Bericht — {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    lines.append("")
+
+    # System
+    lines.append("### System")
+    lines.append(f"Add-on Version:   {APP_VERSION}")
+    lines.append(f"Architektur:      {platform.machine()} ({platform.system()})")
+    lines.append(f"Python:           {platform.python_version()}")
+    lines.append("")
+
+    # Configuration (no credentials, no host details)
+    lines.append("### Konfiguration")
+    lines.append(f"MQTT aktiviert:   {'ja' if settings.MQTT_DISCOVERY_ENABLED else 'nein'}")
+    lines.append(f"MQTT Host:        {'konfiguriert' if settings.MQTT_HOST else 'leer'}")
+    lines.append(f"MQTT Auth:        {'ja' if settings.MQTT_USER else 'nein'}")
+    lines.append(f"HA Token:         {'gesetzt' if settings.HA_TOKEN else 'fehlt'}")
+    license_data = _read_license_file()
+    license_type = license_data.get("type", "none" if not license_data.get("key") else "hmac")
+    lines.append(f"Lizenz-Typ:       {license_type}")
+    lines.append("")
+
+    # Database
+    lines.append("### Datenbank")
+    try:
+        with get_db() as conn:
+            active = conn.execute(
+                "SELECT COUNT(*) FROM devices WHERE deleted_at IS NULL"
+            ).fetchone()[0]
+            deleted = conn.execute(
+                "SELECT COUNT(*) FROM devices WHERE deleted_at IS NOT NULL"
+            ).fetchone()[0]
+            last_change = conn.execute(
+                "SELECT MAX(updated_at) FROM devices"
+            ).fetchone()[0] or "—"
+        lines.append(f"Geräte (aktiv):   {active}")
+        lines.append(f"Geräte (gelöscht): {deleted}")
+        lines.append(f"Letzte Änderung:  {last_change}")
+    except Exception as e:
+        lines.append(f"Datenbank-Fehler: {e}")
+    lines.append("")
+
+    # Recent logs
+    log_lines = list(_LOG_RING)[-200:]
+    lines.append(f"### Letzte Logs ({len(log_lines)} Zeilen)")
+    lines.extend(log_lines)
+
+    report = "\n".join(lines)
+    report = _sanitize_text(report)
+
+    if body.anonymize_devices:
+        # Replace anything that looks like a device name in log messages with Gerät-N.
+        # Crude but effective for common patterns like "device 'Foo'" or "name=Foo".
+        counter = {"n": 0}
+
+        def repl(match: re.Match[str]) -> str:
+            counter["n"] += 1
+            return f"'Gerät-{counter['n']:03d}'"
+
+        report = re.sub(r"'[^']{2,60}'", repl, report)
+
+    return {"markdown": report}

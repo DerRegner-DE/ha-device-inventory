@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.6
+
+- **Support & Diagnose-Sektion in den Einstellungen**: Neuer Abschnitt am Ende der Einstellungen erzeugt auf Knopfdruck einen Diagnose-Bericht (Version, Architektur, MQTT-Status, DB-Zählung, die letzten ~200 Log-Zeilen eines In-Memory-Ringbuffers). Passwörter, Tokens, Bearer/JWT-Strings, IP-Adressen (letzte zwei Oktette maskiert), E-Mail-Adressen und Lizenzschlüssel werden automatisch redigiert. Optional lassen sich Gerätenamen in Logs durch „Gerät-001" usw. ersetzen. Zwei Abgabewege: „Problem auf GitHub melden" (öffnet Issue mit vorausgefülltem Body) und „In Zwischenablage kopieren" (für Forum/Mail). Vorschau vor dem Absenden. Bei fehlgeschlagenem HA-Import erscheint zusätzlich ein „Problem melden →"-Link, der direkt zur Diagnose-Sektion scrollt.
+
 ## 2.2.5
 
 - **HA-Import robuster bei großen Setups**: Frontend-Timeout für „Home Assistant importieren" von 120 s auf 300 s erhöht (Installationen mit 500+ Geräten stiegen vorher kurz vor dem Ende aus). Backend-Import-Loop fängt pro Gerät Fehler ab — ein einzelnes defektes Device killt nicht mehr den gesamten Import-Lauf. Zusätzliche Progress-Logs (alle 50 Geräte) und eine Fehlerliste in der Import-Antwort helfen bei der Diagnose.
