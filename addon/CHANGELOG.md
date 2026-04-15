@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.5
+
+- **HA-Import robuster bei großen Setups**: Frontend-Timeout für „Home Assistant importieren" von 120 s auf 300 s erhöht (Installationen mit 500+ Geräten stiegen vorher kurz vor dem Ende aus). Backend-Import-Loop fängt pro Gerät Fehler ab — ein einzelnes defektes Device killt nicht mehr den gesamten Import-Lauf. Zusätzliche Progress-Logs (alle 50 Geräte) und eine Fehlerliste in der Import-Antwort helfen bei der Diagnose.
+
 ## 2.2.4
 
 - **Lemon Squeezy Live-Store**: Pro-Lizenz wird jetzt über den Live-Store ausgeliefert (vorher Test-Modus). Neue Produkt-ID und neuer Checkout-Link. Lizenzschlüssel werden automatisch per E-Mail verschickt.

@@ -82,12 +82,12 @@ export function Settings() {
     setImporting(true);
     setImportResult(null);
     try {
-      // Use longer timeout for import (can take 60s+ for large device registries)
+      // Use longer timeout for import (can take 5 min+ for large device registries with 500+ devices)
       const res = await fetch(`${getApiBase()}/ha/import-devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-        signal: AbortSignal.timeout(120000),
+        signal: AbortSignal.timeout(300000),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();

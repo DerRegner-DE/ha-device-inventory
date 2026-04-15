@@ -20,7 +20,7 @@ from app.database import init_db
 from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy
 from app.services.device_sync import sync_ha_areas
 
-APP_VERSION = "2.2.4"
+APP_VERSION = "2.2.5"
 
 logging.basicConfig(
     level=logging.INFO,

@@ -566,111 +566,142 @@ async def import_ha_devices() -> dict[str, Any]:
     skipped_duplicates = 0
     skipped_no_name = 0
     skipped_non_physical = 0
+    errors: list[dict] = []
+
+    total = len(ha_devices)
+    logger.info("HA import starting: %d HA devices to process", total)
 
     with get_db() as conn:
-        for dev in ha_devices:
-            device_id = dev.get("id", "")
-            name = dev.get("name_by_user") or dev.get("name") or ""
+        for idx, dev in enumerate(ha_devices):
+            # Progress log every 50 devices (helps diagnose where imports hang on large setups)
+            if idx > 0 and idx % 50 == 0:
+                logger.info(
+                    "HA import progress: %d/%d processed (imported=%d, dup=%d, non_phys=%d, err=%d)",
+                    idx, total, imported, skipped_duplicates, skipped_non_physical, len(errors),
+                )
 
-            # Skip devices without a name
-            if not name or name.strip() == "":
-                skipped_no_name += 1
-                continue
+            # Per-device try/except so one broken device cannot abort the whole import
+            try:
+                device_id = dev.get("id", "")
+                name = dev.get("name_by_user") or dev.get("name") or ""
 
-            # Skip duplicates (already imported)
-            if device_id in existing_ids:
-                skipped_duplicates += 1
-                continue
+                # Skip devices without a name
+                if not name or name.strip() == "":
+                    skipped_no_name += 1
+                    continue
 
-            # Get entities for this device
-            device_entities = entity_map.get(device_id, [])
+                # Skip duplicates (already imported)
+                if device_id in existing_ids:
+                    skipped_duplicates += 1
+                    continue
 
-            # Determine integration domain from config entries
-            integration_domain = None
-            for ce_id in dev.get("config_entries", []):
-                if ce_id in config_entry_domains:
-                    integration_domain = config_entry_domains[ce_id]
-                    break
+                # Get entities for this device
+                device_entities = entity_map.get(device_id, [])
 
-            # Skip non-physical devices (automations, helpers, services, etc.)
-            if _is_non_physical_device(dev, device_entities, integration_domain):
-                skipped_non_physical += 1
-                continue
+                # Determine integration domain from config entries
+                integration_domain = None
+                for ce_id in dev.get("config_entries", []):
+                    if ce_id in config_entry_domains:
+                        integration_domain = config_entry_domains[ce_id]
+                        break
 
-            # Determine device type (3-tier: integration → manufacturer+model → entity domains)
-            type_from_integration = _guess_type_from_integration(integration_domain)
-            # Integration map returned None → use smart guesser
-            if type_from_integration is None:
-                device_type = _guess_device_type(dev, device_entities, integration_domain)
-            else:
-                device_type = type_from_integration
+                # Skip non-physical devices (automations, helpers, services, etc.)
+                if _is_non_physical_device(dev, device_entities, integration_domain):
+                    skipped_non_physical += 1
+                    continue
 
-            # Map area
-            area_id = dev.get("area_id")
-            area_name = area_lookup.get(area_id, {}).get("name") if area_id else None
-            floor_id = area_lookup.get(area_id, {}).get("floor_id") if area_id else None
+                # Determine device type (3-tier: integration → manufacturer+model → entity domains)
+                type_from_integration = _guess_type_from_integration(integration_domain)
+                # Integration map returned None → use smart guesser
+                if type_from_integration is None:
+                    device_type = _guess_device_type(dev, device_entities, integration_domain)
+                else:
+                    device_type = type_from_integration
 
-            # Map primary entity - prefer the most representative one
-            # Priority: switch > light > cover > climate > media_player > sensor > binary_sensor > rest
-            primary_entity = None
-            if device_entities:
-                domain_priority = [
-                    "switch", "light", "cover", "climate", "fan", "lock",
-                    "media_player", "camera", "vacuum", "lawn_mower",
-                    "alarm_control_panel", "remote", "valve", "humidifier",
-                    "sensor", "binary_sensor", "number", "select",
-                ]
-                sorted_entities = sorted(
-                    device_entities,
-                    key=lambda e: next(
-                        (i for i, d in enumerate(domain_priority)
-                         if e.get("entity_id", "").startswith(d + ".")),
-                        len(domain_priority),
+                # Map area
+                area_id = dev.get("area_id")
+                area_name = area_lookup.get(area_id, {}).get("name") if area_id else None
+                floor_id = area_lookup.get(area_id, {}).get("floor_id") if area_id else None
+
+                # Map primary entity - prefer the most representative one
+                # Priority: switch > light > cover > climate > media_player > sensor > binary_sensor > rest
+                primary_entity = None
+                if device_entities:
+                    domain_priority = [
+                        "switch", "light", "cover", "climate", "fan", "lock",
+                        "media_player", "camera", "vacuum", "lawn_mower",
+                        "alarm_control_panel", "remote", "valve", "humidifier",
+                        "sensor", "binary_sensor", "number", "select",
+                    ]
+                    sorted_entities = sorted(
+                        device_entities,
+                        key=lambda e: next(
+                            (i for i, d in enumerate(domain_priority)
+                             if e.get("entity_id", "").startswith(d + ".")),
+                            len(domain_priority),
+                        ),
+                    )
+                    primary_entity = sorted_entities[0]["entity_id"]
+
+                # Network type
+                network = _guess_network(integration_domain, dev)
+
+                # Safely convert fields that might be lists
+                sw_version = dev.get("sw_version")
+                if isinstance(sw_version, list):
+                    sw_version = ", ".join(str(v) for v in sw_version) if sw_version else None
+                model = dev.get("model")
+                if isinstance(model, list):
+                    model = ", ".join(str(m) for m in model) if model else None
+                manufacturer = dev.get("manufacturer")
+                if isinstance(manufacturer, list):
+                    manufacturer = ", ".join(str(m) for m in manufacturer) if manufacturer else None
+
+                # Build device record
+                uuid = uuid4().hex
+                conn.execute(
+                    """INSERT INTO devices (
+                        uuid, typ, bezeichnung, modell, hersteller,
+                        standort_area_id, standort_name, standort_floor_id,
+                        firmware, integration, netzwerk,
+                        ha_device_id, ha_entity_id,
+                        sync_version
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                    (
+                        uuid,
+                        str(device_type),
+                        str(name),
+                        str(model) if model else None,
+                        str(manufacturer) if manufacturer else None,
+                        str(area_id) if area_id else None,
+                        str(area_name) if area_name else None,
+                        str(floor_id) if floor_id else None,
+                        str(sw_version) if sw_version else None,
+                        str(integration_domain) if integration_domain else "Sonstiges",
+                        str(network) if network else None,
+                        str(device_id),
+                        str(primary_entity) if primary_entity else None,
                     ),
                 )
-                primary_entity = sorted_entities[0]["entity_id"]
+                imported += 1
+            except Exception as e:
+                # Log the bad device and keep going so a single broken record
+                # does not kill an import of 500+ devices.
+                err_name = dev.get("name_by_user") or dev.get("name") or dev.get("id") or "<unknown>"
+                logger.warning(
+                    "HA import: skipping device '%s' due to error: %s: %s",
+                    err_name, type(e).__name__, e,
+                )
+                errors.append({
+                    "device": str(err_name),
+                    "error_type": type(e).__name__,
+                    "error": str(e),
+                })
 
-            # Network type
-            network = _guess_network(integration_domain, dev)
-
-            # Safely convert fields that might be lists
-            sw_version = dev.get("sw_version")
-            if isinstance(sw_version, list):
-                sw_version = ", ".join(str(v) for v in sw_version) if sw_version else None
-            model = dev.get("model")
-            if isinstance(model, list):
-                model = ", ".join(str(m) for m in model) if model else None
-            manufacturer = dev.get("manufacturer")
-            if isinstance(manufacturer, list):
-                manufacturer = ", ".join(str(m) for m in manufacturer) if manufacturer else None
-
-            # Build device record
-            uuid = uuid4().hex
-            conn.execute(
-                """INSERT INTO devices (
-                    uuid, typ, bezeichnung, modell, hersteller,
-                    standort_area_id, standort_name, standort_floor_id,
-                    firmware, integration, netzwerk,
-                    ha_device_id, ha_entity_id,
-                    sync_version
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
-                (
-                    uuid,
-                    str(device_type),
-                    str(name),
-                    str(model) if model else None,
-                    str(manufacturer) if manufacturer else None,
-                    str(area_id) if area_id else None,
-                    str(area_name) if area_name else None,
-                    str(floor_id) if floor_id else None,
-                    str(sw_version) if sw_version else None,
-                    str(integration_domain) if integration_domain else "Sonstiges",
-                    str(network) if network else None,
-                    str(device_id),
-                    str(primary_entity) if primary_entity else None,
-                ),
-            )
-            imported += 1
+    logger.info(
+        "HA import done: %d imported, %d duplicates, %d non-physical, %d errors (of %d total)",
+        imported, skipped_duplicates, skipped_non_physical, len(errors), total,
+    )
 
     return {
         "status": "ok",
@@ -678,5 +709,7 @@ async def import_ha_devices() -> dict[str, Any]:
         "skipped_duplicates": skipped_duplicates,
         "skipped_no_name": skipped_no_name,
         "skipped_non_physical": skipped_non_physical,
-        "total_ha_devices": len(ha_devices),
+        "errors": errors[:20],  # cap at 20 entries so response stays reasonable
+        "error_count": len(errors),
+        "total_ha_devices": total,
     }
