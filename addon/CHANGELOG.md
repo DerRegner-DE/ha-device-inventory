@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.8
+
+- **Dashboard-Donuts klickbar**: Segmente in „Nach Typ", „Nach Netzwerk", „Nach Stromversorgung" und „Garantie-Status" sind jetzt anklickbar. Ein Klick filtert die Geräteliste direkt auf den gewählten Wert (z. B. „Garantie-Status: Abgelaufen" oder „Netzwerk: WLAN"). In der Geräteliste erscheint ein Filter-Chip mit X-Button zum Entfernen; der „Filter zurücksetzen"-Button räumt auch die neuen Filter. Cursor wird beim Hover über ein Segment zum Zeigefinger.
+
 ## 2.2.7
 
 - **Fix: Lemon-Squeezy-Aktivierung meldete fälschlich „invalid license key"**: Der Backend-Proxy hat `store_id` und `product_id` im falschen Objekt der LS-API-Antwort gesucht (`license_key` statt `meta`). Die Felder waren dort nicht vorhanden (→ 0), der anschließende Store-/Product-Check schlug daher immer fehl und das Add-on zeigte „invalid license key". Auf LS-Seite war die Aktivierung aber bereits erfolgt und hat einen Slot belegt — Nutzer liefen nach wenigen Versuchen ins Activation-Limit. Fix: korrekt aus `meta` lesen.

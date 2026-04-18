@@ -164,10 +164,11 @@ export function Dashboard() {
     .slice(0, 5);
 
   // --- Chart data ---
-  const typeChartData = mapToChartData(byType, (k) => t(getDeviceTypeLabel(k)));
-  const networkChartData = mapToChartData(byNetwork);
-  const powerChartData = mapToChartData(byPower);
+  const typeChart = mapToChartData(byType, (k) => t(getDeviceTypeLabel(k)));
+  const networkChart = mapToChartData(byNetwork);
+  const powerChart = mapToChartData(byPower);
 
+  const warrantyKeys = ["ok", "warning", "expired", "none"] as const;
   const warrantyChartData = {
     labels: [
       t("dashboard.warrantyOk"),
@@ -188,6 +189,17 @@ export function Dashboard() {
   };
 
   const hasWarrantyData = warrantyOk + warrantyWarning + warrantyExpired + warrantyNone > 0;
+
+  // Clear all chart-driven filters and navigate to /devices with one filter set.
+  const applyFilterAndGo = (key: string, value: string) => {
+    sessionStorage.removeItem("gv_filter_type");
+    sessionStorage.removeItem("gv_filter_netzwerk");
+    sessionStorage.removeItem("gv_filter_power");
+    sessionStorage.removeItem("gv_filter_warranty");
+    sessionStorage.removeItem("gv_filter_search");
+    if (value) sessionStorage.setItem(key, value);
+    navigate("/devices");
+  };
 
   return (
     <div class="p-4 space-y-6">
@@ -234,16 +246,32 @@ export function Dashboard() {
       {total > 0 && (
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-4xl mx-auto">
           {typeCounts.length > 0 && (
-            <DonutChart title={t("dashboard.byType")} data={typeChartData} />
+            <DonutChart
+              title={t("dashboard.byType")}
+              data={typeChart.data}
+              onSegmentClick={(i) => applyFilterAndGo("gv_filter_type", typeChart.keys[i])}
+            />
           )}
           {byNetwork.size > 0 && (
-            <DonutChart title={t("dashboard.byNetwork")} data={networkChartData} />
+            <DonutChart
+              title={t("dashboard.byNetwork")}
+              data={networkChart.data}
+              onSegmentClick={(i) => applyFilterAndGo("gv_filter_netzwerk", networkChart.keys[i])}
+            />
           )}
           {byPower.size > 0 && (
-            <DonutChart title={t("dashboard.byPower")} data={powerChartData} />
+            <DonutChart
+              title={t("dashboard.byPower")}
+              data={powerChart.data}
+              onSegmentClick={(i) => applyFilterAndGo("gv_filter_power", powerChart.keys[i])}
+            />
           )}
           {hasWarrantyData && (
-            <DonutChart title={t("dashboard.warrantyStatus")} data={warrantyChartData} />
+            <DonutChart
+              title={t("dashboard.warrantyStatus")}
+              data={warrantyChartData}
+              onSegmentClick={(i) => applyFilterAndGo("gv_filter_warranty", warrantyKeys[i])}
+            />
           )}
         </div>
       )}
@@ -291,18 +319,24 @@ export function Dashboard() {
 }
 
 // --- Helper: Convert Map to Chart.js data ---
+// Returns both the chart data and the raw keys so callers can map a clicked
+// segment index back to its underlying value (typeId, netzwerk, etc.).
 function mapToChartData(
   map: Map<string, number>,
   labelFn?: (key: string) => string,
 ) {
   const sorted = [...map.entries()].sort((a, b) => b[1] - a[1]);
+  const keys = sorted.map(([k]) => k);
   return {
-    labels: sorted.map(([k]) => labelFn ? labelFn(k) : k),
-    datasets: [{
-      data: sorted.map(([, v]) => v),
-      backgroundColor: sorted.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-      borderWidth: 0,
-    }],
+    keys,
+    data: {
+      labels: sorted.map(([k]) => labelFn ? labelFn(k) : k),
+      datasets: [{
+        data: sorted.map(([, v]) => v),
+        backgroundColor: sorted.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+        borderWidth: 0,
+      }],
+    },
   };
 }
 
@@ -336,14 +370,28 @@ const DONUT_OPTIONS = {
 function DonutChart({
   title,
   data,
+  onSegmentClick,
 }: {
   title: string;
   data: any;
+  onSegmentClick?: (index: number) => void;
 }) {
+  const options = onSegmentClick
+    ? {
+        ...DONUT_OPTIONS,
+        onClick: (_evt: any, elements: any[]) => {
+          if (elements.length > 0) onSegmentClick(elements[0].index);
+        },
+        onHover: (evt: any, elements: any[]) => {
+          const target = evt?.native?.target;
+          if (target) target.style.cursor = elements.length > 0 ? "pointer" : "default";
+        },
+      }
+    : DONUT_OPTIONS;
   return (
     <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3">
       <h4 class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2 text-center">{title}</h4>
-      <Doughnut data={data} options={DONUT_OPTIONS} />
+      <Doughnut data={data} options={options} />
     </div>
   );
 }

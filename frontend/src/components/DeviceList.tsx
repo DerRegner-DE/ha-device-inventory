@@ -1,5 +1,5 @@
 import { useState, useCallback } from "preact/hooks";
-import { useDevices } from "../hooks/useDevices";
+import { useDevices, type WarrantyStatus } from "../hooks/useDevices";
 import { DeviceCard } from "./DeviceCard";
 import { FilterBar } from "./FilterBar";
 import { t } from "../i18n";
@@ -10,13 +10,26 @@ import { apiPost } from "../api/client";
 import { db } from "../db/schema";
 import { DEVICE_TYPES, INTEGRATIONS } from "../utils/constants";
 
+const WARRANTY_LABEL_KEY: Record<string, string> = {
+  ok: "dashboard.warrantyOk",
+  warning: "dashboard.warrantyWarning",
+  expired: "dashboard.warrantyExpired",
+  none: "dashboard.warrantyNone",
+};
+
 export function DeviceList() {
   useLanguage();
   const license = useLicense();
   const [search, _setSearch] = useState(() => sessionStorage.getItem("gv_filter_search") || "");
   const [activeType, _setActiveType] = useState(() => sessionStorage.getItem("gv_filter_type") || "");
+  const [activeNetwork, _setActiveNetwork] = useState(() => sessionStorage.getItem("gv_filter_netzwerk") || "");
+  const [activePower, _setActivePower] = useState(() => sessionStorage.getItem("gv_filter_power") || "");
+  const [activeWarranty, _setActiveWarranty] = useState(() => sessionStorage.getItem("gv_filter_warranty") || "");
   const setSearch = useCallback((v: string) => { sessionStorage.setItem("gv_filter_search", v); _setSearch(v); }, []);
   const setActiveType = useCallback((v: string) => { sessionStorage.setItem("gv_filter_type", v); _setActiveType(v); }, []);
+  const clearNetwork = useCallback(() => { sessionStorage.removeItem("gv_filter_netzwerk"); _setActiveNetwork(""); }, []);
+  const clearPower = useCallback(() => { sessionStorage.removeItem("gv_filter_power"); _setActivePower(""); }, []);
+  const clearWarranty = useCallback(() => { sessionStorage.removeItem("gv_filter_warranty"); _setActiveWarranty(""); }, []);
   const deviceLimit = getDeviceLimit();
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -26,7 +39,18 @@ export function DeviceList() {
 
   const { devices, loading } = useDevices({
     typ: activeType || undefined,
+    netzwerk: activeNetwork || undefined,
+    stromversorgung: activePower || undefined,
+    warranty: (activeWarranty || undefined) as WarrantyStatus | undefined,
     search: search || undefined,
+  });
+
+  const extraChips: { label: string; onClear: () => void }[] = [];
+  if (activeNetwork) extraChips.push({ label: `${t("dashboard.byNetwork")}: ${activeNetwork}`, onClear: clearNetwork });
+  if (activePower) extraChips.push({ label: `${t("dashboard.byPower")}: ${activePower}`, onClear: clearPower });
+  if (activeWarranty) extraChips.push({
+    label: `${t("dashboard.warrantyStatus")}: ${t(WARRANTY_LABEL_KEY[activeWarranty] ?? activeWarranty)}`,
+    onClear: clearWarranty,
   });
 
   const toggleSelect = (uuid: string) => {
@@ -98,6 +122,23 @@ export function DeviceList() {
         onTypeChange={setActiveType}
       />
 
+      {extraChips.length > 0 && (
+        <div class="px-4 -mt-2 mb-2 flex flex-wrap gap-2">
+          {extraChips.map((chip) => (
+            <button
+              key={chip.label}
+              onClick={chip.onClear}
+              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1F4E79] text-white text-xs font-medium hover:bg-[#1a4268]"
+            >
+              <span>{chip.label}</span>
+              <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Bulk mode header */}
       {devices.length > 0 && (
         <div class="px-4 flex items-center justify-between mb-2">
@@ -150,11 +191,14 @@ export function DeviceList() {
               />
             </svg>
             <p class="text-sm">{t("devices.noDevicesFound")}</p>
-            {(search || activeType) && (
+            {(search || activeType || activeNetwork || activePower || activeWarranty) && (
               <button
                 onClick={() => {
                   setSearch("");
                   setActiveType("");
+                  clearNetwork();
+                  clearPower();
+                  clearWarranty();
                 }}
                 class="mt-2 text-[#1F4E79] text-sm font-medium"
               >
