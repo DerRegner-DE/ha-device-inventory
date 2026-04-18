@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.3.0
+
+- **Donut-Filter auf der Geräteliste (Variante B)**: Die vier Übersichts-Donuts (Nach Typ, Nach Netzwerk, Nach Stromversorgung, Garantie-Status) erscheinen jetzt auch oben auf der Geräteliste als kompakte, horizontal scrollbare Mini-Charts. Segment-Klick wechselt den Filter direkt — kein Zurückspringen zum Dashboard mehr. Filter-Chip mit X-Button zum Entfernen bleibt, der „Filter zurücksetzen"-Button räumt alle neuen Filter.
+- **Panel-Pfad Warnung**: Wenn die App über die HA-Sidebar (Panel-Pfad `/app/<slug>` oder `/<slug>`) geöffnet wird, erscheint oben ein gelber Warnbanner — Schreibzugriffe scheitern dort mit HTTP 405, weil HA-Panels nur GET erlauben. Der Banner verlinkt direkt auf die funktionierende Ingress-URL (`/hassio/addon/geraeteverwaltung/ingress`).
+- **Inline-Bestätigung statt confirm()**: Bulk-Löschen nutzt jetzt eine Zwei-Tap-Bestätigung (Button wird rot, Text „Nochmal tippen zum Löschen"). `window.confirm()` wurde im HA-Ingress-iFrame blockiert — jetzt funktioniert Löschen auch dort.
+- **Health-Endpoint Version dynamisch**: `APP_VERSION` wird aus der `ADDON_VERSION` Build-Arg (CI) bzw. aus `addon/config.yaml` gelesen, statt hartkodiert. Health-Endpoint meldet jetzt immer die tatsächliche Add-on-Version.
+- **Bulk-Action-Buttons vertikal zentriert**: Die Buttons in der Bulk-Bar richten sich jetzt mit `items-center` am Container aus — keine gekippte Ausrichtung mehr.
+- **CI-Build mit piwheels**: `pip install` nutzt `https://www.piwheels.org/simple` als zusätzlichen Index. armv7/aarch64 bekommen damit vorgebaute Wheels für `aiohttp`/`Pillow`, der QEMU-Compile-Schritt entfällt (erwartete Build-Zeit-Reduktion ~40-50%). Fallback auf Source-Compile bleibt erhalten, falls ein Wheel fehlt.
+
 ## 2.2.8
 
 - **Dashboard-Donuts klickbar**: Segmente in „Nach Typ", „Nach Netzwerk", „Nach Stromversorgung" und „Garantie-Status" sind jetzt anklickbar. Ein Klick filtert die Geräteliste direkt auf den gewählten Wert (z. B. „Garantie-Status: Abgelaufen" oder „Netzwerk: WLAN"). In der Geräteliste erscheint ein Filter-Chip mit X-Button zum Entfernen; der „Filter zurücksetzen"-Button räumt auch die neuen Filter. Cursor wird beim Hover über ein Segment zum Zeigefinger.

@@ -34,7 +34,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 COPY backend/requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+# piwheels provides prebuilt wheels for armv7/aarch64 (Raspberry Pi), which
+# lets us skip QEMU-emulated compilation of aiohttp/Pillow on those archs.
+# If a wheel is missing, pip transparently falls back to the regular PyPI
+# source compile path using the build tools installed above.
+RUN pip install --no-cache-dir \
+        --extra-index-url https://www.piwheels.org/simple \
+        -r /tmp/requirements.txt \
     && rm /tmp/requirements.txt
 RUN apt-get purge -y --auto-remove \
         build-essential \
@@ -48,6 +54,14 @@ COPY frontend/dist/ /app/frontend/
 
 # Copy backend
 COPY backend/ /app/backend/
+
+# Add-on config is copied in as a runtime fallback for version detection
+# (the primary source is the ADDON_VERSION build arg below).
+COPY addon/config.yaml /app/addon_config.yaml
+
+# Version baked in at build time from the release tag.
+ARG ADDON_VERSION=dev
+ENV ADDON_VERSION=${ADDON_VERSION}
 
 # Copy nginx config (Debian path). Remove Debian's default site to avoid
 # conflict with our server block listening on 3001.

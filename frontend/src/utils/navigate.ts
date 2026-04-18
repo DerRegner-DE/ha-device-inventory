@@ -13,6 +13,7 @@
 
 let basePath = "";
 let apiBasePath = "";
+let onPanelPath = false;
 
 /** Call once before first render to detect the Ingress base path. */
 export function initBasePath(): void {
@@ -32,11 +33,21 @@ export function initBasePath(): void {
   if (ingressMatch) {
     apiBasePath = ingressMatch[1];
   } else {
-    // We're on a panel path - try to discover the Ingress path from HA
-    // by probing the standard Ingress URL pattern via the X-Ingress-Path header.
-    // Fallback: use panel path (GET works, POST may fail on some HA versions).
+    // We're on a panel path - POST/PUT/DELETE return 405 here, so we
+    // surface a banner that tells the user how to reach the Ingress path.
     apiBasePath = basePath;
+    onPanelPath = basePath !== "" && !ingressMatch;
   }
+}
+
+/**
+ * True when the page is being served via a HA Panel path (not Ingress).
+ * Panel paths only allow GET, so writes (devices, photos, settings) will fail
+ * with 405. Callers use this to render a banner pointing users at the
+ * Ingress URL (usually "Settings → Add-ons → Geräteverwaltung → Open Web UI").
+ */
+export function isOnPanelPath(): boolean {
+  return onPanelPath;
 }
 
 /** Return the detected Ingress base path (empty string when running standalone). */

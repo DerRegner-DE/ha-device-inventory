@@ -1,13 +1,15 @@
-import { useState, useCallback } from "preact/hooks";
+import { useState, useCallback, useEffect, useRef } from "preact/hooks";
+import { liveQuery } from "dexie";
 import { useDevices, type WarrantyStatus } from "../hooks/useDevices";
 import { DeviceCard } from "./DeviceCard";
 import { FilterBar } from "./FilterBar";
+import { DonutFilters, type DonutFilterKey } from "./DonutFilters";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
 import { getDeviceLimit } from "../license";
 import { useLicense } from "../license/useLicense";
 import { apiPost } from "../api/client";
-import { db } from "../db/schema";
+import { db, type Device } from "../db/schema";
 import { DEVICE_TYPES, INTEGRATIONS } from "../utils/constants";
 
 const WARRANTY_LABEL_KEY: Record<string, string> = {
@@ -36,6 +38,19 @@ export function DeviceList() {
   const [bulkAction, setBulkAction] = useState<string | null>(null);
   const [bulkValue, setBulkValue] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const confirmTimer = useRef<number | null>(null);
+
+  // Unfiltered device list — drives the donut aggregations so the overview
+  // stays stable regardless of the current filter selection.
+  const [allDevices, setAllDevices] = useState<Device[]>([]);
+  useEffect(() => {
+    const sub = liveQuery(() => db.devices.toArray()).subscribe({
+      next: setAllDevices,
+      error: () => {},
+    });
+    return () => sub.unsubscribe();
+  }, []);
 
   const { devices, loading } = useDevices({
     typ: activeType || undefined,
@@ -44,6 +59,24 @@ export function DeviceList() {
     warranty: (activeWarranty || undefined) as WarrantyStatus | undefined,
     search: search || undefined,
   });
+
+  // Donut segment click: replaces whatever was active, stays on the list view.
+  const applyDonutFilter = useCallback((key: DonutFilterKey, value: string) => {
+    sessionStorage.removeItem("gv_filter_type");
+    sessionStorage.removeItem("gv_filter_netzwerk");
+    sessionStorage.removeItem("gv_filter_power");
+    sessionStorage.removeItem("gv_filter_warranty");
+    _setActiveType("");
+    _setActiveNetwork("");
+    _setActivePower("");
+    _setActiveWarranty("");
+    if (!value) return;
+    sessionStorage.setItem(key, value);
+    if (key === "gv_filter_type") _setActiveType(value);
+    else if (key === "gv_filter_netzwerk") _setActiveNetwork(value);
+    else if (key === "gv_filter_power") _setActivePower(value);
+    else if (key === "gv_filter_warranty") _setActiveWarranty(value);
+  }, []);
 
   const extraChips: { label: string; onClear: () => void }[] = [];
   if (activeNetwork) extraChips.push({ label: `${t("dashboard.byNetwork")}: ${activeNetwork}`, onClear: clearNetwork });
@@ -75,6 +108,8 @@ export function DeviceList() {
     setSelected(new Set());
     setBulkAction(null);
     setBulkValue("");
+    setConfirmDelete(false);
+    if (confirmTimer.current) { clearTimeout(confirmTimer.current); confirmTimer.current = null; }
   };
 
   const handleBulkUpdate = async (field: string, value: string) => {
@@ -85,7 +120,6 @@ export function DeviceList() {
         uuids: [...selected],
         updates: { [field]: value },
       });
-      // Update local IndexedDB
       await db.devices.where("uuid").anyOf([...selected]).modify((d: any) => { d[field] = value; });
       exitSelectMode();
     } catch {
@@ -94,17 +128,22 @@ export function DeviceList() {
     setBulkBusy(false);
   };
 
-  const handleBulkDelete = async () => {
+  // Inline two-tap delete confirmation — works inside HA Ingress, where
+  // window.confirm() is blocked by the iframe sandbox.
+  const handleBulkDeleteClick = async () => {
     if (selected.size === 0) return;
-    const mqttActive = localStorage.getItem("gv_mqtt_enabled") === "true";
-    const msg = mqttActive
-      ? t("bulk.deleteConfirmMqtt", { count: selected.size })
-      : t("bulk.deleteConfirm", { count: selected.size });
-    if (!confirm(msg)) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      confirmTimer.current = window.setTimeout(() => {
+        setConfirmDelete(false);
+        confirmTimer.current = null;
+      }, 4000);
+      return;
+    }
+    if (confirmTimer.current) { clearTimeout(confirmTimer.current); confirmTimer.current = null; }
     setBulkBusy(true);
     try {
       await apiPost("/devices/bulk/delete", { uuids: [...selected] });
-      // Remove from local IndexedDB
       await db.devices.where("uuid").anyOf([...selected]).delete();
       exitSelectMode();
     } catch {
@@ -122,8 +161,14 @@ export function DeviceList() {
         onTypeChange={setActiveType}
       />
 
+      {allDevices.length > 0 && (
+        <div class="px-4 -mt-2 mb-3">
+          <DonutFilters devices={allDevices} onSelect={applyDonutFilter} compact />
+        </div>
+      )}
+
       {extraChips.length > 0 && (
-        <div class="px-4 -mt-2 mb-2 flex flex-wrap gap-2">
+        <div class="px-4 mb-2 flex flex-wrap gap-2">
           {extraChips.map((chip) => (
             <button
               key={chip.label}
@@ -139,7 +184,6 @@ export function DeviceList() {
         </div>
       )}
 
-      {/* Bulk mode header */}
       {devices.length > 0 && (
         <div class="px-4 flex items-center justify-between mb-2">
           <p class="text-xs text-gray-400 px-1">
@@ -160,7 +204,6 @@ export function DeviceList() {
         </div>
       )}
 
-      {/* Select all */}
       {selectMode && devices.length > 0 && (
         <div class="px-5 mb-2">
           <button onClick={selectAll} class="text-xs text-[#1F4E79] font-medium">
@@ -242,7 +285,7 @@ export function DeviceList() {
           style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);"
         >
           {!bulkAction ? (
-            <div class="flex gap-2 justify-center">
+            <div class="flex gap-2 justify-center items-center">
               <button
                 onClick={() => setBulkAction("typ")}
                 class="px-4 py-2 rounded-lg bg-[#1F4E79] text-white text-xs font-medium hover:bg-[#1a4268] cursor-pointer"
@@ -256,11 +299,15 @@ export function DeviceList() {
                 {t("bulk.changeIntegration")}
               </button>
               <button
-                onClick={handleBulkDelete}
+                onClick={handleBulkDeleteClick}
                 disabled={bulkBusy}
-                class="px-4 py-2 rounded-lg bg-red-500 text-white text-xs font-medium hover:bg-red-600 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                class={`px-4 py-2 rounded-lg text-white text-xs font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                  confirmDelete
+                    ? "bg-red-700 hover:bg-red-800 ring-2 ring-red-300"
+                    : "bg-red-500 hover:bg-red-600"
+                }`}
               >
-                {t("bulk.delete")}
+                {confirmDelete ? t("bulk.deleteConfirmInline") : t("bulk.delete")}
               </button>
             </div>
           ) : (

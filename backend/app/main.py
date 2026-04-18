@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import json
 import logging
+import os
 import platform
 import re
 import time
@@ -24,7 +25,24 @@ from app.database import init_db
 from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy
 from app.services.device_sync import sync_ha_areas
 
-APP_VERSION = "2.2.6"
+
+def _detect_version() -> str:
+    """Resolve add-on version from env (set by Docker build arg), falling back to
+    parsing addon/config.yaml when running locally without the build arg."""
+    env = os.environ.get("ADDON_VERSION", "").strip()
+    if env and env != "dev":
+        return env
+    for candidate in (Path("/app/addon_config.yaml"), Path(__file__).parent.parent.parent / "addon" / "config.yaml"):
+        try:
+            for line in candidate.read_text(encoding="utf-8").splitlines():
+                if line.startswith("version:"):
+                    return line.split(":", 1)[1].strip().strip('"').strip("'")
+        except OSError:
+            continue
+    return env or "dev"
+
+
+APP_VERSION = _detect_version()
 
 # In-memory ring buffer for the diagnostic report.
 # Captures the last 300 log lines across all loggers so users can include

@@ -97,6 +97,8 @@ jobs:
           file: addon/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
+          build-args: |
+            ADDON_VERSION=dev
           tags: |
             ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:dev
           cache-from: type=gha,scope=${{ matrix.arch }}
@@ -155,6 +157,8 @@ jobs:
           file: addon/Dockerfile
           platforms: ${{ matrix.platform }}
           push: true
+          build-args: |
+            ADDON_VERSION=${{ steps.meta.outputs.version_bare }}
           tags: |
             ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:${{ steps.meta.outputs.version }}
             ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:${{ steps.meta.outputs.version_bare }}
