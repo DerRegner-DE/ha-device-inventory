@@ -92,22 +92,50 @@ export function Settings() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const result = await res.json();
-      if (result) {
+      if (!result) {
+        setImportResult(t("settings.haImportFailed"));
+      } else if (result.status === "error") {
+        // Backend reported structured error (e.g. HA registry unreachable)
+        setImportResult(
+          `${t("settings.haImportFailed")} ${result.message ? `— ${result.message}` : ""}`.trim()
+        );
+      } else {
         // Pull imported devices into local IndexedDB
         await syncFromServer();
-        let resultText = t("settings.haImportResult", {
-            imported: result.imported || 0,
-            duplicates: result.skipped_duplicates || 0,
-            total: result.total_ha_devices || 0,
+        const imported = result.imported || 0;
+        const duplicates = result.skipped_duplicates || 0;
+        const nonPhysical = result.skipped_non_physical || 0;
+        const total = result.total_ha_devices || 0;
+
+        let resultText: string;
+        if (total === 0) {
+          // HA returned zero devices — likely token/connection issue.
+          resultText = t("settings.haImportNoDevices")
+            || "No HA devices found — check HA connection & token";
+        } else if (imported === 0 && duplicates === total) {
+          // Everything already imported on a previous run.
+          resultText = t("settings.haImportAllDuplicates", { total })
+            || `All ${total} HA devices already imported (re-import uses device id, nothing new).`;
+        } else if (imported === 0 && nonPhysical === total) {
+          // Everything was filtered out.
+          resultText = t("settings.haImportAllNonPhysical", { total })
+            || `All ${total} HA entries were non-physical (automations, helpers) and skipped.`;
+        } else {
+          resultText = t("settings.haImportResult", {
+            imported,
+            duplicates,
+            total,
           });
-        if (result.skipped_non_physical > 0) {
-          resultText += t("settings.haImportSkippedNonPhysical", {
-            nonPhysical: result.skipped_non_physical,
-          });
+          if (nonPhysical > 0) {
+            resultText += t("settings.haImportSkippedNonPhysical", {
+              nonPhysical,
+            });
+          }
+        }
+        if (result.error_count > 0) {
+          resultText += ` (${result.error_count} errors — see logs)`;
         }
         setImportResult(resultText);
-      } else {
-        setImportResult(t("settings.haImportFailed"));
       }
     } catch {
       setImportResult(t("settings.haImportFailed"));
@@ -143,7 +171,13 @@ export function Settings() {
     setMqttResult(null);
     const result = await apiPost<any>("/mqtt/test", {});
     if (result && result.ok) {
-      setMqttResult(`OK: ${result.broker}`);
+      setMqttResult(t("settings.mqttTestPublishOk", { broker: result.broker }));
+    } else if (result && result.connect_ok && !result.publish_ok) {
+      // Connect works but publish blocked — most likely broker ACL.
+      const reason = `${result.error_type || ""} ${result.error || ""}`.trim();
+      setMqttResult(
+        `${t("settings.mqttTestConnectOnly", { broker: result.broker })} ${reason ? `— ${reason}` : ""}`.trim()
+      );
     } else if (result) {
       setMqttResult(`FAIL: ${result.broker} — ${result.error_type || ""} ${result.error || ""}`.trim());
     } else {

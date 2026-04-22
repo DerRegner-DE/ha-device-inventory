@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.1
+
+- **MQTT-Test prüft jetzt auch Publish-Berechtigung**: Der Test-Button hat bisher nur TCP-Connect + Auth getestet — grünes „OK" obwohl der eigentliche Publish-Sync nichts veröffentlichen konnte (typischer Fall: Broker-ACL erlaubt Connect aber kein Publish auf `homeassistant/#`). Der Test sendet jetzt zusätzlich eine leere retained-Nachricht auf `homeassistant/sensor/geraeteverwaltung/_probe/config`. Drei Ergebnisse: „OK: Verbindung und Publish", „Teilweise OK: Verbindung OK, aber Publish fehlgeschlagen (ACL?)", oder Fehler mit Typ und Meldung.
+- **HA-Import gibt bei 0 Geräten eine hilfreiche Meldung**: Bisher zeigte das UI nur „0 importiert, 0 Duplikate übersprungen" ohne Grund. Jetzt drei neue Spezialmeldungen: „Keine HA-Geräte gefunden — Verbindung/Token prüfen" (Backend meldet `status: error` oder 0 HA-Geräte), „Alle {total} HA-Geräte sind bereits importiert" (alle Duplikate), „Alle {total} HA-Einträge waren nicht-physisch" (alles gefiltert). Fehler aus der per-Device-Schleife werden jetzt als „(N errors — see logs)"-Suffix angezeigt.
+- **i18n-Audit: 38 fehlende Übersetzungen nachgezogen**: `settings.mqttTestButton` und `settings.mqttToggleFailed` fehlten in allen Sprachdateien (erschienen im UI als roher Key). Die komplette Support- & Diagnose-Sektion (v2.2.6) war nur in DE+EN, fehlte komplett in ES/FR/RU — dort erschienen ~25 Keys als Rohtext. Alle fünf Sprachdateien sind jetzt auf 307 Keys synchronisiert.
+
 ## 2.3.0
 
 - **Donut-Filter auf der Geräteliste (Variante B)**: Die vier Übersichts-Donuts (Nach Typ, Nach Netzwerk, Nach Stromversorgung, Garantie-Status) erscheinen jetzt auch oben auf der Geräteliste als kompakte, horizontal scrollbare Mini-Charts. Segment-Klick wechselt den Filter direkt — kein Zurückspringen zum Dashboard mehr. Filter-Chip mit X-Button zum Entfernen bleibt, der „Filter zurücksetzen"-Button räumt alle neuen Filter.
