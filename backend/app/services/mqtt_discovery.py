@@ -40,28 +40,64 @@ def _broker_descr() -> str:
 
 
 async def test_connection(timeout: float = 5.0) -> dict:
-    """Attempt an MQTT connect and return diagnostic info.
+    """Attempt an MQTT connect AND a publish to the discovery prefix.
 
-    Returns a dict {ok: bool, broker: str, error?: str, error_type?: str}.
+    Two-step diagnostic:
+      1. connect (TCP + auth) — reveals wrong host/port/credentials
+      2. publish a no-op retained message to homeassistant/sensor/geraeteverwaltung/_probe/config
+         — reveals broker ACLs that allow connect but block publishing to the
+         discovery prefix (the exact failure mode that makes the "Test" button
+         show OK while the actual sync publishes nothing).
+
+    Returns a dict:
+      {ok: bool, broker: str, connect_ok: bool, publish_ok: bool,
+       error?: str, error_type?: str}
     """
     descr = _broker_descr()
+    probe_topic = f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/_probe/config"
+
     try:
-        async def _connect():
-            async with aiomqtt.Client(**_connect_kwargs()):
+        async def _connect_and_publish():
+            async with aiomqtt.Client(**_connect_kwargs()) as client:
+                # Empty retained payload = noop delete, safe to send
+                # and also validates publish ACL on the discovery prefix.
+                # QoS 1 is required so we get a PUBACK back — with MQTT v5
+                # Mosquitto returns reason code "Not Authorized" (0x87) if an
+                # ACL rejects the publish, which paho surfaces as an exception.
+                # QoS 0 would silently succeed even when the broker drops it.
+                await client.publish(probe_topic, b"", qos=1, retain=True)
                 return True
 
-        await asyncio.wait_for(_connect(), timeout=timeout)
-        logger.info("MQTT connect OK: %s", descr)
-        return {"ok": True, "broker": descr}
+        await asyncio.wait_for(_connect_and_publish(), timeout=timeout)
+        logger.info("MQTT connect+publish OK: %s", descr)
+        return {"ok": True, "broker": descr, "connect_ok": True, "publish_ok": True}
     except asyncio.TimeoutError:
         msg = f"timeout after {timeout:.0f}s"
-        logger.warning("MQTT connect FAILED (%s): %s", descr, msg)
-        return {"ok": False, "broker": descr, "error": msg, "error_type": "TimeoutError"}
+        logger.warning("MQTT test FAILED (%s): %s", descr, msg)
+        return {"ok": False, "broker": descr, "connect_ok": False, "publish_ok": False,
+                "error": msg, "error_type": "TimeoutError"}
     except Exception as e:
         err_type = type(e).__name__
         msg = str(e) or repr(e)
+        # Distinguish connect vs publish failure by retrying connect alone.
+        connect_ok = False
+        try:
+            async def _connect_only():
+                async with aiomqtt.Client(**_connect_kwargs()):
+                    return True
+            await asyncio.wait_for(_connect_only(), timeout=timeout)
+            connect_ok = True
+        except Exception:
+            pass
+
+        if connect_ok:
+            logger.warning("MQTT publish FAILED (%s): %s: %s (connect itself OK — likely ACL)",
+                           descr, err_type, msg)
+            return {"ok": False, "broker": descr, "connect_ok": True, "publish_ok": False,
+                    "error": msg, "error_type": err_type}
         logger.warning("MQTT connect FAILED (%s): %s: %s", descr, err_type, msg)
-        return {"ok": False, "broker": descr, "error": msg, "error_type": err_type}
+        return {"ok": False, "broker": descr, "connect_ok": False, "publish_ok": False,
+                "error": msg, "error_type": err_type}
 
 
 def _slugify(text: str) -> str:

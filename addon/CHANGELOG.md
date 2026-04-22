@@ -1,5 +1,59 @@
 # Changelog
 
+## 2.4.0
+
+Großes Release, ausgelöst durch Community-Feedback aus dem HA-Forum zu v2.3.0. Bündelt MQTT-Test-Fix, HA-Import-Meldungen, Kategorie-Rewrite, Bulk-Re-Kategorisierung, Custom Categories, Auto-Match-Toggle und i18n-Audit in einer Release.
+
+### Kategorie-Klassifikation komplett überarbeitet (device_class-first)
+
+- Die bisherige Logik hat Gerätenamen per Substring-Match gegen Patterns wie `" tv"` oder `"steckdose"` geprüft und reihenweise falsch klassifiziert — Rauchmelder mit „TV" im Namen wurden zum Smart TV, Tuya-Regensensoren zur Steckdose, Fingerbots zur Steckdose, Samsung-Backöfen zum Smartphone.
+- Der Rewrite arbeitet jetzt in dieser Priorität:
+  1. HA `device_class` auf Entities (smoke→Sensor, outlet→Steckdose, tv→Smart TV, shutter→Rollladen, …)
+  2. Entity-Domain (light, climate, lock, camera, vacuum, lawn_mower, …)
+  3. Hersteller+Modell-Pattern mit Wort-Grenzen
+  4. Name nur mit Wort-Grenzen (`\btv\b` matcht „Smart TV", nicht „Rauchmelder TV")
+- Tuya-Default „Steckdose" entfernt — Tuya umfasst Plugs, Sensoren, Fingerbots, Vorhänge, Licht.
+- Samsung-/Xiaomi-Default „Smartphone" entfernt — beide bauen auch Haushaltsgeräte, Sensoren, Kameras.
+- 16 Unit-Tests in `backend/tests/test_device_type_classification.py` decken die gemeldeten Fehlklassifikationen als Regressionstests ab.
+
+### „Kategorien neu zuordnen"-Button
+
+Neuer `POST /api/ha/recategorize` + Settings-Button wendet die aktuelle Klassifikations-Logik auf alle bereits importierten HA-Geräte an. Essenziell nach dem Update — Bestandsinstallationen müssen Fehl-Zuordnungen nicht manuell korrigieren.
+
+### Custom Categories
+
+- Neue DB-Tabelle `device_categories` mit 32 eingebauten Kategorien plus beliebig vielen eigenen.
+- CRUD-Endpoint `/api/categories`: GET/POST/PUT/DELETE.
+- Neuer Abschnitt „Kategorien verwalten" in den Einstellungen zum Anlegen/Umbenennen/Löschen eigener Kategorien. Eingebaute Kategorien sind sichtbar aber nicht änderbar, damit die i18n-Keys erhalten bleiben.
+- Löschen einer eigenen Kategorie mit betroffenen Geräten: alle Geräte werden automatisch auf „Sonstiges" verschoben (oder auf eine explizit angegebene Ziel-Kategorie). Zwei-Tap-Bestätigung, Meldung zeigt wie viele Geräte umgezogen wurden.
+- DeviceForm und Filter nutzen die dynamische Kategorien-Liste; Fallback auf statische Liste falls Backend noch nicht geseeded ist.
+
+### Auto-Match-Toggle
+
+- Neuer Toggle „Auto-Kategorisierung beim Import" in den Einstellungen.
+- Wenn deaktiviert, bekommen alle neuen Geräte beim HA-Import die Kategorie „Sonstiges" und werden manuell zugeordnet — für User die ihre Kategorisierung komplett selbst steuern wollen.
+- Persistiert in `app_settings` (neue generische Key/Value-Tabelle für künftige Feature-Flags).
+- Kriterien der Auto-Klassifizierung sind inline in den Einstellungen dokumentiert (aufklappbare Liste mit der Priorisierungs-Reihenfolge) — beantwortet die wiederholte Community-Frage „nach welchen Kriterien wird zugeordnet?".
+
+### MQTT-Test prüft jetzt Publish-Berechtigung
+
+- Der Test-Button hat bisher nur TCP-Connect + Auth getestet — grünes „OK" obwohl der eigentliche Publish-Sync nichts veröffentlichen konnte (typischer Fall: Broker-ACL erlaubt Connect aber kein Publish auf `homeassistant/#`).
+- Test sendet jetzt zusätzlich eine leere retained-Nachricht mit QoS 1 auf `homeassistant/sensor/geraeteverwaltung/_probe/config`. QoS 1 ist essenziell — QoS 0 bekommt kein PUBACK und würde stille ACL-Verweigerung maskieren.
+- Drei Ergebnis-Varianten: „Verbindung und Publish-Berechtigung", „Teilweise OK: Verbindung OK, aber Publish fehlgeschlagen (ACL?)", oder Fehler mit Typ und Meldung.
+
+### HA-Import-Feedback bei 0 Geräten
+
+- Bisher zeigte das UI stumm „0 importiert, 0 Duplikate übersprungen" ohne Erklärung.
+- Drei neue spezifische Meldungen: „Keine HA-Geräte gefunden — Verbindung/Token prüfen", „Alle {total} HA-Geräte sind bereits importiert", „Alle {total} HA-Einträge waren nicht-physisch".
+- Strukturierte Backend-Fehler (`status: "error"`) werden mit `message` angehängt; Per-Device-Fehler aus der Import-Schleife als „(N errors — see logs)"-Suffix.
+
+### i18n-Audit
+
+- `settings.mqttTestButton` und `settings.mqttToggleFailed` fehlten in allen 5 Sprachen (erschienen im UI als roher Key).
+- Komplette Support- & Diagnose-Sektion aus v2.2.6 war nur in DE+EN, ~25 Keys als Rohtext in ES/FR/RU.
+- Plus 6 Keys für Re-Kategorisierung, 14 Keys für Custom Categories, 6 Keys für Auto-Match-Toggle mit Kriterien-Erklärung.
+- Alle 5 Sprachdateien jetzt auf 330 Keys synchronisiert in identischer Reihenfolge.
+
 ## 2.3.0
 
 - **Donut-Filter auf der Geräteliste (Variante B)**: Die vier Übersichts-Donuts (Nach Typ, Nach Netzwerk, Nach Stromversorgung, Garantie-Status) erscheinen jetzt auch oben auf der Geräteliste als kompakte, horizontal scrollbare Mini-Charts. Segment-Klick wechselt den Filter direkt — kein Zurückspringen zum Dashboard mehr. Filter-Chip mit X-Button zum Entfernen bleibt, der „Filter zurücksetzen"-Button räumt alle neuen Filter.

@@ -194,12 +194,16 @@ MANUFACTURER_MODEL_HINTS: list[tuple[list[str], str | None, str]] = [
     (["apple"], r"iphone", "Smartphone"),
     (["apple"], r"mac|imac|macbook", "Sonstiges"),
     (["apple"], None, "Streaming"),  # default Apple
-    # Samsung – TV vs Smartphone
+    # Samsung – TV vs Smartphone vs appliance. NO default: Samsung makes
+    # fridges, ovens, washers, printers, monitors — defaulting to "Smartphone"
+    # miscategorises those.
     (["samsung"], r"tv|ue\d|qe\d|qn\d|un\d|frame|serif|sero|neo|crystal|qled|oled", "Smart TV"),
     (["samsung"], r"galaxy|sm-", "Smartphone"),
     (["samsung"], r"tab", "Tablet"),
-    (["samsung"], None, "Smartphone"),
-    # Xiaomi – NOT always Smartphone!
+    (["samsung"], r"wasch|trockn|kühl|gefrier|oven|herd|spül|geschirr", "Haushaltsgerät"),
+    # Xiaomi – NO default: Xiaomi covers sensors, vacuums, lights, cameras,
+    # air purifiers, kettles, toothbrushes, etc. Previous default "Smartphone"
+    # mis-classified everything that didn't match a specific pattern.
     (["xiaomi"], r"tv|mi.*box|stick", "Smart TV"),
     (["xiaomi"], r"vacuum|roborock|dreame", "Mähroboter"),
     (["xiaomi"], r"gateway|hub", "Controller/Gateway"),
@@ -207,7 +211,7 @@ MANUFACTURER_MODEL_HINTS: list[tuple[list[str], str | None, str]] = [
     (["xiaomi"], r"plug|socket|power.*strip", "Steckdose"),
     (["xiaomi"], r"sensor|thermo|hygro|door|window|motion|button", "Sensor"),
     (["xiaomi"], r"tab|pad", "Tablet"),
-    (["xiaomi"], None, "Smartphone"),
+    (["xiaomi"], r"phone|redmi|mi\s?\d", "Smartphone"),
     # Sonos
     (["sonos"], None, "Lautsprecher"),
     # Netzwerk
@@ -243,8 +247,10 @@ MANUFACTURER_MODEL_HINTS: list[tuple[list[str], str | None, str]] = [
     (["lg"], r"tv|oled|nano|55|65|75|43|webos", "Smart TV"),
     (["lg"], r"wasch|trockn|kühl|dishwash", "Haushaltsgerät"),
     (["lg"], None, "Smart TV"),
-    # Tuya / generic
-    (["tuya", "_tz3"], None, "Steckdose"),
+    # Tuya / generic: NO default category. Tuya covers plugs, sensors,
+    # fingerbots, rain sensors, switches, lights, curtains, etc. — a default of
+    # "Steckdose" historically mis-categorised >50% of Tuya devices. Let the
+    # entity-domain / device_class logic classify these instead.
     # Thermostate
     (["bosch"], r"shc|smart.*home|therm|room.*climate", "Thermostat"),
     (["homematic", "eq-3", "eqiva"], None, "Thermostat"),
@@ -322,79 +328,185 @@ NETWORK_MAP = {
 SKIP_ENTRY_TYPES = {"service"}
 
 
+# ---------------------------------------------------------------------------
+# device_class → category mapping. HA device_class is the most authoritative
+# signal available (set by the integration itself, not guessed). Tuples of
+# (domain, device_class) map to categories. Use None for "any domain".
+# ---------------------------------------------------------------------------
+DEVICE_CLASS_TO_TYPE: dict[tuple[str | None, str], str] = {
+    # media_player device_classes
+    ("media_player", "tv"): "Smart TV",
+    ("media_player", "speaker"): "Lautsprecher",
+    ("media_player", "receiver"): "Lautsprecher",
+    # switch device_classes
+    ("switch", "outlet"): "Steckdose",
+    ("switch", "switch"): "Aktor/Relais",
+    # cover device_classes (window covers → Rollladen; garage/gate/door → Sonstiges for now)
+    ("cover", "awning"): "Rollladen",
+    ("cover", "blind"): "Rollladen",
+    ("cover", "curtain"): "Rollladen",
+    ("cover", "shade"): "Rollladen",
+    ("cover", "shutter"): "Rollladen",
+    ("cover", "window"): "Rollladen",
+    # Any-domain: these are almost always sensor-like
+    (None, "smoke"): "Sensor",
+    (None, "gas"): "Sensor",
+    (None, "co"): "Sensor",
+    (None, "co2"): "Sensor",
+    (None, "carbon_dioxide"): "Sensor",
+    (None, "carbon_monoxide"): "Sensor",
+    (None, "door"): "Sensor",
+    (None, "window"): "Sensor",
+    (None, "opening"): "Sensor",
+    (None, "motion"): "Sensor",
+    (None, "moisture"): "Sensor",
+    (None, "occupancy"): "Sensor",
+    (None, "presence"): "Sensor",
+    (None, "temperature"): "Sensor",
+    (None, "humidity"): "Sensor",
+    (None, "illuminance"): "Sensor",
+    (None, "pressure"): "Sensor",
+    (None, "battery"): "Sensor",
+    (None, "vibration"): "Sensor",
+    (None, "sound"): "Sensor",
+    (None, "tamper"): "Sensor",
+    (None, "safety"): "Sensor",
+    (None, "heat"): "Sensor",
+    (None, "cold"): "Sensor",
+    (None, "power"): "Sensor",
+    (None, "energy"): "Sensor",
+    (None, "voltage"): "Sensor",
+    (None, "current"): "Sensor",
+}
+
+
+def _entity_classes_and_domains(entities: list[dict]) -> tuple[set[tuple[str, str]], set[str]]:
+    """Extract (domain, device_class) tuples and domain set from entity list.
+
+    Uses ``device_class`` (user override) or ``original_device_class`` (set by
+    integration) — both are part of the entity registry and don't require
+    state fetches.
+    """
+    dc_pairs: set[tuple[str, str]] = set()
+    domains: set[str] = set()
+    for ent in entities:
+        entity_id = ent.get("entity_id") or ""
+        if not entity_id or "." not in entity_id:
+            continue
+        domain = entity_id.split(".", 1)[0]
+        domains.add(domain)
+        dc = ent.get("device_class") or ent.get("original_device_class")
+        if dc:
+            dc_pairs.add((domain, dc.lower()))
+    return dc_pairs, domains
+
+
 def _guess_device_type(device: dict, entities: list[dict],
                        integration_domain: str | None = None) -> str:
-    """Guess the device type from integration, manufacturer, model, and entity domains."""
+    """Guess the device type using HA signals in priority order:
+
+    1. Entity ``device_class`` — most authoritative (set by integration).
+       Catches smoke alarms, doors, motion sensors, TV vs. speaker media_players,
+       outlet switches vs. relay switches, window covers vs. garage doors.
+    2. Entity domain — unambiguous HA typing (light, climate, lock, camera,
+       vacuum, lawn_mower, …).
+    3. Manufacturer + model patterns with word-boundary regex on name.
+    4. Name patterns as LAST resort with word boundaries — prevents the
+       "Bosch TV Rauchmelder → Smart TV" class of bug.
+    """
     manufacturer = (device.get("manufacturer") or "").lower()
     model = (device.get("model") or "").lower()
     name = (device.get("name_by_user") or device.get("name") or "").lower()
 
-    # 1. Check manufacturer + model hints (most specific)
+    dc_pairs, domains = _entity_classes_and_domains(entities)
+
+    # --- 1. device_class is king ---------------------------------------------
+    for domain, dc in dc_pairs:
+        # Exact (domain, dc) match
+        if (domain, dc) in DEVICE_CLASS_TO_TYPE:
+            return DEVICE_CLASS_TO_TYPE[(domain, dc)]
+        # Any-domain fallback
+        if (None, dc) in DEVICE_CLASS_TO_TYPE:
+            return DEVICE_CLASS_TO_TYPE[(None, dc)]
+
+    # --- 2. Entity domain (unambiguous HA typing) ----------------------------
+    # Priority: most specific physical-device domains first.
+    priority_domains = [
+        ("lawn_mower", "Mähroboter"),
+        ("vacuum", "Mähroboter"),
+        ("lock", "Schloss"),
+        ("camera", "Kamera"),
+        ("alarm_control_panel", "Alarmanlage"),
+        ("siren", "Alarmanlage"),
+        ("cover", "Rollladen"),
+        ("climate", "Thermostat"),
+        ("fan", "Ventilator"),
+        ("humidifier", "Haushaltsgerät"),
+        ("water_heater", "Haushaltsgerät"),
+        ("valve", "Bewässerung"),
+        ("remote", "Fernbedienung"),
+        ("light", "Leuchtmittel"),
+    ]
+    for domain_name, category in priority_domains:
+        if domain_name in domains:
+            return category
+
+    # media_player without device_class — use manufacturer then word-boundary name match.
+    if "media_player" in domains:
+        name_and_model = f"{model} {name}"
+        if any(kw in manufacturer for kw in ("amazon",)) or \
+                re.search(r"\b(echo|alexa)\b", name_and_model, re.IGNORECASE):
+            return "Sprachassistent"
+        if any(kw in manufacturer for kw in ("google",)) and \
+                re.search(r"\b(nest.*hub|home.*mini|nest.*audio|nest.*mini)\b", name_and_model, re.IGNORECASE):
+            return "Sprachassistent"
+        if any(kw in manufacturer for kw in ("sonos", "denon", "yamaha", "bang", "bose", "marantz")):
+            return "Lautsprecher"
+        if any(kw in manufacturer for kw in ("samsung", "lg", "sony", "philips", "vizio", "tcl", "hisense", "panasonic")):
+            return "Smart TV"
+        if re.search(r"\b(tv|television|fernseher|smart[- ]?tv)\b", name_and_model, re.IGNORECASE):
+            return "Smart TV"
+        if re.search(r"\b(speaker|lautsprecher|soundbar|homepod|home[- ]?pod)\b", name_and_model, re.IGNORECASE):
+            return "Lautsprecher"
+        return "Streaming"
+
+    # --- 3. Manufacturer + model patterns ------------------------------------
     for mfr_keywords, model_pattern, dtype in MANUFACTURER_MODEL_HINTS:
         if any(kw in manufacturer for kw in mfr_keywords):
             if model_pattern is None:
                 return dtype
             if re.search(model_pattern, model, re.IGNORECASE):
                 return dtype
-            if re.search(model_pattern, name, re.IGNORECASE):
+            # Name only matches with word boundaries — prevents a name containing
+            # "TV" as a location hint ("… TV Rauchmelder") from triggering
+            # the Samsung/LG/Sony "tv" rule.
+            if re.search(rf"\b(?:{model_pattern})\b", name, re.IGNORECASE):
                 return dtype
 
-    # 2. Check model string for common patterns
-    if any(kw in model for kw in ("tv", "television", "fernseh")):
+    # --- 4. Name/model patterns — LAST resort, word boundaries only ----------
+    name_and_model = f"{model} {name}"
+    if re.search(r"\b(tv|television|fernseher|smart[- ]?tv)\b", name_and_model, re.IGNORECASE):
         return "Smart TV"
-    if any(kw in model for kw in ("echo", "alexa")):
+    if re.search(r"\b(echo|alexa)\b", name_and_model, re.IGNORECASE):
         return "Sprachassistent"
-    if any(kw in model for kw in ("fire tv", "firetv", "fire stick")):
+    if re.search(r"\b(fire[- ]?tv|fire[- ]?stick)\b", name_and_model, re.IGNORECASE):
         return "Streaming"
-    if "repeater" in model:
+    if re.search(r"\brepeater\b", name_and_model, re.IGNORECASE):
         return "Repeater"
-    if any(kw in model for kw in ("homepod", "home pod")):
+    if re.search(r"\b(homepod|home[- ]?pod)\b", name_and_model, re.IGNORECASE):
         return "Lautsprecher"
-    if any(kw in model for kw in ("ipad", "tab ")):
+    if re.search(r"\b(ipad|tablet)\b", name_and_model, re.IGNORECASE):
         return "Tablet"
-    if any(kw in model for kw in ("display", "show", "dashboard")):
+    if re.search(r"\b(display|dashboard|wandpanel)\b", name_and_model, re.IGNORECASE):
         return "Display"
 
-    # 3. Check name for common patterns
-    if any(kw in name for kw in ("fernseher", "tv ", " tv", "smart tv")):
-        return "Smart TV"
-    if any(kw in name for kw in ("display", "dashboard", "wandpanel")):
-        return "Display"
-
-    # 4. Check entity domains
-    domains = set()
-    for ent in entities:
-        domain = ent.get("entity_id", "").split(".")[0] if ent.get("entity_id") else ""
-        if domain:
-            domains.add(domain)
-
-    # Prefer more specific domains
-    priority_domains = [
-        "camera", "climate", "cover", "lock", "alarm_control_panel",
-        "fan", "vacuum", "lawn_mower", "siren", "valve", "water_heater",
-        "humidifier", "remote",
-    ]
-    for domain in priority_domains:
-        if domain in domains:
-            return DOMAIN_TO_TYPE.get(domain, "Sonstiges")
-
-    # Light is specific enough
-    if "light" in domains:
-        return "Leuchtmittel"
-
-    # Media player needs more context – could be TV, speaker, or streaming
-    if "media_player" in domains:
-        if any(kw in manufacturer for kw in ("sonos", "denon", "yamaha", "bang", "bose")):
-            return "Lautsprecher"
-        if any(kw in manufacturer for kw in ("samsung", "lg", "sony", "philips", "vizio")):
-            return "Smart TV"
-        return "Streaming"
-
-    # Switch – could be outlet, relay, light switch
-    if "switch" in domains and not domains.intersection(priority_domains):
+    # --- 5. Fallbacks on remaining domains -----------------------------------
+    if "switch" in domains:
+        # Without device_class we can't distinguish outlet vs. relay — default
+        # to Aktor/Relais (safer than Steckdose, which was the old Tuya catch-all
+        # that miscategorised rain sensors, fingerbots, etc.).
         return "Aktor/Relais"
 
-    # Check if it's primarily a sensor device
     sensor_only = {"sensor", "binary_sensor", "update", "button", "number",
                    "select", "device_tracker", "event", "text"}
     if domains and domains <= sensor_only:
@@ -527,6 +639,10 @@ async def import_ha_devices() -> dict[str, Any]:
     - Deduplicates by ha_device_id (skips already imported devices)
     - Returns import statistics
     """
+    # Respect the user's auto-categorize preference.
+    from app.routers.settings import get_bool_setting
+    auto_categorize = get_bool_setting("auto_categorize", True)
+
     # Fetch all data from HA
     ha_devices = await get_ha_device_registry()
     ha_entities = await get_ha_entity_registry()
@@ -610,13 +726,17 @@ async def import_ha_devices() -> dict[str, Any]:
                     skipped_non_physical += 1
                     continue
 
-                # Determine device type (3-tier: integration → manufacturer+model → entity domains)
-                type_from_integration = _guess_type_from_integration(integration_domain)
-                # Integration map returned None → use smart guesser
-                if type_from_integration is None:
-                    device_type = _guess_device_type(dev, device_entities, integration_domain)
+                # Determine device type. When the user disabled auto-categorisation
+                # (settings.auto_categorize = false) we leave everything as
+                # "Sonstiges" and let them assign types manually.
+                if not auto_categorize:
+                    device_type = "Sonstiges"
                 else:
-                    device_type = type_from_integration
+                    type_from_integration = _guess_type_from_integration(integration_domain)
+                    if type_from_integration is None:
+                        device_type = _guess_device_type(dev, device_entities, integration_domain)
+                    else:
+                        device_type = type_from_integration
 
                 # Map area
                 area_id = dev.get("area_id")
