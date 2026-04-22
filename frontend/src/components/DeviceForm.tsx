@@ -10,6 +10,7 @@ import {
   getFloorForArea,
 } from "../utils/constants";
 import { AreaPicker } from "./AreaPicker";
+import { useCategories } from "./CategoryManager";
 import { CameraCapture } from "./CameraCapture";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { t } from "../i18n";
@@ -81,6 +82,10 @@ const selectClass =
 export function DeviceForm({ device }: DeviceFormProps) {
   useLanguage();
   const isEdit = !!device;
+  const categories = useCategories();
+  const allCategoryIds = categories.length
+    ? categories.map((c) => c.name)
+    : DEVICE_TYPES.map((dt) => dt.id);
 
   const [form, setForm] = useState({
     typ: device?.typ ?? "",
@@ -364,13 +369,19 @@ export function DeviceForm({ device }: DeviceFormProps) {
         <Section title={t("form.sectionBasic")} open={sections.basic} onToggle={() => toggleSection("basic")}>
           <Field label={t("form.deviceType")}>
             <select
-              value={DEVICE_TYPES.some(dt => dt.id === form.typ) ? form.typ : (form.typ ? "Sonstiges" : "")}
+              value={allCategoryIds.includes(form.typ) ? form.typ : (form.typ ? "Sonstiges" : "")}
               onChange={(e) => updateField("typ", (e.target as HTMLSelectElement).value)}
               class={selectClass}
               required
             >
               <option value="">{t("form.selectType")}</option>
-              {DEVICE_TYPES.map((dt) => (
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.label_key ? t(c.label_key) : c.name}
+                </option>
+              ))}
+              {/* Back-compat: keep static types visible if backend hasn't seeded yet */}
+              {categories.length === 0 && DEVICE_TYPES.map((dt) => (
                 <option key={dt.id} value={dt.id}>{t(dt.labelKey)}</option>
               ))}
             </select>

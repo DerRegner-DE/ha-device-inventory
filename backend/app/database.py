@@ -81,7 +81,61 @@ CREATE TABLE IF NOT EXISTS sync_log (
     client_id TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS device_categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    label_key TEXT,
+    icon TEXT,
+    is_custom INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 999,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    deleted_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
+
+
+BUILTIN_CATEGORIES: list[tuple[str, str, str | None]] = [
+    # (name, label_key, icon)
+    ("Router", "types.router", "mdi:router-wireless"),
+    ("Repeater", "types.repeater", "mdi:wifi-strength-2"),
+    ("Powerline", "types.powerline", "mdi:power-plug"),
+    ("DECT Repeater", "types.dect_repeater", "mdi:phone"),
+    ("Steckdose", "types.outlet", "mdi:power-socket-de"),
+    ("Lichtschalter", "types.light_switch", "mdi:light-switch"),
+    ("Leuchtmittel", "types.light_bulb", "mdi:lightbulb"),
+    ("Aktor/Relais", "types.relay", "mdi:electric-switch"),
+    ("Schalter/Taster", "types.switch_button", "mdi:gesture-tap-button"),
+    ("Rollladen", "types.shutter", "mdi:window-shutter"),
+    ("Thermostat", "types.thermostat", "mdi:thermostat"),
+    ("Controller/Gateway", "types.controller", "mdi:router-network"),
+    ("Kamera", "types.camera", "mdi:cctv"),
+    ("Türklingel", "types.doorbell", "mdi:doorbell"),
+    ("Gong", "types.chime", "mdi:bell-ring"),
+    ("Schloss", "types.lock", "mdi:lock"),
+    ("Alarmanlage", "types.alarm", "mdi:shield-home"),
+    ("Sprachassistent", "types.voice_assistant", "mdi:microphone"),
+    ("Smart TV", "types.smart_tv", "mdi:television"),
+    ("Streaming", "types.streaming", "mdi:cast"),
+    ("Display", "types.display", "mdi:monitor"),
+    ("Tablet", "types.tablet", "mdi:tablet"),
+    ("Lautsprecher", "types.speaker", "mdi:speaker"),
+    ("Haushaltsgerät", "types.appliance", "mdi:washing-machine"),
+    ("Mähroboter", "types.mower", "mdi:robot-mower"),
+    ("Bewässerung", "types.irrigation", "mdi:sprinkler"),
+    ("Ventilator", "types.fan", "mdi:fan"),
+    ("Fernbedienung", "types.remote", "mdi:remote"),
+    ("Drucker", "types.printer", "mdi:printer"),
+    ("Sensor", "types.sensor", "mdi:motion-sensor"),
+    ("Smartphone", "types.smartphone", "mdi:cellphone"),
+    ("Sonstiges", "types.other", "mdi:devices"),
+]
 
 
 def _ensure_dirs() -> None:
@@ -136,6 +190,18 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
                 deleted_at TEXT
             )
         """)
+
+    # v2.4.0: Seed device_categories with builtin types on first run.
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    if "device_categories" in tables:
+        cat_count = conn.execute("SELECT COUNT(*) FROM device_categories").fetchone()[0]
+        if cat_count == 0:
+            for i, (name, label_key, icon) in enumerate(BUILTIN_CATEGORIES):
+                conn.execute(
+                    "INSERT INTO device_categories (name, label_key, icon, is_custom, sort_order) "
+                    "VALUES (?, ?, ?, 0, ?)",
+                    (name, label_key, icon, i),
+                )
 
 
 def init_db() -> None:
