@@ -61,7 +61,11 @@ async def test_connection(timeout: float = 5.0) -> dict:
             async with aiomqtt.Client(**_connect_kwargs()) as client:
                 # Empty retained payload = noop delete, safe to send
                 # and also validates publish ACL on the discovery prefix.
-                await client.publish(probe_topic, b"", retain=True)
+                # QoS 1 is required so we get a PUBACK back — with MQTT v5
+                # Mosquitto returns reason code "Not Authorized" (0x87) if an
+                # ACL rejects the publish, which paho surfaces as an exception.
+                # QoS 0 would silently succeed even when the broker drops it.
+                await client.publish(probe_topic, b"", qos=1, retain=True)
                 return True
 
         await asyncio.wait_for(_connect_and_publish(), timeout=timeout)
