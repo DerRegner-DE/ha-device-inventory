@@ -7,11 +7,11 @@
 <h3 align="center">Smart Home Device Inventory for Home Assistant</h3>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.4.0-blue.svg" />
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-41BDF5?logo=homeassistant&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-Source%20Available-orange.svg" />
   <img alt="GitHub Stars" src="https://img.shields.io/github/stars/DerRegner-DE/ha-device-inventory?style=social" />
-  <img alt="Architectures" src="https://img.shields.io/badge/arch-amd64-lightgrey" />
+  <img alt="Architectures" src="https://img.shields.io/badge/arch-amd64%20%7C%20aarch64%20%7C%20armv7-lightgrey" />
 </p>
 
 <p align="center">
@@ -74,7 +74,7 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 | Dashboard with charts | Yes | Yes |
 | Dark mode | Yes | Yes |
 | JSON export | Yes | Yes |
-| 22 device type categories | Yes | Yes |
+| 32 built-in device categories + custom categories | Yes | Yes |
 | Network & power source tracking | Yes | Yes |
 | Languages | English | **DE, EN, ES, FR, RU** |
 | One-click HA device import | -- | **Yes** |
