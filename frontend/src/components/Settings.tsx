@@ -8,6 +8,7 @@ import { DiagnosticPanel } from "./DiagnosticPanel";
 import { CategoryManager } from "./CategoryManager";
 import { SnapshotManager } from "./SnapshotManager";
 import { TrashView } from "./TrashView";
+import { RecategorizePreview } from "./RecategorizePreview";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -38,6 +39,7 @@ export function Settings() {
   const [recategorizing, setRecategorizing] = useState(false);
   const [recategorizeResult, setRecategorizeResult] = useState<string | null>(null);
   const [confirmRecategorize, setConfirmRecategorize] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [autoCategorize, setAutoCategorize] = useState(true);
   const [autoCategorizeLoaded, setAutoCategorizeLoaded] = useState(false);
 
@@ -407,38 +409,61 @@ export function Settings() {
           )}
         </div>
 
-        {/* Re-categorize existing devices (v2.4.0) */}
+        {/* Re-categorize existing devices (v2.4.0) + Preview (v2.4.3) */}
         <div class="p-4">
           <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.recategorize")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.recategorizeDesc")}
           </p>
+          {/* Primary button (v2.4.3): preview first, cherry-pick, then apply. */}
           <button
-            onClick={handleRecategorize}
-            disabled={recategorizing || !hasHaSync}
-            class={`w-full py-2.5 rounded-xl text-white text-sm font-medium disabled:opacity-50 ${
-              confirmRecategorize ? "bg-amber-500 hover:bg-amber-600" : "bg-[#1F4E79] hover:bg-[#1a4268]"
-            }`}
+            onClick={() => setPreviewOpen(true)}
+            disabled={!hasHaSync}
+            class="w-full py-2.5 rounded-xl bg-[#1F4E79] text-white text-sm font-medium hover:bg-[#1a4268] disabled:opacity-50 mb-2"
           >
-            {recategorizing
-              ? t("settings.recategorizing")
-              : confirmRecategorize
-              ? t("common.confirm")
-              : t("settings.recategorizeButton")}
+            {t("recategorize.previewButton")}
             {!hasHaSync && " (Pro)"}
           </button>
-          {confirmRecategorize && (
-            <button
-              onClick={() => setConfirmRecategorize(false)}
-              class="w-full mt-1 text-xs text-gray-400 hover:text-gray-600 text-center"
-            >
-              {t("common.cancel")}
-            </button>
-          )}
-          {recategorizeResult && (
-            <p class="text-xs text-gray-500 mt-2 text-center">{recategorizeResult}</p>
-          )}
+          {/* Legacy "apply immediately" fallback kept behind a disclosure. */}
+          <details class="text-xs text-gray-500 dark:text-gray-400">
+            <summary class="cursor-pointer select-none">
+              {t("recategorize.legacyDisclosure")}
+            </summary>
+            <div class="mt-2">
+              <button
+                onClick={handleRecategorize}
+                disabled={recategorizing || !hasHaSync}
+                class={`w-full py-2 rounded-xl text-white text-sm font-medium disabled:opacity-50 ${
+                  confirmRecategorize ? "bg-amber-500 hover:bg-amber-600" : "bg-gray-500 hover:bg-gray-600"
+                }`}
+              >
+                {recategorizing
+                  ? t("settings.recategorizing")
+                  : confirmRecategorize
+                  ? t("common.confirm")
+                  : t("settings.recategorizeButton")}
+              </button>
+              {confirmRecategorize && (
+                <button
+                  onClick={() => setConfirmRecategorize(false)}
+                  class="w-full mt-1 text-xs text-gray-400 hover:text-gray-600 text-center"
+                >
+                  {t("common.cancel")}
+                </button>
+              )}
+              {recategorizeResult && (
+                <p class="text-xs text-gray-500 mt-2 text-center">{recategorizeResult}</p>
+              )}
+            </div>
+          </details>
         </div>
+
+        {previewOpen && (
+          <RecategorizePreview
+            onClose={() => setPreviewOpen(false)}
+            onApplied={() => { /* list refresh handled by syncFromServer in modal */ }}
+          />
+        )}
 
         {/* Category management (v2.4.0) */}
         <div class="p-4">
