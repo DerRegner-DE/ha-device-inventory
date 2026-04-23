@@ -146,6 +146,19 @@ export async function syncPendingQueue(): Promise<number> {
       const path = `/${item.entity_type}s/${item.entity_uuid}`;
       let ok = false;
 
+      // Empty update payloads would be rejected (pre-v2.5.2) or be a no-op
+      // (v2.5.2+). Either way, dropping the item locally clears the queue
+      // instead of hammering the server every sync tick.
+      if (
+        item.action === "update" &&
+        payload &&
+        typeof payload === "object" &&
+        Object.keys(payload).length === 0
+      ) {
+        if (item.id !== undefined) await db.syncQueue.delete(item.id);
+        continue;
+      }
+
       if (item.action === "create") {
         const res = await fetch(`${getBaseUrl()}/${item.entity_type}s/${item.entity_uuid}`, {
           method: "PUT",

@@ -168,7 +168,21 @@ def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
 def update_device(uuid: str, body: DeviceUpdate, background_tasks: BackgroundTasks):
     update_data = body.model_dump(exclude_unset=True)
     if not update_data:
-        raise HTTPException(status_code=400, detail="No fields to update")
+        # Empty payloads happen when the sync queue contains items whose
+        # deltas were already applied (or the client saved without changing
+        # anything). Return the current row instead of 400 so the queue
+        # entry clears — a 400 kept the item stuck forever and every sync
+        # tick hammered the endpoint. No write, no sync_version bump.
+        with get_db() as conn:
+            row = dict_from_row(
+                conn.execute(
+                    "SELECT * FROM devices WHERE uuid = ? AND deleted_at IS NULL",
+                    (uuid,),
+                ).fetchone()
+            )
+            if not row:
+                raise HTTPException(status_code=404, detail="Device not found")
+            return _build_device_response(row, conn)
 
     sets = []
     params: list[Any] = []
