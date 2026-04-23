@@ -4,6 +4,13 @@
 
 Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. Ausgelöst durch die Erkenntnis aus Osorkons Feedback, dass „Kategorien neu zuordnen" bei 500 Geräten 300 richtig und 200 falsch machen kann — und es vorher keinen Weg zurück gab.
 
+### Papierkorb für gelöschte Geräte
+
+- Neuer Bereich „Papierkorb" in den Einstellungen zeigt alle soft-gelöschten Geräte mit Lösch-Datum, Typ, Hersteller und Standort.
+- „Wiederherstellen"-Button pro Gerät, plus Mehrfachauswahl für Bulk-Wiederherstellen. Fotos, die beim Löschen mit entfernt wurden, werden beim Restore automatisch mit zurückgeholt.
+- „Endgültig löschen"-Button (mit Zwei-Tap-Bestätigung) entfernt Gerät inklusive Fotos-Rows aus der DB — nur auf bereits soft-gelöschten Einträgen möglich.
+- Neue Backend-Endpoints: `GET /api/devices/trash/list`, `POST /api/devices/{uuid}/restore`, `POST /api/devices/bulk/restore`, `DELETE /api/devices/trash/{uuid}`.
+
 ### Automatische Datenbank-Schnappschüsse
 
 - Vor jeder der folgenden Aktionen wird automatisch eine Kopie der SQLite-Datenbank erstellt: „Kategorien neu zuordnen", Bulk-Bearbeiten, Bulk-Löschen, Excel-Import mit „Ersetzen", Löschen einer Kategorie (sofern Geräte betroffen sind).

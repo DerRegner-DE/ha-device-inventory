@@ -10,7 +10,7 @@ from uuid import uuid4
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 
 from app.database import get_db, dict_from_row, dicts_from_rows
-from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody
+from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody, BulkRestoreBody
 from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
 from app.services.snapshots import create_snapshot
 
@@ -212,6 +212,98 @@ def delete_device(uuid: str, background_tasks: BackgroundTasks):
 
     # Remove from HA via MQTT discovery (non-blocking)
     background_tasks.add_task(asyncio.create_task, mqtt_remove_device(uuid))
+
+
+@router.get("/trash/list")
+def list_trash():
+    """List soft-deleted devices, newest-deletion first.
+
+    Mirrors the main list but *only* returns rows with ``deleted_at IS NOT NULL``.
+    Used by the frontend "Papierkorb" view so users can restore devices they
+    didn't mean to delete (or undo a bulk-delete that was too wide).
+    """
+    with get_db() as conn:
+        rows = dicts_from_rows(conn.execute(
+            "SELECT uuid, typ, bezeichnung, modell, hersteller, standort_name, "
+            "integration, netzwerk, deleted_at, updated_at "
+            "FROM devices WHERE deleted_at IS NOT NULL "
+            "ORDER BY deleted_at DESC"
+        ).fetchall())
+    return {"items": rows, "total": len(rows)}
+
+
+@router.post("/{uuid}/restore")
+def restore_device(uuid: str):
+    """Un-delete a single device. Also restores its photos that were
+    soft-deleted at the same time."""
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT id, deleted_at FROM devices WHERE uuid = ?", (uuid,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Device not found")
+        if row["deleted_at"] is None:
+            raise HTTPException(status_code=400, detail="Device is not deleted")
+
+        cursor = conn.execute(
+            "UPDATE devices SET deleted_at = NULL, sync_version = sync_version + 1, "
+            "updated_at = datetime('now') WHERE uuid = ?",
+            (uuid,),
+        )
+        # Restore photos that were soft-deleted around the same time.
+        # Matching on device_id is enough — photos can only be deleted via
+        # their device, so any deleted photo of this device belongs to it.
+        conn.execute(
+            "UPDATE photos SET deleted_at = NULL WHERE device_id = ? "
+            "AND deleted_at IS NOT NULL",
+            (row["id"],),
+        )
+    return {"status": "ok", "restored": cursor.rowcount}
+
+
+@router.post("/bulk/restore")
+def bulk_restore_devices(body: BulkRestoreBody):
+    """Restore multiple soft-deleted devices at once."""
+    if not body.uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+    placeholders = ", ".join(["?"] * len(body.uuids))
+    with get_db() as conn:
+        cursor = conn.execute(
+            f"UPDATE devices SET deleted_at = NULL, sync_version = sync_version + 1, "
+            f"updated_at = datetime('now') WHERE uuid IN ({placeholders}) "
+            f"AND deleted_at IS NOT NULL",
+            body.uuids,
+        )
+        # Restore the photos of every restored device.
+        conn.execute(
+            f"UPDATE photos SET deleted_at = NULL WHERE device_id IN "
+            f"(SELECT id FROM devices WHERE uuid IN ({placeholders})) "
+            f"AND deleted_at IS NOT NULL",
+            body.uuids,
+        )
+    return {"restored": cursor.rowcount, "total": len(body.uuids)}
+
+
+@router.delete("/trash/{uuid}", status_code=204)
+def hard_delete_device(uuid: str):
+    """Permanently delete a soft-deleted device (empty trash for one item).
+
+    Only works on already-deleted devices — calling this on a live device
+    returns 400. Removes photos rows as well.
+    """
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT id, deleted_at FROM devices WHERE uuid = ?", (uuid,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Device not found")
+        if row["deleted_at"] is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Device is not in trash. Soft-delete it first via DELETE /devices/{uuid}.",
+            )
+        conn.execute("DELETE FROM photos WHERE device_id = ?", (row["id"],))
+        conn.execute("DELETE FROM devices WHERE id = ?", (row["id"],))
 
 
 @router.put("/bulk/update")

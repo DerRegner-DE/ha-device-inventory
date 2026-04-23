@@ -7,6 +7,7 @@ import { LicenseSettings } from "./LicenseSettings";
 import { DiagnosticPanel } from "./DiagnosticPanel";
 import { CategoryManager } from "./CategoryManager";
 import { SnapshotManager } from "./SnapshotManager";
+import { TrashView } from "./TrashView";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -457,6 +458,17 @@ export function Settings() {
             {t("settings.snapshotsDesc")}
           </p>
           <SnapshotManager />
+        </div>
+
+        {/* Trash view (v2.4.2) — soft-deleted devices with restore. */}
+        <div class="p-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t("settings.trash")}
+          </h3>
+          <p class="text-xs text-gray-400 mb-3">
+            {t("settings.trashDesc")}
+          </p>
+          <TrashView />
         </div>
 
         {/* Auto-categorize toggle (v2.4.0) */}
