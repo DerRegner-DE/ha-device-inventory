@@ -6,6 +6,7 @@ import { useLanguage } from "../i18n";
 import { LicenseSettings } from "./LicenseSettings";
 import { DiagnosticPanel } from "./DiagnosticPanel";
 import { CategoryManager } from "./CategoryManager";
+import { SnapshotManager } from "./SnapshotManager";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -444,6 +445,18 @@ export function Settings() {
             {t("settings.categories")}
           </h3>
           <CategoryManager />
+        </div>
+
+        {/* DB snapshots (v2.4.2) — lists and restores pre-action snapshots
+            created automatically before destructive bulk operations. */}
+        <div class="p-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t("settings.snapshots")}
+          </h3>
+          <p class="text-xs text-gray-400 mb-3">
+            {t("settings.snapshotsDesc")}
+          </p>
+          <SnapshotManager />
         </div>
 
         {/* Auto-categorize toggle (v2.4.0) */}

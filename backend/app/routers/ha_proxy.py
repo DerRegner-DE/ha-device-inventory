@@ -105,6 +105,7 @@ async def recategorize_ha_devices():
     from app.database import get_db, dicts_from_rows
     from app.services.ha_client import get_ha_device_registry, get_ha_entity_registry
     from app.services.ha_import import _guess_device_type, _guess_type_from_integration
+    from app.services.snapshots import create_snapshot
 
     try:
         ha_devices = await get_ha_device_registry()
@@ -114,6 +115,9 @@ async def recategorize_ha_devices():
 
     if not ha_devices:
         raise HTTPException(status_code=502, detail="HA device registry empty — is the token valid?")
+
+    # Snapshot before we mass-update categories — restorable via /api/snapshots.
+    create_snapshot("recategorize")
 
     # Build lookups
     entity_map: dict[str, list[dict]] = {}

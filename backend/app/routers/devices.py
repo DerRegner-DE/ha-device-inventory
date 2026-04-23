@@ -12,6 +12,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from app.database import get_db, dict_from_row, dicts_from_rows
 from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody
 from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
+from app.services.snapshots import create_snapshot
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -223,6 +224,8 @@ def bulk_update_devices(body: BulkUpdateBody):
     if not update_data:
         raise HTTPException(status_code=400, detail="No fields to update")
 
+    create_snapshot("bulk_update")
+
     sets = []
     params: list[Any] = []
     for k, v in update_data.items():
@@ -246,6 +249,8 @@ def bulk_delete_devices(body: BulkDeleteBody):
     """Soft-delete multiple devices."""
     if not body.uuids:
         raise HTTPException(status_code=400, detail="No UUIDs provided")
+
+    create_snapshot("bulk_delete")
 
     placeholders = ", ".join(["?"] * len(body.uuids))
 

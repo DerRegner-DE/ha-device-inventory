@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Query
 
 from app.database import get_db
 from app.services.excel_import import parse_xlsx, import_devices_to_db
+from app.services.snapshots import create_snapshot
 
 router = APIRouter(prefix="/import", tags=["import"])
 
@@ -44,7 +45,9 @@ async def import_xlsx(
     # Import into DB
     with get_db() as conn:
         if replace:
-            # Soft-delete all existing devices
+            # Replace wipes every existing device — snapshot first so the user
+            # can roll back if the uploaded file turns out to be the wrong one.
+            create_snapshot("xlsx_replace_import")
             conn.execute("UPDATE devices SET deleted_at = datetime('now') WHERE deleted_at IS NULL")
             conn.execute("UPDATE photos SET deleted_at = datetime('now') WHERE deleted_at IS NULL")
 

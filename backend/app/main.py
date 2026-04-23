@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.database import init_db
-from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy, categories
+from app.routers import devices, photos, documents, sync, export, import_data, ha_proxy, categories, snapshots
 from app.routers import settings as settings_router
 from app.services.device_sync import sync_ha_areas
 
@@ -155,6 +155,7 @@ app.include_router(export.router, prefix="/api")
 app.include_router(import_data.router, prefix="/api")
 app.include_router(ha_proxy.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
+app.include_router(snapshots.router, prefix="/api")
 app.include_router(settings_router.router, prefix="/api")
 
 
