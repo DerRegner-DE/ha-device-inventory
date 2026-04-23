@@ -5,6 +5,7 @@ import { DeviceList } from "./components/DeviceList";
 import { DeviceDetail } from "./components/DeviceDetail";
 import { DeviceForm } from "./components/DeviceForm";
 import { Settings } from "./components/Settings";
+import { UndoToastHost } from "./components/UndoToast";
 import { useDevice } from "./hooks/useDevices";
 import { t } from "./i18n";
 import { useLanguage } from "./i18n";
@@ -112,8 +113,11 @@ export function App() {
   }
 
   return (
-    <Layout activeRoute={currentPath || "/"}>
-      {content}
-    </Layout>
+    <>
+      <Layout activeRoute={currentPath || "/"}>
+        {content}
+      </Layout>
+      <UndoToastHost />
+    </>
   );
 }

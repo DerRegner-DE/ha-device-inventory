@@ -4,6 +4,12 @@
 
 Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. Ausgelöst durch die Erkenntnis aus Osorkons Feedback, dass „Kategorien neu zuordnen" bei 500 Geräten 300 richtig und 200 falsch machen kann — und es vorher keinen Weg zurück gab.
 
+### Rückgängig-Toast nach Löschen
+
+- Nach Einzel-Löschen und Bulk-Löschen erscheint am unteren Bildschirmrand 6 Sekunden lang ein „Rückgängig"-Toast im Gmail-Stil. Ein Klick darauf stellt das Gerät (oder alle markierten Geräte) komplett wieder her: Server-seitig über `restore`, lokal durch Wieder-Einfügen in IndexedDB aus einem In-Memory-Cache.
+- Toast wird zentral über `UndoToastHost` am App-Root gerendert; Aufrufer-Seite nutzt die Funktion `showUndoToast(message, onUndo)` ohne Prop-Drilling.
+- Übersetzt in DE/EN/ES/FR/RU (3 Keys).
+
 ### Papierkorb für gelöschte Geräte
 
 - Neuer Bereich „Papierkorb" in den Einstellungen zeigt alle soft-gelöschten Geräte mit Lösch-Datum, Typ, Hersteller und Standort.
