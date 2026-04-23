@@ -263,6 +263,8 @@ export function RecategorizePreview({ uuids, onClose, onApplied }: Props) {
           >
             {applying
               ? t("recategorize.applying")
+              : checked.size >= 100
+              ? t("recategorize.applyButtonLarge", { count: checked.size })
               : t("recategorize.applyButton", { count: checked.size })}
           </button>
         </div>

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.4.4
+
+Kleine UX-Nachbesserungen aus dem HA-Forum, gemeldet von der_micro. Keine neuen Features, nur Schliffarbeiten.
+
+- **Dark-Mode-Fix „Neue Kategorie"-Eingabefeld**: das Input in Einstellungen → Kategorien verwalten hatte im Dark-Mode keine Text-Color-Klasse. Folge: schwarzer Text auf dunkelgrauem Hintergrund, praktisch unleserlich. Jetzt `text-gray-900 dark:text-gray-100` plus passende Placeholder-Farbe. Gleiche Lücke beim Rename-Inline-Input mit behoben.
+- **Papierkorb + Datenbank-Schnappschüsse default eingeklappt**: beide Sektionen in den Einstellungen sind jetzt `<details>`-Collapsibles mit rotierendem Chevron. Spart Scrollen zur nächsten Sektion, wenn man sie gerade nicht braucht — die meisten Sessions öffnen sie nicht. Titel-Text bleibt sichtbar, Inhalt klappt auf erstem Klick auf.
+- **Easter Egg im Kategorie-Vorschau-Apply-Button**: ab 100 ausgewählten Vorschlägen wird der Button-Text von „Anwenden (191)" auf „🐰 Was ganz Besonderes: 191 anwenden" — kleines Augenzwinkern für User, die Massen-Kategorisierungen machen (wörtliches Zitat aus der_micros Forum-Post). Hase-Emoji für den Easter-Egg-Character. Übersetzt in alle 5 Sprachen.
+
 ## 2.4.3
 
 Vorschau-Release für „Kategorien neu zuordnen". Adressiert den Kern von Osorkons v2.4.0-Feedback: statt dass der Classifier blind 500 Geräte umschreibt und dabei 200 falsch macht, kann der User jetzt sehen **was** geändert würde, **warum**, und nur die bestätigten Vorschläge anwenden.
