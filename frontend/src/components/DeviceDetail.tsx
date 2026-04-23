@@ -5,7 +5,8 @@ import { db, type Photo } from "../db/schema";
 import { getAreaName, getFloorForArea, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
-import { apiDelete, apiPut, getPhotoUrl, getDocuments, getDocumentUrl, deleteDocument, uploadDocument, addDocumentLink, type DocumentItem } from "../api/client";
+import { apiDelete, apiPost, apiPut, getPhotoUrl, getDocuments, getDocumentUrl, deleteDocument, uploadDocument, addDocumentLink, type DocumentItem } from "../api/client";
+import { showUndoToast } from "./UndoToast";
 import { hasFeature } from "../license";
 
 /** Map device integration/type to HA setup URL */
@@ -106,10 +107,21 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
       ? t("detail.confirmDeleteMqtt")
       : t("detail.confirmDelete");
     if (!confirm(msg)) return;
+    // Cache before deletion so the undo callback can re-insert locally.
+    const cachedDevice = { ...device };
+    const cachedPhotos = await db.photos.where("device_uuid").equals(device.uuid).toArray();
     await db.devices.delete(device.uuid);
     await db.photos.where("device_uuid").equals(device.uuid).delete();
     await apiDelete(`/devices/${device.uuid}`, "device", device.uuid);
     navigate("/devices");
+    showUndoToast(
+      t("undo.deviceDeleted", { name: cachedDevice.bezeichnung || "—" }),
+      async () => {
+        await apiPost(`/devices/${cachedDevice.uuid}/restore`, {});
+        await db.devices.put(cachedDevice);
+        if (cachedPhotos.length) await db.photos.bulkPut(cachedPhotos);
+      },
+    );
   };
 
   return (

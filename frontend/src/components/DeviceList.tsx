@@ -9,6 +9,7 @@ import { useLanguage } from "../i18n";
 import { getDeviceLimit } from "../license";
 import { useLicense } from "../license/useLicense";
 import { apiPost } from "../api/client";
+import { showUndoToast } from "./UndoToast";
 import { db, type Device } from "../db/schema";
 import { DEVICE_TYPES, INTEGRATIONS } from "../utils/constants";
 
@@ -142,10 +143,21 @@ export function DeviceList() {
     }
     if (confirmTimer.current) { clearTimeout(confirmTimer.current); confirmTimer.current = null; }
     setBulkBusy(true);
+    const uuids = [...selected];
+    // Cache the full rows before we delete from IndexedDB so we can
+    // re-insert them if the user clicks Undo on the toast.
+    const cachedRows = await db.devices.where("uuid").anyOf(uuids).toArray();
     try {
-      await apiPost("/devices/bulk/delete", { uuids: [...selected] });
-      await db.devices.where("uuid").anyOf([...selected]).delete();
+      await apiPost("/devices/bulk/delete", { uuids });
+      await db.devices.where("uuid").anyOf(uuids).delete();
       exitSelectMode();
+      showUndoToast(
+        t("undo.bulkDeleted", { count: uuids.length }),
+        async () => {
+          await apiPost("/devices/bulk/restore", { uuids });
+          if (cachedRows.length) await db.devices.bulkPut(cachedRows);
+        },
+      );
     } catch {
       // silent
     }

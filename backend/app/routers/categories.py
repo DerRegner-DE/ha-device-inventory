@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.database import get_db, dicts_from_rows
+from app.services.snapshots import create_snapshot
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -190,6 +191,9 @@ async def delete_category(category_id: int, reassign_to: str = "Sonstiges"):
 
         # Reassign
         if affected > 0:
+            # Snapshot before the mass typ-rewrite — category deletes can
+            # move dozens of devices at once.
+            create_snapshot(f"category_delete_{existing['name']}")
             conn.execute(
                 "UPDATE devices SET typ = ?, sync_version = sync_version + 1, "
                 "updated_at = datetime('now') WHERE typ = ? AND deleted_at IS NULL",

@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.4.2
+
+Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. Ausgelöst durch die Erkenntnis aus Osorkons Feedback, dass „Kategorien neu zuordnen" bei 500 Geräten 300 richtig und 200 falsch machen kann — und es vorher keinen Weg zurück gab.
+
+### Rückgängig-Toast nach Löschen
+
+- Nach Einzel-Löschen und Bulk-Löschen erscheint am unteren Bildschirmrand 6 Sekunden lang ein „Rückgängig"-Toast im Gmail-Stil. Ein Klick darauf stellt das Gerät (oder alle markierten Geräte) komplett wieder her: Server-seitig über `restore`, lokal durch Wieder-Einfügen in IndexedDB aus einem In-Memory-Cache.
+- Toast wird zentral über `UndoToastHost` am App-Root gerendert; Aufrufer-Seite nutzt die Funktion `showUndoToast(message, onUndo)` ohne Prop-Drilling.
+- Übersetzt in DE/EN/ES/FR/RU (3 Keys).
+
+### Papierkorb für gelöschte Geräte
+
+- Neuer Bereich „Papierkorb" in den Einstellungen zeigt alle soft-gelöschten Geräte mit Lösch-Datum, Typ, Hersteller und Standort.
+- „Wiederherstellen"-Button pro Gerät, plus Mehrfachauswahl für Bulk-Wiederherstellen. Fotos, die beim Löschen mit entfernt wurden, werden beim Restore automatisch mit zurückgeholt.
+- „Endgültig löschen"-Button (mit Zwei-Tap-Bestätigung) entfernt Gerät inklusive Fotos-Rows aus der DB — nur auf bereits soft-gelöschten Einträgen möglich.
+- Neue Backend-Endpoints: `GET /api/devices/trash/list`, `POST /api/devices/{uuid}/restore`, `POST /api/devices/bulk/restore`, `DELETE /api/devices/trash/{uuid}`.
+
+### Automatische Datenbank-Schnappschüsse
+
+- Vor jeder der folgenden Aktionen wird automatisch eine Kopie der SQLite-Datenbank erstellt: „Kategorien neu zuordnen", Bulk-Bearbeiten, Bulk-Löschen, Excel-Import mit „Ersetzen", Löschen einer Kategorie (sofern Geräte betroffen sind).
+- Schnappschüsse liegen in `/data/db/snapshots/<ISO-Zeitstempel>_<op>.db`. Technisch wird `VACUUM INTO` verwendet — saubere Kopie ohne WAL-Residuen. Fallback auf `shutil.copy2` bei älteren SQLite-Versionen.
+- Neuer Bereich „Datenbank-Schnappschüsse" in den Einstellungen: zeigt die letzten Schnappschüsse mit Aktions-Typ, Alter, Größe und Notiz. Wiederherstellen-Button pro Eintrag mit Zwei-Tap-Bestätigung. Einzelne Schnappschüsse können manuell gelöscht werden.
+- Beim Wiederherstellen wird zuerst der aktuelle Stand selbst als Schnappschuss gesichert (`pre_restore`-Tag), sodass auch der Restore rückrollbar ist.
+- Aufbewahrung: die letzten 10 Schnappschüsse oder 30 Tage, je nachdem was zuerst greift. Ältere werden automatisch gelöscht.
+- Sicherheit: Pfad-Traversal in Dateinamen wird abgewiesen (`/`, `\`, `..`).
+- Snapshot-Erstellung ist ausnahmesicher — wenn das Schreiben aus irgendeinem Grund fehlschlägt (voller Datenträger, Read-only-Filesystem), wird die eigentliche destruktive Aktion trotzdem ausgeführt, nur ohne Rückroll-Netz. Warnung landet im Add-on-Log.
+
+### Backend
+
+- Neuer Service `backend/app/services/snapshots.py`: `create_snapshot(op)`, `list_snapshots()`, `restore_snapshot(filename)`, `delete_snapshot(filename)`, intern `_prune()`.
+- Neuer Router `backend/app/routers/snapshots.py` mit `GET /api/snapshots`, `POST /api/snapshots/{filename}/restore`, `DELETE /api/snapshots/{filename}`.
+- Aufruf von `create_snapshot()` in `ha_proxy.recategorize`, `devices.bulk_update`, `devices.bulk_delete`, `import_data.import_xlsx` (replace-Pfad), `categories.delete_category` (wenn Reassign stattfindet).
+
+### Frontend
+
+- Neue Komponente `SnapshotManager.tsx`, eingebunden in die Einstellungen direkt unter „Kategorien verwalten".
+- Zeit-Anzeige relativ („vor 5 Min", „vor 2 Std", „vor 3 Tagen") mit i18n-Pluralisierung.
+- Aktions-Typ wird übersetzt angezeigt („Vor Kategorie-Neuzuordnung" statt `recategorize`).
+- Neue i18n-Keys in DE/EN/ES/FR/RU: `settings.snapshots`, `settings.snapshotsDesc`, komplette `snapshots.*`-Sektion (19 Keys pro Sprache).
+
 ## 2.4.1
 
 Hotfix-Release mit Fokus auf MQTT-Diagnose (Forum-Feedback Osorkon zu v2.4.0).

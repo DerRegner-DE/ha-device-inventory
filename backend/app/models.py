@@ -83,6 +83,10 @@ class BulkDeleteBody(BaseModel):
     uuids: list[str]
 
 
+class BulkRestoreBody(BaseModel):
+    uuids: list[str]
+
+
 class DeviceListResponse(BaseModel):
     items: list[Device]
     total: int
