@@ -19,6 +19,15 @@ function warrantyBucket(garantieBis: string | undefined | null): WarrantyStatus 
   }
 }
 
+export type SortKey =
+  | "updated_desc"  // default, newest edit first
+  | "bezeichnung_asc"
+  | "bezeichnung_desc"
+  | "typ_asc"
+  | "hersteller_asc"
+  | "standort_asc"
+  | "warranty_soonest";  // v2.5.0 Bacardi request
+
 export function useDevices(
   filter?: {
     typ?: string;
@@ -28,6 +37,7 @@ export function useDevices(
     stromversorgung?: string;
     warranty?: WarrantyStatus;
     search?: string;
+    sort?: SortKey;
   }
 ) {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -79,10 +89,34 @@ export function useDevices(
         );
       }
 
-      return result.sort(
-        (a, b) =>
-          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-      );
+      const sortKey: SortKey = filter?.sort || "updated_desc";
+      const str = (v: unknown) => (v == null ? "" : String(v)).toLowerCase();
+      return result.sort((a, b) => {
+        switch (sortKey) {
+          case "bezeichnung_asc":
+            return str(a.bezeichnung).localeCompare(str(b.bezeichnung));
+          case "bezeichnung_desc":
+            return str(b.bezeichnung).localeCompare(str(a.bezeichnung));
+          case "typ_asc":
+            return str(a.typ).localeCompare(str(b.typ))
+              || str(a.bezeichnung).localeCompare(str(b.bezeichnung));
+          case "hersteller_asc":
+            return str(a.hersteller).localeCompare(str(b.hersteller))
+              || str(a.bezeichnung).localeCompare(str(b.bezeichnung));
+          case "standort_asc":
+            return str(a.standort_name).localeCompare(str(b.standort_name))
+              || str(a.bezeichnung).localeCompare(str(b.bezeichnung));
+          case "warranty_soonest": {
+            // "soonest expiring first"; devices without a warranty date sink to the bottom.
+            const ad = a.garantie_bis ? new Date(a.garantie_bis).getTime() : Infinity;
+            const bd = b.garantie_bis ? new Date(b.garantie_bis).getTime() : Infinity;
+            return ad - bd;
+          }
+          case "updated_desc":
+          default:
+            return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        }
+      });
     }).subscribe({
       next: (result) => {
         setDevices(result);
@@ -103,6 +137,7 @@ export function useDevices(
     filter?.stromversorgung,
     filter?.warranty,
     filter?.search,
+    filter?.sort,
   ]);
 
   return { devices, loading };

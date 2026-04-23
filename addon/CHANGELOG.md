@@ -1,5 +1,60 @@
 # Changelog
 
+## 2.5.0
+
+Großes Feature-Release. Bündelt die offenen Community-Wünsche aus dem HA-Forum (Bacardi, Todo82, der_micro) in einer einzigen Release.
+
+### Parent-Child-Gruppierung für Multi-Kanal-Geräte (der_micros Blocker)
+
+- Neue Spalte `devices.parent_uuid` plus Index. Soft-Beziehung, keine Foreign Key.
+- HA-Import setzt `parent_uuid` automatisch, wenn HA ein `via_device_id` auf dem Sub-Gerät hat. Das ist genau das Shelly-2PM-Szenario: Hauptgerät plus zwei Kanal-Geräte, die HA aus Integrationssicht trennt, physisch aber eine Einheit sind.
+- Neuer Endpoint `GET /api/devices/{uuid}/children` liefert alle Kinder. Device-Detail zeigt jetzt eine kompakte „Teil von …"-Zeile (wenn das Gerät ein Kind ist) plus eine „Untergeräte (N)"-Sektion (wenn es Eltern ist), beide mit klickbaren Links.
+- Der Listen-Endpoint akzeptiert optional `parents_only=true`, um Kinder aus Hauptlisten rauszufiltern (vorbereitet, aber per Default noch off).
+
+### Einbauort-Bilder pro Gerät (Todo82)
+
+- Neue Tabelle `attachments` mit bis zu 20 Bildern pro Gerät à max. 10 MB.
+- Separat von der bestehenden `photos`-Tabelle — das ist die „primäre Geräte-Aufnahme", Attachments sind viele, mit Beschriftung, für Einbauort-Doku („Schalter hinter Abdeckung, unter Bett"). Dateinamen-Präfix `att_` im Shared-Photos-Dir.
+- CRUD-Endpoints: `POST /devices/{uuid}/attachments`, `GET /devices/{uuid}/attachments`, `GET /attachments/{uuid}`, `PATCH /attachments/{uuid}` (Caption), `DELETE /attachments/{uuid}`.
+- Neue `AttachmentsSection` im DeviceDetail als Grid mit Captions und Delete-Hover-Button.
+
+### Notizfeld prominenter (Bacardi)
+
+- Die Notizen-Sektion im Formular ist jetzt per Default aufgeklappt statt zugeklappt. Feld hat 5 Zeilen statt 3 und ist manuell resizebar (`resize-y`).
+- Neuer Placeholder-Text gibt klare Hinweise auf typische Use-Cases (Nachlass, Versicherung, Einbauort, Kaufbeleg-Nummer).
+
+### Pro-Gerät-Änderungshistorie mit Revert
+
+- Neue Tabelle `device_history` mit Indexen auf `device_uuid` und `changed_at`. Protokolliert pro Feld-Änderung: alt, neu, Quelle (`user` / `ha_import` / `recategorize` / `bulk` / `restore` / `revert`), Zeitstempel.
+- Recording-Hook in: Single-Update (`PUT /devices/{uuid}`), Bulk-Update (`PUT /devices/bulk/update`), Recategorize (beide Endpoints). 22 Felder werden protokolliert; interne Bookkeeping-Felder wie `updated_at` oder `sync_version` nicht.
+- Neue Endpoints: `GET /api/devices/{uuid}/history` (newest-first, max. 500), `POST /api/devices/{uuid}/history/{id}/revert` (setzt die einzelne Änderung zurück, protokolliert den Revert selbst als `source='revert'`).
+- Neue `HistorySection` im DeviceDetail als einklappbares `<details>`, lazy-loaded beim ersten Öffnen. Pro Zeile: Feldname, Quelle-Badge, alt→neu, Zeitstempel, „Zurück"-Button.
+
+### Wählbare Exportfelder mit Presets (Bacardi)
+
+- `GET /api/export/xlsx` und `GET /api/export/pdf` akzeptieren jetzt `fields=...` als Komma-Liste — nur diese Felder landen im Export.
+- Neuer Endpoint `GET /api/export/presets` listet vordefinierte Field-Sets. v2.5.0 startet mit zwei Presets: **Versicherung** (Basisdaten für Schadensfall) und **Nachlass** (erweitert um Standort, Netzwerk, Einbaudetails).
+- Neue `ExportPicker`-Komponente als Modal mit Preset-Buttons plus 22 Einzel-Checkboxes. Die letzte Auswahl wird in `localStorage` gemerkt.
+- In den Einstellungen ersetzt ein „PDF / Excel exportieren..."-Button den bisherigen direkten PDF-Export. Der JSON-Export-Button bleibt unverändert.
+
+### Sort-Dropdown in der Geräteliste (Bacardi)
+
+- Neues Sort-Select oben auf der Liste (neben dem Geräte-Zähler) mit 7 Sortierungen: zuletzt geändert (Default), Name A→Z / Z→A, Typ, Hersteller, Standort, Garantie bald ablaufend.
+- Auswahl wird in `sessionStorage` persistiert.
+- Client-seitig sortiert via `useDevices({ sort })` — keine Server-Roundtrips.
+
+### i18n
+
+- 36 neue Keys pro Sprache in allen 5 Sprachdateien (DE/EN/ES/FR/RU), synchron.
+
+### DB-Migration
+
+- Drei Ergänzungen in `_migrate_db`:
+  - `devices.parent_uuid` + Index
+  - Neue `device_history`-Tabelle mit zwei Indexen
+  - Neue `attachments`-Tabelle mit Geräte-Index
+- Migration ist idempotent (Existenz-Checks), kein Schema-Reset erforderlich.
+
 ## 2.4.4
 
 Kleine UX-Nachbesserungen aus dem HA-Forum, gemeldet von der_micro. Keine neuen Features, nur Schliffarbeiten.
