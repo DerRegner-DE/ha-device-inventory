@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
@@ -14,6 +16,26 @@ router = APIRouter(prefix="/ha", tags=["home-assistant"])
 
 class AreaUpdateRequest(BaseModel):
     area_id: str
+
+
+class RecategorizeBody(BaseModel):
+    """Optional filter for ``POST /recategorize`` and ``/recategorize/preview``.
+
+    If ``uuids`` is None, the operation runs over *all* HA-imported devices.
+    If present, it's scoped to just those devices — used by the "Kategorie
+    auto-ermitteln"-bulk-action on selected rows in the device list.
+    """
+    uuids: Optional[list[str]] = None
+
+
+class RecategorizeApplyItem(BaseModel):
+    uuid: str
+    expected_new_type: str  # TOCTOU guard: reject if the classifier now proposes
+                             # something else (e.g. user changed the device in between).
+
+
+class RecategorizeApplyBody(BaseModel):
+    items: list[RecategorizeApplyItem]
 
 
 @router.get("/areas")
@@ -91,21 +113,15 @@ async def import_devices_from_ha():
         raise HTTPException(status_code=502, detail=str(e))
 
 
-@router.post("/recategorize")
-async def recategorize_ha_devices():
-    """Re-run the device-type classifier on all imported devices.
+async def _load_recategorize_context(uuids: Optional[list[str]]):
+    """Shared plumbing for recategorize preview + apply.
 
-    Fetches fresh entity/device registries from HA and applies the current
-    classification logic to every inventory device that has an ``ha_device_id``.
-    Returns stats: how many devices changed type, how many stayed the same.
-
-    Use this after upgrading to a new categorisation version (e.g. v2.4.0)
-    to fix categories that were assigned by an older buggy classifier.
+    Fetches HA registries, builds lookup maps, and returns the inventory
+    rows to evaluate (optionally filtered by UUIDs). Raises HTTPException
+    on registry fetch failures.
     """
     from app.database import get_db, dicts_from_rows
     from app.services.ha_client import get_ha_device_registry, get_ha_entity_registry
-    from app.services.ha_import import _guess_device_type, _guess_type_from_integration
-    from app.services.snapshots import create_snapshot
 
     try:
         ha_devices = await get_ha_device_registry()
@@ -116,10 +132,6 @@ async def recategorize_ha_devices():
     if not ha_devices:
         raise HTTPException(status_code=502, detail="HA device registry empty — is the token valid?")
 
-    # Snapshot before we mass-update categories — restorable via /api/snapshots.
-    create_snapshot("recategorize")
-
-    # Build lookups
     entity_map: dict[str, list[dict]] = {}
     config_entry_domains: dict[str, str] = {}
     for ent in ha_entities:
@@ -132,53 +144,191 @@ async def recategorize_ha_devices():
             config_entry_domains[ce] = platform
     ha_device_map = {d["id"]: d for d in ha_devices}
 
+    query = (
+        "SELECT uuid, ha_device_id, typ, bezeichnung, hersteller, modell "
+        "FROM devices WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
+    )
+    params: list = []
+    if uuids:
+        placeholders = ", ".join(["?"] * len(uuids))
+        query += f" AND uuid IN ({placeholders})"
+        params.extend(uuids)
+
+    with get_db() as conn:
+        rows = dicts_from_rows(conn.execute(query, params).fetchall())
+
+    return rows, ha_device_map, entity_map, config_entry_domains
+
+
+def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
+                  config_entry_domains: dict) -> tuple[Optional[str], str] | None:
+    """Evaluate a single inventory row. Returns ``(new_type, evidence)`` or
+    None if the device has no matching HA device (shouldn't happen normally).
+    """
+    from app.services.ha_import import (
+        _guess_device_type_with_evidence,
+        _guess_type_from_integration_with_evidence,
+    )
+
+    ha_dev = ha_device_map.get(row["ha_device_id"])
+    if not ha_dev:
+        return None
+
+    device_entities = entity_map.get(row["ha_device_id"], [])
+    integration_domain = None
+    for ce_id in ha_dev.get("config_entries", []):
+        if ce_id in config_entry_domains:
+            integration_domain = config_entry_domains[ce_id]
+            break
+
+    int_type, int_evidence = _guess_type_from_integration_with_evidence(integration_domain)
+    if int_type is not None:
+        return int_type, int_evidence or f"integration={integration_domain}"
+
+    return _guess_device_type_with_evidence(ha_dev, device_entities, integration_domain)
+
+
+@router.post("/recategorize/preview")
+async def recategorize_preview(body: Optional[RecategorizeBody] = None):
+    """Compute what the classifier *would* assign, without writing.
+
+    Returns the full diff list so the UI can render a table with checkboxes.
+    The frontend then posts the confirmed subset back via ``/recategorize/apply``.
+    """
+    uuids = body.uuids if body else None
+    rows, ha_device_map, entity_map, config_entry_domains = await _load_recategorize_context(uuids)
+
+    changes: list[dict] = []
+    unchanged = 0
+    skipped_no_ha = 0
+
+    for row in rows:
+        classified = _classify_row(row, ha_device_map, entity_map, config_entry_domains)
+        if classified is None:
+            skipped_no_ha += 1
+            continue
+        new_type, evidence = classified
+        if new_type != row["typ"]:
+            changes.append({
+                "uuid": row["uuid"],
+                "bezeichnung": row["bezeichnung"],
+                "hersteller": row["hersteller"],
+                "modell": row["modell"],
+                "old_type": row["typ"],
+                "new_type": new_type,
+                "evidence": evidence,
+            })
+        else:
+            unchanged += 1
+
+    return {
+        "status": "ok",
+        "changes": changes,
+        "unchanged": unchanged,
+        "skipped_no_ha": skipped_no_ha,
+        "total": len(rows),
+    }
+
+
+@router.post("/recategorize/apply")
+async def recategorize_apply(body: RecategorizeApplyBody):
+    """Apply only the explicitly confirmed subset from a preview.
+
+    Each item includes ``expected_new_type`` — we re-run the classifier and
+    skip the device if the proposal has changed since preview (TOCTOU guard,
+    e.g. user renamed the device in HA in between).
+    Takes a DB snapshot before writing so the whole batch is rollback-able.
+    """
+    from app.database import get_db
+    from app.services.snapshots import create_snapshot
+
+    if not body.items:
+        raise HTTPException(status_code=400, detail="No items to apply")
+
+    uuids = [it.uuid for it in body.items]
+    expected = {it.uuid: it.expected_new_type for it in body.items}
+
+    rows, ha_device_map, entity_map, config_entry_domains = await _load_recategorize_context(uuids)
+
+    # Snapshot once for the whole apply batch.
+    create_snapshot("recategorize_apply")
+
+    applied = 0
+    skipped_toctou = 0
+    skipped_no_ha = 0
+
+    with get_db() as conn:
+        for row in rows:
+            classified = _classify_row(row, ha_device_map, entity_map, config_entry_domains)
+            if classified is None:
+                skipped_no_ha += 1
+                continue
+            new_type, _evidence = classified
+            if new_type != expected.get(row["uuid"]):
+                # Proposal drifted between preview and apply — don't silently
+                # apply something the user didn't see in the preview.
+                skipped_toctou += 1
+                continue
+            if new_type == row["typ"]:
+                continue  # nothing to do
+            conn.execute(
+                "UPDATE devices SET typ = ?, updated_at = datetime('now'), "
+                "sync_version = sync_version + 1 WHERE uuid = ?",
+                (str(new_type), row["uuid"]),
+            )
+            applied += 1
+
+    return {
+        "status": "ok",
+        "applied": applied,
+        "skipped_toctou": skipped_toctou,
+        "skipped_no_ha": skipped_no_ha,
+        "total_requested": len(body.items),
+    }
+
+
+@router.post("/recategorize")
+async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
+    """Legacy "apply immediately" endpoint. Kept for backward compat with v2.4.0
+    Settings UI. New UI uses the preview+apply pair instead.
+
+    If ``body.uuids`` is provided, only those devices are evaluated —
+    supports the "Kategorie auto-ermitteln"-Bulk-Aktion on the device list.
+    """
+    from app.database import get_db
+    from app.services.snapshots import create_snapshot
+
+    uuids = body.uuids if body else None
+    rows, ha_device_map, entity_map, config_entry_domains = await _load_recategorize_context(uuids)
+
+    create_snapshot("recategorize")
+
     updated = 0
     unchanged = 0
     skipped_no_ha = 0
     changes: list[dict] = []
 
     with get_db() as conn:
-        rows = dicts_from_rows(conn.execute(
-            "SELECT uuid, ha_device_id, typ, bezeichnung "
-            "FROM devices WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
-        ).fetchall())
-
         for row in rows:
-            uuid_ = row["uuid"]
-            ha_id = row["ha_device_id"]
-            old_type = row["typ"]
-            ha_dev = ha_device_map.get(ha_id)
-            if not ha_dev:
+            classified = _classify_row(row, ha_device_map, entity_map, config_entry_domains)
+            if classified is None:
                 skipped_no_ha += 1
                 continue
-
-            device_entities = entity_map.get(ha_id, [])
-            integration_domain = None
-            for ce_id in ha_dev.get("config_entries", []):
-                if ce_id in config_entry_domains:
-                    integration_domain = config_entry_domains[ce_id]
-                    break
-
-            type_from_integration = _guess_type_from_integration(integration_domain)
-            if type_from_integration is None:
-                new_type = _guess_device_type(ha_dev, device_entities, integration_domain)
-            else:
-                new_type = type_from_integration
-
-            if new_type != old_type:
+            new_type, evidence = classified
+            if new_type != row["typ"]:
                 conn.execute(
                     "UPDATE devices SET typ = ?, updated_at = datetime('now'), "
                     "sync_version = sync_version + 1 WHERE uuid = ?",
-                    (str(new_type), uuid_),
+                    (str(new_type), row["uuid"]),
                 )
                 updated += 1
-                # Capture first 50 changes so the UI can show them for review.
                 if len(changes) < 50:
                     changes.append({
-                        "uuid": uuid_,
+                        "uuid": row["uuid"],
                         "bezeichnung": row["bezeichnung"],
-                        "old_type": old_type,
+                        "old_type": row["typ"],
                         "new_type": new_type,
+                        "evidence": evidence,
                     })
             else:
                 unchanged += 1

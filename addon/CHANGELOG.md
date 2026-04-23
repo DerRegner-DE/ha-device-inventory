@@ -1,5 +1,45 @@
 # Changelog
 
+## 2.4.3
+
+Vorschau-Release für „Kategorien neu zuordnen". Adressiert den Kern von Osorkons v2.4.0-Feedback: statt dass der Classifier blind 500 Geräte umschreibt und dabei 200 falsch macht, kann der User jetzt sehen **was** geändert würde, **warum**, und nur die bestätigten Vorschläge anwenden.
+
+### Preview-Endpoint + Cherry-Pick
+
+- Neuer Endpoint `POST /api/ha/recategorize/preview` berechnet für jedes HA-importierte Gerät den Vorschlag, ohne die Datenbank anzufassen. Liefert Liste mit `{uuid, bezeichnung, hersteller, modell, old_type, new_type, evidence}`.
+- Neuer Endpoint `POST /api/ha/recategorize/apply` nimmt eine bestätigte Teilmenge `{uuid, expected_new_type}` und wendet nur diese an. TOCTOU-Schutz: wenn der Classifier zwischen Preview und Apply einen anderen Vorschlag hat (z.B. weil der User in HA inzwischen etwas geändert hat), wird das Gerät übersprungen.
+- Beide Endpoints akzeptieren optional `{uuids: [...]}` als Filter — bereitet die Bulk-Aktion aus der Geräteliste vor.
+
+### Evidenz-Spalte (Klassifikator wird transparent)
+
+Jeder Vorschlag kommt mit einer kurzen Begründung, woher der vorgeschlagene Typ stammt:
+
+- `device_class=smoke on binary_sensor` — klarer Treffer aus der HA-device_class
+- `domain=light` / `domain=climate` / etc. — HA-Entity-Domain als Signal
+- `manufacturer=ikea + name pattern (word-boundary)` — Hersteller-Match mit Wortgrenze
+- `name match: tv/fernseher (no device_class/domain hint)` — Last-Resort Name-Match, typischer Fall für Fehltreffer (genau der „Fernseher"-Zigbee-Plug aus Osorkons Beispielen)
+- `integration=hue` — Integration-basierter Kurzschluss
+- `no matching signal — default` — fällt auf „Sonstiges" zurück
+
+Macht den bisher Black-Box-Classifier inspizierbar und gibt dem User die Chance, systematische Fehltreffer zu erkennen, bevor sie angewendet werden.
+
+### UI: Vorschau-Dialog
+
+- Neue Komponente `RecategorizePreview.tsx` als Full-Screen-Modal mit Tabelle. Jede Zeile zeigt Gerätename, Hersteller/Modell, alte Kategorie → vorgeschlagene Kategorie und die Evidenz (monospace, gut scanbar).
+- Alle Vorschläge sind standardmäßig angehakt. User kann einzeln abhaken oder per Filter-Textfeld nach Name, Hersteller, Typ oder Begründung filtern und dann gezielt alle gefilterten ab-/anhaken.
+- Summary-Zeile zeigt live wie viele Vorschläge anstehen und wie viele aktuell ausgewählt sind.
+- „Anwenden"-Button ist deaktiviert wenn null Vorschläge ausgewählt sind, ansonsten zeigt er die Anzahl (`Apply {count}`).
+- „Kategorien neu zuordnen" in den Einstellungen startet jetzt standardmäßig die Vorschau. Der Legacy-„Alles direkt anwenden"-Pfad ist hinter ein `<details>`-Disclosure weggeklappt, sollte aber noch funktionieren (jetzt auch mit optionalem UUID-Filter und Snapshot).
+
+### Backend-Refaktor
+
+- `_guess_device_type` gibt jetzt zusätzlich einen Evidenz-String zurück. Der bisherige String-Rückgabewert ist als dünner Wrapper `_guess_device_type(...)` erhalten, sodass bestehende Aufrufer unverändert weiterlaufen.
+- Neue Helper `_load_recategorize_context` + `_classify_row` teilen sich Preview, Apply und den Legacy-Recategorize-Endpoint — keine Duplikation der HA-Registry-Plumbing.
+
+### i18n
+
+- 13 neue Keys pro Sprache (`recategorize.*`) in DE/EN/ES/FR/RU, synchron.
+
 ## 2.4.2
 
 Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. Ausgelöst durch die Erkenntnis aus Osorkons Feedback, dass „Kategorien neu zuordnen" bei 500 Geräten 300 richtig und 200 falsch machen kann — und es vorher keinen Weg zurück gab.

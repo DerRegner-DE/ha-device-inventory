@@ -401,18 +401,22 @@ def _entity_classes_and_domains(entities: list[dict]) -> tuple[set[tuple[str, st
     return dc_pairs, domains
 
 
-def _guess_device_type(device: dict, entities: list[dict],
-                       integration_domain: str | None = None) -> str:
-    """Guess the device type using HA signals in priority order:
+def _guess_device_type_with_evidence(
+    device: dict, entities: list[dict],
+    integration_domain: str | None = None,
+) -> tuple[str, str]:
+    """Guess the device type and return the reasoning as a short string.
 
-    1. Entity ``device_class`` — most authoritative (set by integration).
-       Catches smoke alarms, doors, motion sensors, TV vs. speaker media_players,
-       outlet switches vs. relay switches, window covers vs. garage doors.
-    2. Entity domain — unambiguous HA typing (light, climate, lock, camera,
-       vacuum, lawn_mower, …).
-    3. Manufacturer + model patterns with word-boundary regex on name.
-    4. Name patterns as LAST resort with word boundaries — prevents the
-       "Bosch TV Rauchmelder → Smart TV" class of bug.
+    Classifier priority (unchanged from v2.4.0):
+    1. Entity ``device_class`` (set by integration)
+    2. Entity domain (unambiguous HA typing)
+    3. Manufacturer + model/name patterns with word boundaries
+    4. Name patterns as last resort with word boundaries
+    5. Remaining-domain fallbacks (switch, sensor-only)
+
+    Returns ``(type, evidence)`` where ``evidence`` is a machine-ish short
+    string meant for the preview UI, e.g.
+    ``"device_class=smoke on binary_sensor"`` or ``"name match: fernseher"``.
     """
     manufacturer = (device.get("manufacturer") or "").lower()
     model = (device.get("model") or "").lower()
@@ -422,15 +426,12 @@ def _guess_device_type(device: dict, entities: list[dict],
 
     # --- 1. device_class is king ---------------------------------------------
     for domain, dc in dc_pairs:
-        # Exact (domain, dc) match
         if (domain, dc) in DEVICE_CLASS_TO_TYPE:
-            return DEVICE_CLASS_TO_TYPE[(domain, dc)]
-        # Any-domain fallback
+            return DEVICE_CLASS_TO_TYPE[(domain, dc)], f"device_class={dc} on {domain}"
         if (None, dc) in DEVICE_CLASS_TO_TYPE:
-            return DEVICE_CLASS_TO_TYPE[(None, dc)]
+            return DEVICE_CLASS_TO_TYPE[(None, dc)], f"device_class={dc}"
 
     # --- 2. Entity domain (unambiguous HA typing) ----------------------------
-    # Priority: most specific physical-device domains first.
     priority_domains = [
         ("lawn_mower", "Mähroboter"),
         ("vacuum", "Mähroboter"),
@@ -449,71 +450,76 @@ def _guess_device_type(device: dict, entities: list[dict],
     ]
     for domain_name, category in priority_domains:
         if domain_name in domains:
-            return category
+            return category, f"domain={domain_name}"
 
     # media_player without device_class — use manufacturer then word-boundary name match.
     if "media_player" in domains:
         name_and_model = f"{model} {name}"
         if any(kw in manufacturer for kw in ("amazon",)) or \
                 re.search(r"\b(echo|alexa)\b", name_and_model, re.IGNORECASE):
-            return "Sprachassistent"
+            return "Sprachassistent", "media_player + manufacturer/name: amazon/echo/alexa"
         if any(kw in manufacturer for kw in ("google",)) and \
                 re.search(r"\b(nest.*hub|home.*mini|nest.*audio|nest.*mini)\b", name_and_model, re.IGNORECASE):
-            return "Sprachassistent"
+            return "Sprachassistent", "media_player + google + nest/home match"
         if any(kw in manufacturer for kw in ("sonos", "denon", "yamaha", "bang", "bose", "marantz")):
-            return "Lautsprecher"
+            return "Lautsprecher", f"media_player + manufacturer={manufacturer}"
         if any(kw in manufacturer for kw in ("samsung", "lg", "sony", "philips", "vizio", "tcl", "hisense", "panasonic")):
-            return "Smart TV"
+            return "Smart TV", f"media_player + TV-manufacturer={manufacturer}"
         if re.search(r"\b(tv|television|fernseher|smart[- ]?tv)\b", name_and_model, re.IGNORECASE):
-            return "Smart TV"
+            return "Smart TV", "media_player + name match: tv/fernseher"
         if re.search(r"\b(speaker|lautsprecher|soundbar|homepod|home[- ]?pod)\b", name_and_model, re.IGNORECASE):
-            return "Lautsprecher"
-        return "Streaming"
+            return "Lautsprecher", "media_player + name match: speaker/lautsprecher/homepod"
+        return "Streaming", "media_player fallback"
 
     # --- 3. Manufacturer + model patterns ------------------------------------
     for mfr_keywords, model_pattern, dtype in MANUFACTURER_MODEL_HINTS:
         if any(kw in manufacturer for kw in mfr_keywords):
+            matched_mfr = next(kw for kw in mfr_keywords if kw in manufacturer)
             if model_pattern is None:
-                return dtype
+                return dtype, f"manufacturer={matched_mfr} (no model pattern)"
             if re.search(model_pattern, model, re.IGNORECASE):
-                return dtype
-            # Name only matches with word boundaries — prevents a name containing
-            # "TV" as a location hint ("… TV Rauchmelder") from triggering
-            # the Samsung/LG/Sony "tv" rule.
+                return dtype, f"manufacturer={matched_mfr} + model pattern"
             if re.search(rf"\b(?:{model_pattern})\b", name, re.IGNORECASE):
-                return dtype
+                return dtype, f"manufacturer={matched_mfr} + name pattern (word-boundary)"
 
     # --- 4. Name/model patterns — LAST resort, word boundaries only ----------
     name_and_model = f"{model} {name}"
     if re.search(r"\b(tv|television|fernseher|smart[- ]?tv)\b", name_and_model, re.IGNORECASE):
-        return "Smart TV"
+        return "Smart TV", "name match: tv/fernseher (no device_class/domain hint)"
     if re.search(r"\b(echo|alexa)\b", name_and_model, re.IGNORECASE):
-        return "Sprachassistent"
+        return "Sprachassistent", "name match: echo/alexa"
     if re.search(r"\b(fire[- ]?tv|fire[- ]?stick)\b", name_and_model, re.IGNORECASE):
-        return "Streaming"
+        return "Streaming", "name match: fire tv/stick"
     if re.search(r"\brepeater\b", name_and_model, re.IGNORECASE):
-        return "Repeater"
+        return "Repeater", "name match: repeater"
     if re.search(r"\b(homepod|home[- ]?pod)\b", name_and_model, re.IGNORECASE):
-        return "Lautsprecher"
+        return "Lautsprecher", "name match: homepod"
     if re.search(r"\b(ipad|tablet)\b", name_and_model, re.IGNORECASE):
-        return "Tablet"
+        return "Tablet", "name match: ipad/tablet"
     if re.search(r"\b(display|dashboard|wandpanel)\b", name_and_model, re.IGNORECASE):
-        return "Display"
+        return "Display", "name match: display/dashboard/wandpanel"
 
     # --- 5. Fallbacks on remaining domains -----------------------------------
     if "switch" in domains:
-        # Without device_class we can't distinguish outlet vs. relay — default
-        # to Aktor/Relais (safer than Steckdose, which was the old Tuya catch-all
-        # that miscategorised rain sensors, fingerbots, etc.).
-        return "Aktor/Relais"
+        return "Aktor/Relais", "domain=switch (no device_class — could be relay or outlet)"
 
     sensor_only = {"sensor", "binary_sensor", "update", "button", "number",
                    "select", "device_tracker", "event", "text"}
     if domains and domains <= sensor_only:
         if "sensor" in domains or "binary_sensor" in domains:
-            return "Sensor"
+            return "Sensor", "only sensor/binary_sensor domains"
 
-    return "Sonstiges"
+    return "Sonstiges", "no matching signal — default"
+
+
+def _guess_device_type(device: dict, entities: list[dict],
+                       integration_domain: str | None = None) -> str:
+    """Thin wrapper that returns only the type, for existing callers.
+
+    New preview/apply endpoints use ``_guess_device_type_with_evidence``
+    directly to also get the reasoning string.
+    """
+    return _guess_device_type_with_evidence(device, entities, integration_domain)[0]
 
 
 def _guess_network(integration_domain: str | None,
@@ -543,6 +549,18 @@ def _guess_type_from_integration(integration_domain: str | None) -> str | None:
     if not integration_domain:
         return None
     return INTEGRATION_TYPE_MAP.get(integration_domain)
+
+
+def _guess_type_from_integration_with_evidence(
+    integration_domain: str | None,
+) -> tuple[str | None, str | None]:
+    """Integration-based lookup with the matched integration returned as evidence."""
+    if not integration_domain:
+        return None, None
+    hit = INTEGRATION_TYPE_MAP.get(integration_domain)
+    if hit is None:
+        return None, None
+    return hit, f"integration={integration_domain}"
 
 
 def _is_non_physical_device(device: dict, entities: list[dict],
