@@ -271,10 +271,16 @@ async def recategorize_apply(body: RecategorizeApplyBody):
                 continue
             if new_type == row["typ"]:
                 continue  # nothing to do
+            from app.services.history import log_changes  # local import, avoid startup-time coupling
             conn.execute(
                 "UPDATE devices SET typ = ?, updated_at = datetime('now'), "
                 "sync_version = sync_version + 1 WHERE uuid = ?",
                 (str(new_type), row["uuid"]),
+            )
+            log_changes(
+                conn, row["uuid"],
+                {"typ": row["typ"]}, {"typ": new_type},
+                source="recategorize",
             )
             applied += 1
 
@@ -316,10 +322,16 @@ async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
                 continue
             new_type, evidence = classified
             if new_type != row["typ"]:
+                from app.services.history import log_changes
                 conn.execute(
                     "UPDATE devices SET typ = ?, updated_at = datetime('now'), "
                     "sync_version = sync_version + 1 WHERE uuid = ?",
                     (str(new_type), row["uuid"]),
+                )
+                log_changes(
+                    conn, row["uuid"],
+                    {"typ": row["typ"]}, {"typ": new_type},
+                    source="recategorize",
                 )
                 updated += 1
                 if len(changes) < 50:

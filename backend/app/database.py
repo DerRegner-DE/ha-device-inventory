@@ -203,6 +203,52 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
                     (name, label_key, icon, i),
                 )
 
+    # v2.5.0: parent_uuid for Shelly-style multi-channel devices that HA
+    # exposes as separate devices but belong together physically.
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(devices)").fetchall()}
+    if "parent_uuid" not in cols:
+        conn.execute("ALTER TABLE devices ADD COLUMN parent_uuid TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_devices_parent_uuid ON devices(parent_uuid)")
+
+    # v2.5.0: device_history — per-field audit trail so users can see
+    # "who/when changed typ from X to Y" and roll back individual edits.
+    # Kept slim: only tracked fields (not every updated_at bump).
+    tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    if "device_history" not in tables:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS device_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                device_uuid TEXT NOT NULL,
+                field TEXT NOT NULL,
+                old_value TEXT,
+                new_value TEXT,
+                source TEXT,  -- 'user' | 'ha_import' | 'recategorize' | 'bulk' | 'restore'
+                changed_at TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_device_history_uuid ON device_history(device_uuid)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_device_history_changed_at ON device_history(changed_at)")
+
+    # v2.5.0: attachments — per-device installation photos with captions
+    # (Todo82 feature). Distinct from the existing ``photos`` table which
+    # holds a single representative image per device; attachments are many,
+    # captioned, and intended for Einbauort-Doku.
+    if "attachments" not in tables:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS attachments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uuid TEXT UNIQUE NOT NULL,
+                device_id INTEGER NOT NULL REFERENCES devices(id),
+                filename TEXT NOT NULL,
+                mime_type TEXT NOT NULL DEFAULT 'image/jpeg',
+                caption TEXT,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL DEFAULT (datetime('now')),
+                deleted_at TEXT
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_attachments_device ON attachments(device_id)")
+
 
 def init_db() -> None:
     _ensure_dirs()

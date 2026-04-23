@@ -32,6 +32,7 @@ class DeviceBase(BaseModel):
     ha_entity_id: str | None = None
     ha_device_id: str | None = None
     ain_artikelnr: str | None = None
+    parent_uuid: str | None = None  # v2.5.0: parent device for grouped sub-devices
 
 
 class DeviceCreate(DeviceBase):
@@ -61,6 +62,7 @@ class DeviceUpdate(BaseModel):
     ha_entity_id: str | None = None
     ha_device_id: str | None = None
     ain_artikelnr: str | None = None
+    parent_uuid: str | None = None
 
 
 class Device(DeviceBase):

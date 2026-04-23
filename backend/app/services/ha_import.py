@@ -836,9 +836,42 @@ async def import_ha_devices() -> dict[str, Any]:
                     "error": str(e),
                 })
 
+    # v2.5.0: Second pass — populate ``parent_uuid`` using HA's ``via_device_id``.
+    # HA sets via_device_id on sub-devices (e.g. Shelly channels point to the
+    # Shelly main device). After all rows are inserted, we can resolve the
+    # inventory UUID of each parent and wire the relationship.
+    linked_parents = 0
+    with get_db() as conn:
+        # Map ha_device_id -> inventory uuid for every imported device.
+        rows = dicts_from_rows(conn.execute(
+            "SELECT uuid, ha_device_id FROM devices "
+            "WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
+        ).fetchall())
+        ha_id_to_uuid = {r["ha_device_id"]: r["uuid"] for r in rows}
+
+        for dev in devices:
+            via = dev.get("via_device_id")
+            if not via:
+                continue
+            dev_id = dev.get("id")
+            if not dev_id:
+                continue
+            parent_uuid = ha_id_to_uuid.get(via)
+            child_uuid = ha_id_to_uuid.get(dev_id)
+            if parent_uuid and child_uuid and parent_uuid != child_uuid:
+                cur = conn.execute(
+                    "UPDATE devices SET parent_uuid = ? WHERE uuid = ? "
+                    "AND (parent_uuid IS NULL OR parent_uuid != ?)",
+                    (parent_uuid, child_uuid, parent_uuid),
+                )
+                if cur.rowcount > 0:
+                    linked_parents += 1
+
     logger.info(
-        "HA import done: %d imported, %d duplicates, %d non-physical, %d errors (of %d total)",
-        imported, skipped_duplicates, skipped_non_physical, len(errors), total,
+        "HA import done: %d imported, %d duplicates, %d non-physical, %d errors, "
+        "%d parent-child links (of %d total)",
+        imported, skipped_duplicates, skipped_non_physical, len(errors),
+        linked_parents, total,
     )
 
     return {
@@ -847,6 +880,7 @@ async def import_ha_devices() -> dict[str, Any]:
         "skipped_duplicates": skipped_duplicates,
         "skipped_no_name": skipped_no_name,
         "skipped_non_physical": skipped_non_physical,
+        "parent_links": linked_parents,
         "errors": errors[:20],  # cap at 20 entries so response stays reasonable
         "error_count": len(errors),
         "total_ha_devices": total,

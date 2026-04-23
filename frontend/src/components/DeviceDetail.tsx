@@ -5,8 +5,10 @@ import { db, type Photo } from "../db/schema";
 import { getAreaName, getFloorForArea, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
-import { apiDelete, apiPost, apiPut, getPhotoUrl, getDocuments, getDocumentUrl, deleteDocument, uploadDocument, addDocumentLink, type DocumentItem } from "../api/client";
+import { apiDelete, apiGet, apiPost, apiPut, getPhotoUrl, getDocuments, getDocumentUrl, deleteDocument, uploadDocument, addDocumentLink, type DocumentItem } from "../api/client";
 import { showUndoToast } from "./UndoToast";
+import { AttachmentsSection } from "./AttachmentsSection";
+import { HistorySection } from "./HistorySection";
 import { hasFeature } from "../license";
 
 /** Map device integration/type to HA setup URL */
@@ -22,6 +24,76 @@ function getHaSetupUrl(device: { ha_device_id?: string; integration?: string; ty
 interface DeviceDetailProps {
   uuid?: string;
 }
+
+/**
+ * v2.5.0: Shows parent-of and children-of relationships for grouped
+ * sub-devices (typically Shelly 2PM → 2 channels, Tuya hubs, etc. where HA's
+ * `via_device_id` points at a logical parent). Renders nothing if there's
+ * no parent and no children — the common case.
+ */
+function RelatedDevicesSection({ uuid, parentUuid }: { uuid: string; parentUuid?: string | null }) {
+  const [children, setChildren] = useState<Array<{
+    uuid: string;
+    bezeichnung: string | null;
+    typ: string | null;
+  }>>([]);
+  const [parent, setParent] = useState<{ uuid: string; bezeichnung: string } | null>(null);
+
+  useEffect(() => {
+    apiGet<{ children: typeof children }>(`/devices/${uuid}/children`)
+      .then((data) => setChildren(data?.children || []))
+      .catch(() => {});
+    if (parentUuid) {
+      apiGet<{ uuid: string; bezeichnung: string }>(`/devices/${parentUuid}`)
+        .then((p) => p && setParent({ uuid: p.uuid, bezeichnung: p.bezeichnung }))
+        .catch(() => {});
+    } else {
+      setParent(null);
+    }
+  }, [uuid, parentUuid]);
+
+  if (!parent && children.length === 0) return null;
+
+  return (
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+      {parent && (
+        <div>
+          <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1">
+            {t("detail.partOf")}
+          </h3>
+          <button
+            onClick={() => navigate(`/devices/${parent.uuid}`)}
+            class="text-sm text-[#1F4E79] dark:text-[#7ab5d6] hover:underline"
+          >
+            {parent.bezeichnung}
+          </button>
+        </div>
+      )}
+      {children.length > 0 && (
+        <div>
+          <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-2">
+            {t("detail.children", { count: children.length })}
+          </h3>
+          <div class="space-y-1">
+            {children.map((c) => (
+              <button
+                key={c.uuid}
+                onClick={() => navigate(`/devices/${c.uuid}`)}
+                class="block w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-sm"
+              >
+                <span class="text-gray-800 dark:text-gray-200">{c.bezeichnung || "(unnamed)"}</span>
+                {c.typ && (
+                  <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">{c.typ}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 function InfoRow({ label, value }: { label: string; value?: string }) {
   if (!value) return null;
@@ -211,6 +283,9 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         <InfoRow label={t("detail.deviceId")} value={device.ha_device_id} />
       </div>
 
+      {/* v2.5.0: parent/children grouping (Shelly-style sub-devices) */}
+      {uuid && <RelatedDevicesSection uuid={uuid} parentUuid={(device as any).parent_uuid} />}
+
       {(device.funktion || device.anmerkungen) && (
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
           {device.funktion && (
@@ -227,6 +302,12 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
           )}
         </div>
       )}
+
+      {/* v2.5.0: installation photos / Einbauort-Bilder (Todo82) */}
+      {uuid && <AttachmentsSection deviceUuid={uuid} />}
+
+      {/* v2.5.0: per-device change history with revert */}
+      {uuid && <HistorySection deviceUuid={uuid} />}
 
       {/* Documents / Manuals section */}
       {uuid && <DocumentsSection deviceUuid={uuid} />}

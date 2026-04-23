@@ -13,6 +13,7 @@ from app.database import get_db, dict_from_row, dicts_from_rows
 from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody, BulkRestoreBody
 from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
 from app.services.snapshots import create_snapshot
+from app.services.history import log_changes
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -42,6 +43,7 @@ def list_devices(
     floor: str | None = Query(None, description="Filter by standort_floor_id"),
     integration: str | None = Query(None, description="Filter by integration"),
     netzwerk: str | None = Query(None, description="Filter by netzwerk"),
+    parents_only: bool = Query(False, description="v2.5.0: only return top-level devices (parent_uuid IS NULL)"),
     sort: str = Query("nr", description="Sort field"),
     order: str = Query("asc", description="Sort order: asc or desc"),
     page: int = Query(1, ge=1, description="Page number"),
@@ -49,6 +51,9 @@ def list_devices(
 ):
     where_clauses = ["deleted_at IS NULL"]
     params: list[Any] = []
+
+    if parents_only:
+        where_clauses.append("parent_uuid IS NULL")
 
     if q:
         where_clauses.append(
@@ -136,6 +141,7 @@ def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
         "firmware", "integration", "stromversorgung", "netzwerk",
         "anschaffungsdatum", "garantie_bis", "funktion", "anmerkungen",
         "ha_entity_id", "ha_device_id", "ain_artikelnr",
+        "parent_uuid",  # v2.5.0: parent-child grouping
     ]
     for f in optional:
         val = getattr(body, f, None)
@@ -175,12 +181,22 @@ def update_device(uuid: str, body: DeviceUpdate, background_tasks: BackgroundTas
     params.append(uuid)
 
     with get_db() as conn:
+        # v2.5.0: snapshot the pre-edit row for the history log.
+        old_row = dict_from_row(
+            conn.execute("SELECT * FROM devices WHERE uuid = ? AND deleted_at IS NULL", (uuid,)).fetchone()
+        )
+        if not old_row:
+            raise HTTPException(status_code=404, detail="Device not found")
+
         cursor = conn.execute(
             f"UPDATE devices SET {', '.join(sets)} WHERE uuid = ? AND deleted_at IS NULL",
             params,
         )
         if cursor.rowcount == 0:
             raise HTTPException(status_code=404, detail="Device not found")
+
+        # v2.5.0: per-field audit trail for the edit.
+        log_changes(conn, uuid, old_row, update_data, source="user")
 
         row = dict_from_row(
             conn.execute("SELECT * FROM devices WHERE uuid = ?", (uuid,)).fetchone()
@@ -212,6 +228,24 @@ def delete_device(uuid: str, background_tasks: BackgroundTasks):
 
     # Remove from HA via MQTT discovery (non-blocking)
     background_tasks.add_task(asyncio.create_task, mqtt_remove_device(uuid))
+
+
+@router.get("/{uuid}/children")
+def list_children(uuid: str):
+    """List devices whose ``parent_uuid`` points at this device.
+
+    Used by the frontend to render grouped Shelly-style sub-devices under
+    the parent row. Returns lightweight rows (no photos) — frontend can
+    fetch full detail per child on demand.
+    """
+    with get_db() as conn:
+        rows = dicts_from_rows(conn.execute(
+            "SELECT uuid, typ, bezeichnung, modell, hersteller, ha_device_id, ha_entity_id "
+            "FROM devices WHERE parent_uuid = ? AND deleted_at IS NULL "
+            "ORDER BY bezeichnung",
+            (uuid,),
+        ).fetchall())
+    return {"children": rows, "total": len(rows)}
 
 
 @router.get("/trash/list")
@@ -329,10 +363,22 @@ def bulk_update_devices(body: BulkUpdateBody):
     placeholders = ", ".join(["?"] * len(body.uuids))
 
     with get_db() as conn:
+        # v2.5.0: snapshot old values per device for the history log.
+        old_rows = dicts_from_rows(conn.execute(
+            f"SELECT uuid, {', '.join(update_data.keys())} FROM devices "
+            f"WHERE uuid IN ({placeholders}) AND deleted_at IS NULL",
+            body.uuids,
+        ).fetchall())
+        old_by_uuid = {r["uuid"]: r for r in old_rows}
+
         cursor = conn.execute(
             f"UPDATE devices SET {', '.join(sets)} WHERE uuid IN ({placeholders}) AND deleted_at IS NULL",
             params + body.uuids,
         )
+
+        for uuid_ in body.uuids:
+            log_changes(conn, uuid_, old_by_uuid.get(uuid_), update_data, source="bulk")
+
         return {"updated": cursor.rowcount, "total": len(body.uuids)}
 
 

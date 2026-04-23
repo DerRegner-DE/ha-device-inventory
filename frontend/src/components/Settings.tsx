@@ -9,6 +9,7 @@ import { CategoryManager } from "./CategoryManager";
 import { SnapshotManager } from "./SnapshotManager";
 import { TrashView } from "./TrashView";
 import { RecategorizePreview } from "./RecategorizePreview";
+import { ExportPicker } from "./ExportPicker";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -40,6 +41,7 @@ export function Settings() {
   const [recategorizeResult, setRecategorizeResult] = useState<string | null>(null);
   const [confirmRecategorize, setConfirmRecategorize] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [autoCategorize, setAutoCategorize] = useState(true);
   const [autoCategorizeLoaded, setAutoCategorizeLoaded] = useState(false);
 
@@ -617,13 +619,17 @@ export function Settings() {
               {t("settings.exportButton")}
             </button>
             <button
-              onClick={handlePdfExport}
+              onClick={() => setExportPickerOpen(true)}
               class="flex-1 py-2.5 rounded-xl bg-[#e74c3c] text-white text-sm font-medium hover:bg-[#c0392b]"
             >
-              {t("settings.pdfExportButton")}
+              {t("settings.pdfXlsxExportButton")}
             </button>
           </div>
         </div>
+
+        {exportPickerOpen && (
+          <ExportPicker onClose={() => setExportPickerOpen(false)} />
+        )}
 
         {/* Support & Diagnose section */}
         <DiagnosticPanel />

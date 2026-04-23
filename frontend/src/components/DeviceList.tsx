@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "preact/hooks";
 import { liveQuery } from "dexie";
-import { useDevices, type WarrantyStatus } from "../hooks/useDevices";
+import { useDevices, type WarrantyStatus, type SortKey } from "../hooks/useDevices";
 import { DeviceCard } from "./DeviceCard";
 import { FilterBar } from "./FilterBar";
 import { DonutFilters, type DonutFilterKey } from "./DonutFilters";
@@ -25,6 +25,13 @@ export function DeviceList() {
   const license = useLicense();
   const [search, _setSearch] = useState(() => sessionStorage.getItem("gv_filter_search") || "");
   const [activeType, _setActiveType] = useState(() => sessionStorage.getItem("gv_filter_type") || "");
+  const [sortKey, _setSortKey] = useState<SortKey>(() =>
+    (sessionStorage.getItem("gv_sort") as SortKey) || "updated_desc"
+  );
+  const setSortKey = useCallback((v: SortKey) => {
+    sessionStorage.setItem("gv_sort", v);
+    _setSortKey(v);
+  }, []);
   const [activeNetwork, _setActiveNetwork] = useState(() => sessionStorage.getItem("gv_filter_netzwerk") || "");
   const [activePower, _setActivePower] = useState(() => sessionStorage.getItem("gv_filter_power") || "");
   const [activeWarranty, _setActiveWarranty] = useState(() => sessionStorage.getItem("gv_filter_warranty") || "");
@@ -59,6 +66,7 @@ export function DeviceList() {
     stromversorgung: activePower || undefined,
     warranty: (activeWarranty || undefined) as WarrantyStatus | undefined,
     search: search || undefined,
+    sort: sortKey,
   });
 
   // Donut segment click: replaces whatever was active, stays on the list view.
@@ -197,8 +205,8 @@ export function DeviceList() {
       )}
 
       {devices.length > 0 && (
-        <div class="px-4 flex items-center justify-between mb-2">
-          <p class="text-xs text-gray-400 px-1">
+        <div class="px-4 flex items-center justify-between mb-2 gap-2">
+          <p class="text-xs text-gray-400 px-1 flex-1 min-w-0 truncate">
             {selectMode
               ? t("bulk.selected", { count: selected.size, total: devices.length })
               : deviceLimit < Infinity
@@ -207,6 +215,22 @@ export function DeviceList() {
               ? t("devices.countPlural", { count: devices.length })
               : t("devices.countSingular", { count: devices.length })}
           </p>
+          {!selectMode && (
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey((e.target as HTMLSelectElement).value as SortKey)}
+              class="text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1"
+              title={t("devices.sortBy")}
+            >
+              <option value="updated_desc">{t("devices.sort.updated_desc")}</option>
+              <option value="bezeichnung_asc">{t("devices.sort.bezeichnung_asc")}</option>
+              <option value="bezeichnung_desc">{t("devices.sort.bezeichnung_desc")}</option>
+              <option value="typ_asc">{t("devices.sort.typ_asc")}</option>
+              <option value="hersteller_asc">{t("devices.sort.hersteller_asc")}</option>
+              <option value="standort_asc">{t("devices.sort.standort_asc")}</option>
+              <option value="warranty_soonest">{t("devices.sort.warranty_soonest")}</option>
+            </select>
+          )}
           <button
             onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
             class="text-xs text-[#1F4E79] font-medium"

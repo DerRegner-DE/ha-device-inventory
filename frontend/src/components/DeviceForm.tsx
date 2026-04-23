@@ -117,7 +117,9 @@ export function DeviceForm({ device }: DeviceFormProps) {
     network: false,
     details: false,
     ha: false,
-    notes: false,
+    notes: true,  // v2.5.0: open by default — Bacardi feedback. Notes turned
+                   // out to be the key use-case for Nachlass/Versicherungs-Doku
+                   // but were hidden behind a collapsed section nobody expanded.
   });
 
   const [photoBlob, setPhotoBlob] = useState<Blob | null>(null);
@@ -576,9 +578,9 @@ export function DeviceForm({ device }: DeviceFormProps) {
             <textarea
               value={form.anmerkungen}
               onInput={(e) => updateField("anmerkungen", (e.target as HTMLTextAreaElement).value)}
-              class={inputClass + " resize-none"}
-              rows={3}
-              placeholder={t("form.notesPlaceholder")}
+              class={inputClass + " resize-y"}
+              rows={5}
+              placeholder={t("form.notesPlaceholderV250")}
             />
           </Field>
         </Section>
