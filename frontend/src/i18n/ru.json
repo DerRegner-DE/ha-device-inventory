@@ -164,7 +164,6 @@
   "recategorize.summary": "{proposed} предложений, {selected} выбрано. {unchanged} устройств без изменений.",
   "recategorize.filterPlaceholder": "Фильтр по имени, производителю, типу или обоснованию...",
   "recategorize.applyButton": "Применить {count}",
-  "recategorize.applyButtonLarge": "🐰 Нечто совершенно особенное: применить {count}",
   "recategorize.applying": "Применяем...",
   "recategorize.applyResult": "{applied} применено, {skipped} пропущено (предложение изменилось) — из {total} подтверждённых.",
   "recategorize.applyFailed": "Ошибка применения",

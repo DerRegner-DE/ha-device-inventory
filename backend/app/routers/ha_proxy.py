@@ -168,6 +168,7 @@ def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
     from app.services.ha_import import (
         _guess_device_type_with_evidence,
         _guess_type_from_integration_with_evidence,
+        _resolve_primary_integration,
     )
 
     ha_dev = ha_device_map.get(row["ha_device_id"])
@@ -175,11 +176,7 @@ def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
         return None
 
     device_entities = entity_map.get(row["ha_device_id"], [])
-    integration_domain = None
-    for ce_id in ha_dev.get("config_entries", []):
-        if ce_id in config_entry_domains:
-            integration_domain = config_entry_domains[ce_id]
-            break
+    integration_domain = _resolve_primary_integration(ha_dev, config_entry_domains)
 
     int_type, int_evidence = _guess_type_from_integration_with_evidence(integration_domain)
     if int_type is not None:

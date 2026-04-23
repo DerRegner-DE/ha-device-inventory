@@ -164,7 +164,6 @@
   "recategorize.summary": "{proposed} proposed, {selected} selected. {unchanged} devices stay unchanged.",
   "recategorize.filterPlaceholder": "Filter by name, manufacturer, type or evidence...",
   "recategorize.applyButton": "Apply {count}",
-  "recategorize.applyButtonLarge": "🐰 Something quite special: apply {count}",
   "recategorize.applying": "Applying...",
   "recategorize.applyResult": "{applied} applied, {skipped} skipped (proposal changed meanwhile) — of {total} confirmed.",
   "recategorize.applyFailed": "Apply failed",

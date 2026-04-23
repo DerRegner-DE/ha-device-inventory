@@ -323,6 +323,60 @@ NETWORK_MAP = {
 }
 
 # ---------------------------------------------------------------------------
+# Integrations that passively observe a device on the network (device
+# trackers, presence detection, MAC-level routers) instead of actually
+# controlling it. A Shelly plug on WiFi often has both a ``shelly`` config
+# entry (controls it) and a ``fritz`` config entry (FritzBox sees it as a
+# LAN client) — the controlling integration should win when we derive the
+# network type, otherwise every WiFi-Shelly ends up as "LAN".
+# ---------------------------------------------------------------------------
+TRACKER_INTEGRATIONS = {
+    "fritz", "fritzbox",
+    "unifi", "unifi_direct",
+    "asuswrt",
+    "mikrotik", "keenetic_ndms2", "tplink_omada",
+    "nmap_tracker", "ping",
+    "dhcp", "snmp",
+    "device_tracker",
+    "bluetooth_le_tracker", "bluetooth_tracker",
+    "ibeacon", "private_ble_device",
+    "huawei_lte",
+    "mqtt_room",
+}
+
+
+def _resolve_primary_integration(
+    device: dict, config_entry_domains: dict[str, str]
+) -> str | None:
+    """Pick the primary controlling integration for a device.
+
+    HA 2024.10+ sets ``primary_config_entry`` on the device record — that is
+    authoritative. On older versions fall back to scanning ``config_entries``
+    but prefer non-tracker integrations, so a Shelly plug with both
+    ``shelly`` and ``fritz`` config entries is reported as Shelly (WLAN),
+    not as FritzBox (LAN).
+    """
+    primary = device.get("primary_config_entry")
+    if primary and primary in config_entry_domains:
+        return config_entry_domains[primary]
+
+    non_tracker: str | None = None
+    tracker: str | None = None
+    for ce_id in device.get("config_entries", []):
+        domain = config_entry_domains.get(ce_id)
+        if not domain:
+            continue
+        if domain in TRACKER_INTEGRATIONS:
+            if tracker is None:
+                tracker = domain
+        else:
+            non_tracker = domain
+            break
+
+    return non_tracker or tracker
+
+
+# ---------------------------------------------------------------------------
 # Entry types to skip (not physical devices)
 # ---------------------------------------------------------------------------
 SKIP_ENTRY_TYPES = {"service"}
@@ -732,12 +786,12 @@ async def import_ha_devices() -> dict[str, Any]:
                 # Get entities for this device
                 device_entities = entity_map.get(device_id, [])
 
-                # Determine integration domain from config entries
-                integration_domain = None
-                for ce_id in dev.get("config_entries", []):
-                    if ce_id in config_entry_domains:
-                        integration_domain = config_entry_domains[ce_id]
-                        break
+                # Determine integration domain. Prefer the device's primary
+                # config entry and demote passive trackers (see
+                # ``_resolve_primary_integration``).
+                integration_domain = _resolve_primary_integration(
+                    dev, config_entry_domains
+                )
 
                 # Skip non-physical devices (automations, helpers, services, etc.)
                 if _is_non_physical_device(dev, device_entities, integration_domain):
