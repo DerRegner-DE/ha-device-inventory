@@ -163,6 +163,7 @@
   "recategorize.summary": "{proposed} propositions, {selected} sélectionnées. {unchanged} appareils inchangés.",
   "recategorize.filterPlaceholder": "Filtrer par nom, fabricant, type ou motif...",
   "recategorize.applyButton": "Appliquer {count}",
+  "recategorize.applyButtonLarge": "🐰 Quelque chose de très spécial : appliquer {count}",
   "recategorize.applying": "Application...",
   "recategorize.applyResult": "{applied} appliqués, {skipped} ignorés (proposition modifiée entre-temps) — sur {total} confirmés.",
   "recategorize.applyFailed": "Échec de l'application",

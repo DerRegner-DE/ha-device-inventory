@@ -152,7 +152,7 @@ export function CategoryManager() {
                       onInput={(e) =>
                         setEditName((e.target as HTMLInputElement).value)
                       }
-                      class="flex-1 px-2 py-1 text-sm border rounded"
+                      class="flex-1 px-2 py-1 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                       maxLength={50}
                     />
                     <button
@@ -224,7 +224,7 @@ export function CategoryManager() {
             value={newName}
             onInput={(e) => setNewName((e.target as HTMLInputElement).value)}
             placeholder={t("categories.namePlaceholder") || "e.g. Smoke alarm"}
-            class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+            class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
             maxLength={50}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleCreate();

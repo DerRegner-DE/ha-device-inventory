@@ -474,27 +474,40 @@ export function Settings() {
         </div>
 
         {/* DB snapshots (v2.4.2) — lists and restores pre-action snapshots
-            created automatically before destructive bulk operations. */}
-        <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {t("settings.snapshots")}
-          </h3>
-          <p class="text-xs text-gray-400 mb-3">
+            created automatically before destructive bulk operations.
+            Default-collapsed (v2.4.4, der_micro feedback) — most sessions
+            don't need it and it used to push everything else down. */}
+        <details class="p-4 group">
+          <summary class="cursor-pointer list-none flex items-center justify-between">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t("settings.snapshots")}
+            </h3>
+            <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <p class="text-xs text-gray-400 mt-2 mb-3">
             {t("settings.snapshotsDesc")}
           </p>
           <SnapshotManager />
-        </div>
+        </details>
 
-        {/* Trash view (v2.4.2) — soft-deleted devices with restore. */}
-        <div class="p-4">
-          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {t("settings.trash")}
-          </h3>
-          <p class="text-xs text-gray-400 mb-3">
+        {/* Trash view (v2.4.2) — soft-deleted devices with restore.
+            Default-collapsed (v2.4.4). */}
+        <details class="p-4 group">
+          <summary class="cursor-pointer list-none flex items-center justify-between">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t("settings.trash")}
+            </h3>
+            <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <p class="text-xs text-gray-400 mt-2 mb-3">
             {t("settings.trashDesc")}
           </p>
           <TrashView />
-        </div>
+        </details>
 
         {/* Auto-categorize toggle (v2.4.0) */}
         <div class="p-4">
