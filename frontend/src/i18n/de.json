@@ -164,7 +164,6 @@
   "recategorize.summary": "{proposed} Vorschläge, {selected} ausgewählt. {unchanged} Geräte bleiben unverändert.",
   "recategorize.filterPlaceholder": "Filter nach Name, Hersteller, Typ oder Begründung...",
   "recategorize.applyButton": "{count} anwenden",
-  "recategorize.applyButtonLarge": "🐰 Was ganz Besonderes: {count} anwenden",
   "recategorize.applying": "Wende an...",
   "recategorize.applyResult": "{applied} angewendet, {skipped} übersprungen (Vorschlag zwischenzeitlich geändert) — von {total} bestätigten.",
   "recategorize.applyFailed": "Anwenden fehlgeschlagen",

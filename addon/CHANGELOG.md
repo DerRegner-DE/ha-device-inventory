@@ -1,24 +1,35 @@
 # Changelog
 
+## 2.5.1
+
+Bugfix-Release. Netzwerk-Klassifikation für Geräte mit mehreren Config Entries.
+
+### Netzwerk-Typ bei Multi-Integration-Geräten
+
+- Geräte, die von zwei HA-Integrationen gleichzeitig erfasst werden (z. B. eine WiFi-Shelly, die von der ``shelly``-Integration gesteuert und von der ``fritz``-Integration auf dem LAN getrackt wird), wurden bisher je nach Reihenfolge der Config Entries mal als „WLAN" und mal als „LAN" klassifiziert. In Setups mit FritzBox + Shelly war das Ergebnis typischerweise „LAN" für alle WiFi-Geräte.
+- Neue Logik: HA's ``primary_config_entry`` wird bevorzugt (seit HA 2024.10). Fällt das Feld weg, bevorzugen wir beim Scan aktive Steuerungs-Integrationen und demoten passive Tracker (``fritz``, ``fritzbox``, ``unifi``, ``nmap_tracker``, ``ping``, ``dhcp``, ``snmp``, ``asuswrt``, ``mikrotik``, ``keenetic_ndms2``, ``tplink_omada``, ``device_tracker``, ``bluetooth_le_tracker``, ``bluetooth_tracker``, ``ibeacon``, ``private_ble_device``, ``huawei_lte``, ``mqtt_room``).
+- Greift sowohl beim Erst-Import als auch bei „Kategorien neu zuordnen". Bestandsinstallationen bekommen die korrekten Netzwerk-Typen nach einem erneuten Import (bei bereits importierten Geräten bleibt der bisherige Wert stehen — die Neuzuordnung im aktuellen v2.5.0-UI klassifiziert nur den Typ, nicht das Netzwerk).
+- Neuer Regressionstest-Satz ``test_primary_integration.py`` mit 9 Tests deckt die typischen Szenarien ab.
+
 ## 2.5.0
 
-Großes Feature-Release. Bündelt die offenen Community-Wünsche aus dem HA-Forum (Bacardi, Todo82, der_micro) in einer einzigen Release.
+Großes Feature-Release. Bündelt mehrere offene Community-Wünsche aus dem HA-Forum in einer einzigen Release.
 
-### Parent-Child-Gruppierung für Multi-Kanal-Geräte (der_micros Blocker)
+### Parent-Child-Gruppierung für Multi-Kanal-Geräte
 
 - Neue Spalte `devices.parent_uuid` plus Index. Soft-Beziehung, keine Foreign Key.
 - HA-Import setzt `parent_uuid` automatisch, wenn HA ein `via_device_id` auf dem Sub-Gerät hat. Das ist genau das Shelly-2PM-Szenario: Hauptgerät plus zwei Kanal-Geräte, die HA aus Integrationssicht trennt, physisch aber eine Einheit sind.
 - Neuer Endpoint `GET /api/devices/{uuid}/children` liefert alle Kinder. Device-Detail zeigt jetzt eine kompakte „Teil von …"-Zeile (wenn das Gerät ein Kind ist) plus eine „Untergeräte (N)"-Sektion (wenn es Eltern ist), beide mit klickbaren Links.
 - Der Listen-Endpoint akzeptiert optional `parents_only=true`, um Kinder aus Hauptlisten rauszufiltern (vorbereitet, aber per Default noch off).
 
-### Einbauort-Bilder pro Gerät (Todo82)
+### Einbauort-Bilder pro Gerät
 
 - Neue Tabelle `attachments` mit bis zu 20 Bildern pro Gerät à max. 10 MB.
 - Separat von der bestehenden `photos`-Tabelle — das ist die „primäre Geräte-Aufnahme", Attachments sind viele, mit Beschriftung, für Einbauort-Doku („Schalter hinter Abdeckung, unter Bett"). Dateinamen-Präfix `att_` im Shared-Photos-Dir.
 - CRUD-Endpoints: `POST /devices/{uuid}/attachments`, `GET /devices/{uuid}/attachments`, `GET /attachments/{uuid}`, `PATCH /attachments/{uuid}` (Caption), `DELETE /attachments/{uuid}`.
 - Neue `AttachmentsSection` im DeviceDetail als Grid mit Captions und Delete-Hover-Button.
 
-### Notizfeld prominenter (Bacardi)
+### Notizfeld prominenter
 
 - Die Notizen-Sektion im Formular ist jetzt per Default aufgeklappt statt zugeklappt. Feld hat 5 Zeilen statt 3 und ist manuell resizebar (`resize-y`).
 - Neuer Placeholder-Text gibt klare Hinweise auf typische Use-Cases (Nachlass, Versicherung, Einbauort, Kaufbeleg-Nummer).
@@ -30,14 +41,14 @@ Großes Feature-Release. Bündelt die offenen Community-Wünsche aus dem HA-Foru
 - Neue Endpoints: `GET /api/devices/{uuid}/history` (newest-first, max. 500), `POST /api/devices/{uuid}/history/{id}/revert` (setzt die einzelne Änderung zurück, protokolliert den Revert selbst als `source='revert'`).
 - Neue `HistorySection` im DeviceDetail als einklappbares `<details>`, lazy-loaded beim ersten Öffnen. Pro Zeile: Feldname, Quelle-Badge, alt→neu, Zeitstempel, „Zurück"-Button.
 
-### Wählbare Exportfelder mit Presets (Bacardi)
+### Wählbare Exportfelder mit Presets
 
 - `GET /api/export/xlsx` und `GET /api/export/pdf` akzeptieren jetzt `fields=...` als Komma-Liste — nur diese Felder landen im Export.
 - Neuer Endpoint `GET /api/export/presets` listet vordefinierte Field-Sets. v2.5.0 startet mit zwei Presets: **Versicherung** (Basisdaten für Schadensfall) und **Nachlass** (erweitert um Standort, Netzwerk, Einbaudetails).
 - Neue `ExportPicker`-Komponente als Modal mit Preset-Buttons plus 22 Einzel-Checkboxes. Die letzte Auswahl wird in `localStorage` gemerkt.
 - In den Einstellungen ersetzt ein „PDF / Excel exportieren..."-Button den bisherigen direkten PDF-Export. Der JSON-Export-Button bleibt unverändert.
 
-### Sort-Dropdown in der Geräteliste (Bacardi)
+### Sort-Dropdown in der Geräteliste
 
 - Neues Sort-Select oben auf der Liste (neben dem Geräte-Zähler) mit 7 Sortierungen: zuletzt geändert (Default), Name A→Z / Z→A, Typ, Hersteller, Standort, Garantie bald ablaufend.
 - Auswahl wird in `sessionStorage` persistiert.
@@ -57,15 +68,14 @@ Großes Feature-Release. Bündelt die offenen Community-Wünsche aus dem HA-Foru
 
 ## 2.4.4
 
-Kleine UX-Nachbesserungen aus dem HA-Forum, gemeldet von der_micro. Keine neuen Features, nur Schliffarbeiten.
+Kleine UX-Nachbesserungen aus dem HA-Forum. Keine neuen Features, nur Schliffarbeiten.
 
 - **Dark-Mode-Fix „Neue Kategorie"-Eingabefeld**: das Input in Einstellungen → Kategorien verwalten hatte im Dark-Mode keine Text-Color-Klasse. Folge: schwarzer Text auf dunkelgrauem Hintergrund, praktisch unleserlich. Jetzt `text-gray-900 dark:text-gray-100` plus passende Placeholder-Farbe. Gleiche Lücke beim Rename-Inline-Input mit behoben.
 - **Papierkorb + Datenbank-Schnappschüsse default eingeklappt**: beide Sektionen in den Einstellungen sind jetzt `<details>`-Collapsibles mit rotierendem Chevron. Spart Scrollen zur nächsten Sektion, wenn man sie gerade nicht braucht — die meisten Sessions öffnen sie nicht. Titel-Text bleibt sichtbar, Inhalt klappt auf erstem Klick auf.
-- **Easter Egg im Kategorie-Vorschau-Apply-Button**: ab 100 ausgewählten Vorschlägen wird der Button-Text von „Anwenden (191)" auf „🐰 Was ganz Besonderes: 191 anwenden" — kleines Augenzwinkern für User, die Massen-Kategorisierungen machen (wörtliches Zitat aus der_micros Forum-Post). Hase-Emoji für den Easter-Egg-Character. Übersetzt in alle 5 Sprachen.
 
 ## 2.4.3
 
-Vorschau-Release für „Kategorien neu zuordnen". Adressiert den Kern von Osorkons v2.4.0-Feedback: statt dass der Classifier blind 500 Geräte umschreibt und dabei 200 falsch macht, kann der User jetzt sehen **was** geändert würde, **warum**, und nur die bestätigten Vorschläge anwenden.
+Vorschau-Release für „Kategorien neu zuordnen". Statt dass der Classifier blind 500 Geräte umschreibt und dabei 200 falsch macht, kann der User jetzt sehen **was** geändert würde, **warum**, und nur die bestätigten Vorschläge anwenden.
 
 ### Preview-Endpoint + Cherry-Pick
 
@@ -80,7 +90,7 @@ Jeder Vorschlag kommt mit einer kurzen Begründung, woher der vorgeschlagene Typ
 - `device_class=smoke on binary_sensor` — klarer Treffer aus der HA-device_class
 - `domain=light` / `domain=climate` / etc. — HA-Entity-Domain als Signal
 - `manufacturer=ikea + name pattern (word-boundary)` — Hersteller-Match mit Wortgrenze
-- `name match: tv/fernseher (no device_class/domain hint)` — Last-Resort Name-Match, typischer Fall für Fehltreffer (genau der „Fernseher"-Zigbee-Plug aus Osorkons Beispielen)
+- `name match: tv/fernseher (no device_class/domain hint)` — Last-Resort Name-Match, typischer Fall für Fehltreffer (z. B. ein „Fernseher"-Zigbee-Plug, der eigentlich eine Steckdose ist)
 - `integration=hue` — Integration-basierter Kurzschluss
 - `no matching signal — default` — fällt auf „Sonstiges" zurück
 
@@ -105,7 +115,7 @@ Macht den bisher Black-Box-Classifier inspizierbar und gibt dem User die Chance,
 
 ## 2.4.2
 
-Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. Ausgelöst durch die Erkenntnis aus Osorkons Feedback, dass „Kategorien neu zuordnen" bei 500 Geräten 300 richtig und 200 falsch machen kann — und es vorher keinen Weg zurück gab.
+Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. „Kategorien neu zuordnen" kann bei 500 Geräten 300 richtig und 200 falsch machen — vorher gab es keinen Weg zurück.
 
 ### Rückgängig-Toast nach Löschen
 
@@ -145,7 +155,7 @@ Sicherheitsnetz-Release. Destruktive Aktionen sind jetzt rückrollbar. Ausgelös
 
 ## 2.4.1
 
-Hotfix-Release mit Fokus auf MQTT-Diagnose (Forum-Feedback Osorkon zu v2.4.0).
+Hotfix-Release mit Fokus auf MQTT-Diagnose.
 
 ### MQTT
 

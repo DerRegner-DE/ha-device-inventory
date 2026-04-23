@@ -164,7 +164,6 @@
   "recategorize.summary": "{proposed} propuestas, {selected} seleccionadas. {unchanged} dispositivos sin cambios.",
   "recategorize.filterPlaceholder": "Filtrar por nombre, fabricante, tipo o motivo...",
   "recategorize.applyButton": "Aplicar {count}",
-  "recategorize.applyButtonLarge": "🐰 Algo muy especial: aplicar {count}",
   "recategorize.applying": "Aplicando...",
   "recategorize.applyResult": "{applied} aplicados, {skipped} omitidos (propuesta cambió entretanto) — de {total} confirmados.",
   "recategorize.applyFailed": "Error al aplicar",
