@@ -31,12 +31,16 @@ def _connect_kwargs() -> dict:
     if settings.MQTT_USER:
         kwargs["username"] = settings.MQTT_USER
         kwargs["password"] = settings.MQTT_PASSWORD
+    if settings.MQTT_CLIENT_ID:
+        # aiomqtt 2.x passes this to paho as client_id
+        kwargs["identifier"] = settings.MQTT_CLIENT_ID
     return kwargs
 
 
 def _broker_descr() -> str:
     user = settings.MQTT_USER or "anonymous"
-    return f"{settings.MQTT_HOST}:{settings.MQTT_PORT} (user={user})"
+    cid = settings.MQTT_CLIENT_ID or "auto"
+    return f"{settings.MQTT_HOST}:{settings.MQTT_PORT} (user={user}, client_id={cid})"
 
 
 async def test_connection(timeout: float = 5.0) -> dict:
@@ -50,10 +54,11 @@ async def test_connection(timeout: float = 5.0) -> dict:
          show OK while the actual sync publishes nothing).
 
     Returns a dict:
-      {ok: bool, broker: str, connect_ok: bool, publish_ok: bool,
-       error?: str, error_type?: str}
+      {ok: bool, broker: str, client_id: str, connect_ok: bool, publish_ok: bool,
+       error?: str, error_type?: str, hint?: str}
     """
     descr = _broker_descr()
+    cid = settings.MQTT_CLIENT_ID or "auto"
     probe_topic = f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/_probe/config"
 
     try:
@@ -70,12 +75,15 @@ async def test_connection(timeout: float = 5.0) -> dict:
 
         await asyncio.wait_for(_connect_and_publish(), timeout=timeout)
         logger.info("MQTT connect+publish OK: %s", descr)
-        return {"ok": True, "broker": descr, "connect_ok": True, "publish_ok": True}
+        return {"ok": True, "broker": descr, "client_id": cid,
+                "connect_ok": True, "publish_ok": True}
     except asyncio.TimeoutError:
         msg = f"timeout after {timeout:.0f}s"
         logger.warning("MQTT test FAILED (%s): %s", descr, msg)
-        return {"ok": False, "broker": descr, "connect_ok": False, "publish_ok": False,
-                "error": msg, "error_type": "TimeoutError"}
+        return {"ok": False, "broker": descr, "client_id": cid,
+                "connect_ok": False, "publish_ok": False,
+                "error": msg, "error_type": "TimeoutError",
+                "hint": _error_hint("TimeoutError", msg, connect_ok=False)}
     except Exception as e:
         err_type = type(e).__name__
         msg = str(e) or repr(e)
@@ -93,11 +101,36 @@ async def test_connection(timeout: float = 5.0) -> dict:
         if connect_ok:
             logger.warning("MQTT publish FAILED (%s): %s: %s (connect itself OK — likely ACL)",
                            descr, err_type, msg)
-            return {"ok": False, "broker": descr, "connect_ok": True, "publish_ok": False,
-                    "error": msg, "error_type": err_type}
+            return {"ok": False, "broker": descr, "client_id": cid,
+                    "connect_ok": True, "publish_ok": False,
+                    "error": msg, "error_type": err_type,
+                    "hint": _error_hint(err_type, msg, connect_ok=True)}
         logger.warning("MQTT connect FAILED (%s): %s: %s", descr, err_type, msg)
-        return {"ok": False, "broker": descr, "connect_ok": False, "publish_ok": False,
-                "error": msg, "error_type": err_type}
+        return {"ok": False, "broker": descr, "client_id": cid,
+                "connect_ok": False, "publish_ok": False,
+                "error": msg, "error_type": err_type,
+                "hint": _error_hint(err_type, msg, connect_ok=False)}
+
+
+def _error_hint(err_type: str, msg: str, connect_ok: bool) -> str:
+    """Map a raw exception to a short, actionable troubleshooting hint.
+
+    Returns an i18n key (see settings.mqttHint*). Frontend resolves it.
+    """
+    m = (msg or "").lower()
+    t = (err_type or "").lower()
+    if "timeout" in t or "timeout" in m:
+        return "settings.mqttHintTimeout"
+    if "not authori" in m or "unauthori" in m or "bad user" in m or "auth" in m:
+        return "settings.mqttHintAuth"
+    if "refused" in m or "connection refused" in m:
+        return "settings.mqttHintRefused"
+    if "name or service" in m or "nodename nor servname" in m or "getaddrinfo" in m:
+        return "settings.mqttHintDns"
+    if connect_ok:
+        # Connect OK but publish blocked → broker ACL on discovery prefix.
+        return "settings.mqttHintAcl"
+    return "settings.mqttHintGeneric"
 
 
 def _slugify(text: str) -> str:

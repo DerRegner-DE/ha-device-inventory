@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.4.1
+
+Hotfix-Release mit Fokus auf MQTT-Diagnose (Forum-Feedback Osorkon zu v2.4.0).
+
+### MQTT
+
+- Neue Add-on-Option `mqtt_client_id` — optionale explizite MQTT Client-ID. Leer lassen für automatische ID (bisheriges Verhalten). Brokern mit ACLs nach Client-ID kann damit eine feste ID mitgegeben werden.
+- Startup-Log zeigt jetzt die verwendete Client-ID (`auto` oder gesetzter Wert).
+- „MQTT-Verbindung testen" gibt die effektive Client-ID zurück und liefert bei Fehlern einen lokalisierten Troubleshooting-Hinweis (Auth/Refused/Timeout/DNS/ACL/Generic) statt nur des rohen Exception-Strings.
+
 ## 2.4.0
 
 Großes Release, ausgelöst durch Community-Feedback aus dem HA-Forum zu v2.3.0. Bündelt MQTT-Test-Fix, HA-Import-Meldungen, Kategorie-Rewrite, Bulk-Re-Kategorisierung, Custom Categories, Auto-Match-Toggle und i18n-Audit in einer Release.

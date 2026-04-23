@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     MQTT_PORT: int = int(os.environ.get("GV_MQTT_PORT", "1883"))
     MQTT_USER: str = os.environ.get("GV_MQTT_USER", "")
     MQTT_PASSWORD: str = os.environ.get("GV_MQTT_PASSWORD", "")
+    # Optional explicit MQTT client id. Empty => aiomqtt/paho picks a random one.
+    # Brokers with per-client-id ACLs need this set to a known value.
+    MQTT_CLIENT_ID: str = os.environ.get("GV_MQTT_CLIENT_ID", "")
     MQTT_DISCOVERY_ENABLED: bool = os.environ.get("GV_MQTT_DISCOVERY", "false").lower() == "true"
 
     class Config:

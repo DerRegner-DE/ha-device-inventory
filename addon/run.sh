@@ -14,6 +14,7 @@ if [ -f "$OPTIONS_FILE" ]; then
     MQTT_PORT_OPT=$(jq -r '.mqtt_port // 1883' "$OPTIONS_FILE")
     MQTT_USER_OPT=$(jq -r '.mqtt_user // ""' "$OPTIONS_FILE")
     MQTT_PASS_OPT=$(jq -r '.mqtt_password // ""' "$OPTIONS_FILE")
+    MQTT_CID_OPT=$(jq -r '.mqtt_client_id // ""' "$OPTIONS_FILE")
     echo "Language from options: $LANGUAGE"
 else
     LANGUAGE="de"
@@ -22,6 +23,7 @@ else
     MQTT_PORT_OPT="1883"
     MQTT_USER_OPT=""
     MQTT_PASS_OPT=""
+    MQTT_CID_OPT=""
     echo "No options.json found, using defaults"
 fi
 
@@ -68,7 +70,10 @@ else
     export GV_MQTT_USER="$SUP_MQTT_USER"
     export GV_MQTT_PASSWORD="$SUP_MQTT_PASS"
 fi
-echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous})"
+# Optional explicit client id. Empty => paho picks a random one per connect.
+# Brokers with per-client-id ACLs need this set.
+export GV_MQTT_CLIENT_ID="$MQTT_CID_OPT"
+echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous}, client_id: ${GV_MQTT_CLIENT_ID:-auto})"
 
 # Quick TCP reachability check (does not verify auth, only network path).
 # Helps distinguish "broker unreachable" from "auth failed" in logs.

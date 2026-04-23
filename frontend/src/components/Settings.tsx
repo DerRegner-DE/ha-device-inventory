@@ -218,14 +218,18 @@ export function Settings() {
     const result = await apiPost<any>("/mqtt/test", {});
     if (result && result.ok) {
       setMqttResult(t("settings.mqttTestPublishOk", { broker: result.broker }));
-    } else if (result && result.connect_ok && !result.publish_ok) {
-      // Connect works but publish blocked — most likely broker ACL.
-      const reason = `${result.error_type || ""} ${result.error || ""}`.trim();
-      setMqttResult(
-        `${t("settings.mqttTestConnectOnly", { broker: result.broker })} ${reason ? `— ${reason}` : ""}`.trim()
-      );
     } else if (result) {
-      setMqttResult(`FAIL: ${result.broker} — ${result.error_type || ""} ${result.error || ""}`.trim());
+      // Compose: headline (connect-only vs fail) + raw error + translated hint.
+      const reason = `${result.error_type || ""} ${result.error || ""}`.trim();
+      const hintKey: string | undefined = result.hint;
+      const hint = hintKey ? t(hintKey) : "";
+      const head = result.connect_ok && !result.publish_ok
+        ? t("settings.mqttTestConnectOnly", { broker: result.broker })
+        : `FAIL: ${result.broker}`;
+      const parts = [head];
+      if (reason) parts.push(`— ${reason}`);
+      if (hint && hint !== hintKey) parts.push(`\n${hint}`);
+      setMqttResult(parts.join(" "));
     } else {
       setMqttResult(t("settings.mqttSyncFailed"));
     }
@@ -533,7 +537,7 @@ export function Settings() {
             </button>
           )}
           {mqttResult && (
-            <p class="text-xs text-gray-500 mt-2 text-center">{mqttResult}</p>
+            <p class="text-xs text-gray-500 mt-2 text-center whitespace-pre-line">{mqttResult}</p>
           )}
         </div>
 
