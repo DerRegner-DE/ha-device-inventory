@@ -6,6 +6,7 @@ on:
     branches: [develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   # Build frontend once on native amd64 — shared by all Docker jobs below.
