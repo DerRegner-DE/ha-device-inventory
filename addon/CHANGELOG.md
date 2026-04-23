@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.5.2
+
+Kritischer Bugfix-Release. Zwei Community-Reports aus v2.5.1.
+
+### HA-Import pull Self-Imports zurueck (Geraete-Verdopplung)
+
+Vor v2.5.2 hat der HA-Importer Geraete, die das Add-on selbst via MQTT Discovery an HA publiziert, beim naechsten Re-Import wieder mit aufgenommen. Jede Import-Runde hat die Geraete-Anzahl verdoppelt (Forum-Report: 860 → 1269 → 1678 → 2087 Geraete, dieselben 20 Standorte und 1 Integration).
+
+- Der Import filtert jetzt HA-Geraete, deren ``identifiers[*][1]`` mit ``geraeteverwaltung`` beginnt (Hub + pro Geraet). Damit werden selbst-publizierte Devices nicht mehr re-importiert, unabhaengig davon ob das MQTT-Discovery-Toggle an oder aus ist.
+- Neuer einmaliger Cleanup-Endpoint ``POST /api/ha/cleanup-self-imports`` fuer Bestandsinstallationen: verschiebt alle Inventar-Zeilen, deren ``ha_device_id`` auf ein Self-Publish-Device zeigt, in den Papierkorb (30 Tage wiederherstellbar). Sinnvoll einmalig ausfuehren nach dem Update auf v2.5.2 — danach bleibt's sauber.
+- 6 neue Regressionstests (``test_self_import_filter.py``).
+
+### PUT /api/devices/{uuid} mit leerem Body: 400 → idempotent
+
+Die Sync-Queue konnte PUT-Requests mit leerem Body aufbauen (z. B. wenn der User „Speichern" ohne Aenderung drueckt oder wenn die gleiche Aenderung schon via anderem Pfad angekommen ist). Server antwortete mit ``400 No fields to update``, der Sync-Client hat den Queue-Eintrag nie geloescht und bei jedem Sync-Tick erneut geschickt — im Forum-Log sichtbar als minuten­lange 400-Spam-Wellen.
+
+- Server: leerer PUT-Body liefert jetzt die aktuelle Zeile zurueck (200 OK), keine Aenderung, kein ``sync_version``-Bump.
+- Client: Sync-Queue ueberspringt Update-Eintraege mit leerem Payload und loescht sie lokal, damit die Wellen auch ohne Server-Roundtrip verschwinden.
+
+### Parent-Child fuer Bestandsinstallationen
+
+Der Zweit-Pass in ``import_ha_devices`` (``parent_uuid`` via HA ``via_device_id``) laeuft ueber *alle* HA-Registry-Devices, nicht nur die neu importierten — Bestandsinstallationen bekommen ihre Parent-Child-Links nach einem erneuten HA-Import automatisch, ohne Loeschen der bestehenden Inventar-Daten. Kein Code-Aenderung, nur Klarstellung.
+
 ## 2.5.1
 
 Bugfix-Release. Netzwerk-Klassifikation für Geräte mit mehreren Config Entries.

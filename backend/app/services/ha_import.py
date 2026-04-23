@@ -621,6 +621,22 @@ def _is_non_physical_device(device: dict, entities: list[dict],
                              integration_domain: str | None) -> bool:
     """Check if the device is non-physical (automation, service, helper, add-on, etc.)
     and should be skipped during import."""
+    # Skip devices that the Geräteverwaltung add-on itself published via MQTT
+    # Discovery. Each inventory item publishes to HA with identifiers of the
+    # form ``[["mqtt", "geraeteverwaltung_<uuid>"]]`` (and a hub device
+    # ``geraeteverwaltung_hub``). Without this filter, every re-import pulls
+    # those virtual devices back into the inventory and doubles the count.
+    identifiers = device.get("identifiers") or []
+    for ident in identifiers:
+        if isinstance(ident, (list, tuple)) and len(ident) >= 2:
+            second = ident[1]
+        elif isinstance(ident, str):
+            second = ident
+        else:
+            continue
+        if isinstance(second, str) and second.startswith("geraeteverwaltung"):
+            return True
+
     # HA marks service-type entries with entry_type
     entry_type = device.get("entry_type")
     if entry_type in SKIP_ENTRY_TYPES:

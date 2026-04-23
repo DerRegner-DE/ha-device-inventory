@@ -113,6 +113,70 @@ async def import_devices_from_ha():
         raise HTTPException(status_code=502, detail=str(e))
 
 
+@router.post("/cleanup-self-imports")
+async def cleanup_self_imports():
+    """One-shot cleanup for installations that ran HA-Import *before* v2.5.2.
+
+    Pre-v2.5.2, the importer didn't filter out devices that the add-on
+    itself had published via MQTT Discovery. Those devices have HA device
+    identifiers like ``geraeteverwaltung_<uuid>`` and ``geraeteverwaltung_hub``.
+    Each re-import doubled the inventory count. This endpoint soft-deletes
+    inventory rows whose ha_device_id maps to such a device in HA today.
+    """
+    from app.database import get_db, dicts_from_rows
+    from app.services.ha_client import get_ha_device_registry
+
+    try:
+        ha_devices = await get_ha_device_registry()
+    except Exception as e:
+        raise HTTPException(
+            status_code=502, detail=f"Could not fetch HA registry: {e}"
+        )
+
+    self_ha_ids: set[str] = set()
+    for dev in ha_devices or []:
+        for ident in dev.get("identifiers") or []:
+            if isinstance(ident, (list, tuple)) and len(ident) >= 2:
+                second = ident[1]
+            elif isinstance(ident, str):
+                second = ident
+            else:
+                continue
+            if isinstance(second, str) and second.startswith("geraeteverwaltung"):
+                self_ha_ids.add(dev["id"])
+                break
+
+    if not self_ha_ids:
+        return {"status": "ok", "purged": 0, "message": "Keine Self-Imports gefunden."}
+
+    with get_db() as conn:
+        placeholders = ", ".join(["?"] * len(self_ha_ids))
+        affected = dicts_from_rows(
+            conn.execute(
+                f"SELECT uuid FROM devices WHERE ha_device_id IN ({placeholders}) "
+                f"AND deleted_at IS NULL",
+                tuple(self_ha_ids),
+            ).fetchall()
+        )
+        if affected:
+            conn.execute(
+                f"UPDATE devices SET deleted_at = datetime('now'), "
+                f"sync_version = sync_version + 1 "
+                f"WHERE ha_device_id IN ({placeholders}) AND deleted_at IS NULL",
+                tuple(self_ha_ids),
+            )
+
+    return {
+        "status": "ok",
+        "purged": len(affected),
+        "ha_self_devices_in_registry": len(self_ha_ids),
+        "message": (
+            f"{len(affected)} Self-Import-Eintraege in den Papierkorb verschoben "
+            "(wiederherstellbar fuer 30 Tage)."
+        ),
+    }
+
+
 async def _load_recategorize_context(uuids: Optional[list[str]]):
     """Shared plumbing for recategorize preview + apply.
 
