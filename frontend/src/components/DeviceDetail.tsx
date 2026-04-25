@@ -196,17 +196,18 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
     );
   };
 
+  // v2.5.3: Bug 8 — open the HA device page in a new tab so users don't
+  // lose the Geräteverwaltung view (they used to be yanked out via
+  // ``window.top.location.assign``).
+  const openInHA = () => {
+    const url = getHaSetupUrl(device);
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div class="p-4 pt-2 space-y-4 pb-24">
-      <button
-        onClick={() => navigate("/devices")}
-        class="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
-      >
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-        {t("common.back")}
-      </button>
+      {/* v2.5.3: Bug 7 — the top back-arrow was a duplicate of the bottom
+          nav's "Zurück" button and confused users. Removed. */}
 
       {photoUrl && (
         <img
@@ -303,39 +304,15 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         </div>
       )}
 
-      {/* v2.5.0: installation photos / Einbauort-Bilder (Todo82) */}
-      {uuid && <AttachmentsSection deviceUuid={uuid} />}
+      {/* v2.5.3: Bug 6 — show Einbauort-Bilder + Dokumente read-only on
+          the detail view. All mutating actions (upload/delete/link) live
+          in the edit form so "Bearbeiten" is where users expect to make
+          changes. Hidden entirely when empty. */}
+      {uuid && <AttachmentsSection deviceUuid={uuid} readOnly />}
 
-      {/* v2.5.0: per-device change history with revert */}
       {uuid && <HistorySection deviceUuid={uuid} />}
 
-      {/* Documents / Manuals section */}
-      {uuid && <DocumentsSection deviceUuid={uuid} />}
-
-      {/* Onboarding: Link to HA integration setup - only show if device has HA link */}
-      {device.ha_device_id && getHaSetupUrl(device) && (
-        <div>
-          <button
-            onClick={() => {
-              const url = getHaSetupUrl(device);
-              if (url) {
-                try {
-                  window.top?.location.assign(url);
-                } catch {
-                  window.open(url, "_blank");
-                }
-              }
-            }}
-            class="w-full py-3 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] cursor-pointer flex items-center justify-center gap-2"
-          >
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            {t("detail.setupInHA")}
-          </button>
-          <p class="text-[10px] text-gray-400 dark:text-gray-500 text-center mt-1">{t("detail.setupInHADesc")}</p>
-        </div>
-      )}
+      {uuid && <DocumentsSection deviceUuid={uuid} readOnly />}
 
       <div class="text-center text-[10px] text-gray-300 py-2">
         {t("detail.created")}: {new Date(device.created_at).toLocaleString("de-DE")}
@@ -343,6 +320,10 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         {t("detail.updated")}: {new Date(device.updated_at).toLocaleString("de-DE")}
       </div>
 
+      {/* v2.5.3: Bug 9 — the "In HA anzeigen" button used to be a separate
+          full-width section above the bottom nav. User feedback: the action
+          belongs with the other nav actions (back / edit) and works better
+          as a middle button between them. */}
       <div class="fixed left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex gap-3 z-30" style="bottom: calc(4rem + max(env(safe-area-inset-bottom, 0px), 12px));">
         <button
           onClick={() => navigate("/devices")}
@@ -350,6 +331,18 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
         >
           {t("common.back")}
         </button>
+        {device.ha_device_id && getHaSetupUrl(device) && (
+          <button
+            onClick={openInHA}
+            class="flex-1 py-2.5 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] cursor-pointer inline-flex items-center justify-center gap-1.5"
+            title={t("detail.setupInHADesc")}
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            {t("detail.showInHA")}
+          </button>
+        )}
         <button
           onClick={() => navigate(`/devices/${device.uuid}/edit`)}
           class="flex-1 py-2.5 rounded-xl bg-[#1F4E79] text-white text-sm font-medium hover:bg-[#1a4268] cursor-pointer"
@@ -369,7 +362,25 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
 
 // ----- Documents Section -----
 
-function DocumentsSection({ deviceUuid }: { deviceUuid: string }) {
+// v2.5.3: Bug 10 — thumbnail preview for image documents instead of making
+// users download them just to check what they are. The HA Companion App
+// on tablets can't open direct-download links and used to show an access
+// error; a thumbnail sidesteps that completely.
+const IMAGE_RE = /\.(jpe?g|png|gif|webp|bmp)$/i;
+
+function isImageDoc(doc: DocumentItem): boolean {
+  if (doc.url) return false;
+  if (doc.mime_type && doc.mime_type.startsWith("image/")) return true;
+  return IMAGE_RE.test(doc.filename || "");
+}
+
+export function DocumentsSection({
+  deviceUuid,
+  readOnly = false,
+}: {
+  deviceUuid: string;
+  readOnly?: boolean;
+}) {
   const [docs, setDocs] = useState<DocumentItem[]>([]);
   const [showUpload, setShowUpload] = useState(false);
   const [showLink, setShowLink] = useState(false);
@@ -410,6 +421,11 @@ function DocumentsSection({ deviceUuid }: { deviceUuid: string }) {
   };
 
   const isPro = hasFeature("ha_sync");
+  const canEdit = isPro && !readOnly;
+
+  // Hide completely in read-only mode when there are no documents; no point
+  // showing an empty "Dokumente" section on the detail page.
+  if (readOnly && docs.length === 0) return null;
 
   return (
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
@@ -417,7 +433,7 @@ function DocumentsSection({ deviceUuid }: { deviceUuid: string }) {
         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
           {t("detail.documents")}
         </h3>
-        {isPro && (
+        {canEdit && (
           <div class="flex gap-2">
             <button
               onClick={() => { setShowUpload(true); setShowLink(false); }}
@@ -481,42 +497,57 @@ function DocumentsSection({ deviceUuid }: { deviceUuid: string }) {
 
       {docs.length > 0 && (
         <div class="space-y-2">
-          {docs.map((doc) => (
-            <div key={doc.uuid} class="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
-              <div class="flex items-center gap-2 min-w-0">
-                <span class="text-gray-400 dark:text-gray-500 shrink-0">
-                  {doc.url ? (
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" /></svg>
+          {docs.map((doc) => {
+            const href = doc.url || getDocumentUrl(doc.uuid);
+            const showThumb = isImageDoc(doc);
+            return (
+              <div key={doc.uuid} class="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
+                <div class="flex items-center gap-2 min-w-0">
+                  {showThumb ? (
+                    <a href={href} target="_blank" rel="noopener" class="shrink-0">
+                      <img
+                        src={href}
+                        alt={doc.caption || doc.filename}
+                        class="w-10 h-10 rounded object-cover bg-gray-100 dark:bg-gray-700"
+                        loading="lazy"
+                      />
+                    </a>
                   ) : (
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                    <span class="text-gray-400 dark:text-gray-500 shrink-0">
+                      {doc.url ? (
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" /></svg>
+                      ) : (
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+                      )}
+                    </span>
                   )}
-                </span>
-                <a
-                  href={doc.url || getDocumentUrl(doc.uuid)}
-                  target="_blank"
-                  rel="noopener"
-                  class="text-sm text-[#1F4E79] dark:text-[#7ab5d6] truncate hover:underline"
-                >
-                  {doc.caption || doc.filename}
-                </a>
-                {doc.file_size > 0 && (
-                  <span class="text-[10px] text-gray-400 shrink-0">
-                    {(doc.file_size / 1024).toFixed(0)} KB
-                  </span>
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener"
+                    class="text-sm text-[#1F4E79] dark:text-[#7ab5d6] truncate hover:underline"
+                  >
+                    {doc.caption || doc.filename}
+                  </a>
+                  {doc.file_size > 0 && (
+                    <span class="text-[10px] text-gray-400 shrink-0">
+                      {(doc.file_size / 1024).toFixed(0)} KB
+                    </span>
+                  )}
+                </div>
+                {canEdit && (
+                  <button
+                    onClick={() => handleDelete(doc.uuid)}
+                    class="text-red-400 hover:text-red-600 cursor-pointer shrink-0 ml-2"
+                  >
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 )}
               </div>
-              {isPro && (
-                <button
-                  onClick={() => handleDelete(doc.uuid)}
-                  class="text-red-400 hover:text-red-600 cursor-pointer shrink-0 ml-2"
-                >
-                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

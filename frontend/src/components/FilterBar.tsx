@@ -1,6 +1,8 @@
+import { useMemo } from "preact/hooks";
 import { DEVICE_TYPES } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
+import { useCategories } from "./CategoryManager";
 
 interface FilterBarProps {
   search: string;
@@ -16,6 +18,28 @@ export function FilterBar({
   onTypeChange,
 }: FilterBarProps) {
   useLanguage();
+  const categories = useCategories();
+
+  // v2.5.3: Bug 3 — chip list is now dynamic (includes Custom Categories
+  // added via Settings → "Kategorien verwalten") and sorted alphabetically
+  // by the rendered label so users can actually find an entry quickly.
+  // Previously only the static DEVICE_TYPES list was rendered in its
+  // definition order, so custom categories were missing entirely and the
+  // order looked random.
+  const chipTypes = useMemo(() => {
+    const entries: { value: string; label: string }[] = [];
+    if (categories.length > 0) {
+      for (const c of categories) {
+        const label = c.label_key ? t(c.label_key) || c.name : c.name;
+        entries.push({ value: c.name, label });
+      }
+    } else {
+      for (const dt of DEVICE_TYPES) {
+        entries.push({ value: dt.id, label: t(dt.labelKey) });
+      }
+    }
+    return entries.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+  }, [categories]);
   return (
     <div class="space-y-3 p-4">
       <div class="relative">
@@ -61,17 +85,17 @@ export function FilterBar({
         >
           {t("filter.all")}
         </button>
-        {DEVICE_TYPES.map((typ) => (
+        {chipTypes.map((typ) => (
           <button
-            key={typ.id}
-            onClick={() => onTypeChange(activeType === typ.id ? "" : typ.id)}
+            key={typ.value}
+            onClick={() => onTypeChange(activeType === typ.value ? "" : typ.value)}
             class={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              activeType === typ.id
+              activeType === typ.value
                 ? "bg-[#1F4E79] text-white"
                 : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
           >
-            {t(typ.labelKey)}
+            {typ.label}
           </button>
         ))}
       </div>

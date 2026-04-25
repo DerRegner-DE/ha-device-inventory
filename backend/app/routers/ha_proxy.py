@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
@@ -11,7 +14,60 @@ from app.services import ha_client
 from app.services.device_sync import sync_ha_areas
 from app.services.ha_import import import_ha_devices
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/ha", tags=["home-assistant"])
+
+# v2.5.3: HA imports on large setups (388+ devices) regularly took longer
+# than HA Ingress' HTTP timeout, giving the client a 502 Bad Gateway even
+# when the work itself completed successfully. We now run the import as a
+# background asyncio task and expose a progress endpoint the frontend polls.
+_IMPORT_STATE: dict = {
+    "running": False,
+    "stage": "idle",        # idle | fetching_registry | processing | linking_parents | done | error
+    "progress": 0,          # devices processed so far
+    "total": 0,             # total devices to process
+    "started_at": None,
+    "finished_at": None,
+    "result": None,         # final result dict from import_ha_devices
+    "error": None,          # error string, set when stage == "error"
+}
+
+
+def _progress_cb(stage: str, current: int, total: int) -> None:
+    _IMPORT_STATE["stage"] = stage
+    _IMPORT_STATE["progress"] = current
+    _IMPORT_STATE["total"] = total
+
+
+async def _run_import_task() -> None:
+    _IMPORT_STATE.update({
+        "running": True,
+        "stage": "starting",
+        "progress": 0,
+        "total": 0,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+        "finished_at": None,
+        "result": None,
+        "error": None,
+    })
+    try:
+        result = await import_ha_devices(progress_cb=_progress_cb)
+        _IMPORT_STATE.update({
+            "running": False,
+            "stage": "done" if result.get("status") != "error" else "error",
+            "result": result,
+            "error": result.get("message") if result.get("status") == "error" else None,
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as e:  # pragma: no cover - defensive catch-all
+        logger.exception("HA import task failed")
+        _IMPORT_STATE.update({
+            "running": False,
+            "stage": "error",
+            "error": f"{type(e).__name__}: {e}",
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+        })
 
 
 class AreaUpdateRequest(BaseModel):
@@ -95,22 +151,40 @@ async def update_ha_device_area(device_id: str, body: AreaUpdateRequest):
 
 @router.post("/import-devices")
 async def import_devices_from_ha():
-    """Import all HA devices into the Geräteverwaltung inventory.
+    """Start a background HA-device import.
 
-    - Fetches device + entity registries via WebSocket API
-    - Maps HA fields to inventory fields (type, area, integration, network)
-    - Deduplicates by ha_device_id (safe to run multiple times)
-    - Returns import statistics
+    v2.5.3: runs asynchronously so large setups don't hit the HA Ingress
+    timeout. Returns immediately after kicking off the task; the frontend
+    polls ``GET /api/ha/import-devices/status`` for progress and the final
+    result.
     """
-    try:
-        result = await import_ha_devices()
-        if result.get("status") == "error":
-            raise HTTPException(status_code=502, detail=result.get("message"))
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=str(e))
+    if _IMPORT_STATE["running"]:
+        return {
+            "status": "already_running",
+            "message": "Ein Import laeuft bereits.",
+            "state": _IMPORT_STATE,
+        }
+    # Fire-and-forget; the task writes its progress into _IMPORT_STATE.
+    asyncio.create_task(_run_import_task())
+    # Give the task a tick to move out of "idle" so the first poll sees "starting".
+    await asyncio.sleep(0)
+    return {
+        "status": "started",
+        "message": "Import gestartet. Fortschritt ueber /api/ha/import-devices/status abrufen.",
+        "state": _IMPORT_STATE,
+    }
+
+
+@router.get("/import-devices/status")
+def get_import_status():
+    """Return the current (or last completed) import state.
+
+    Poll this endpoint every ~2 s while an import is running. When
+    ``state.running`` goes back to ``false``, inspect ``state.stage``:
+    ``done`` + ``state.result`` carries the final stats, ``error`` +
+    ``state.error`` carries the failure reason.
+    """
+    return _IMPORT_STATE
 
 
 @router.post("/cleanup-self-imports")

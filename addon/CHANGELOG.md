@@ -1,5 +1,60 @@
 # Changelog
 
+## 2.5.3
+
+Breites Bugfix- und UX-Release. Sammelt Community-Reports aus v2.5.1/2.5.2 plus drei während der Beta-Runde gefundene Regressions.
+
+### Geräte löschen — MQTT-Discovery wurde nie aufgeräumt
+
+- ``DELETE /api/devices/{uuid}`` lieferte 204, aber im Backend-Log erschien parallel ``RuntimeWarning: coroutine 'remove_device' was never awaited``. Die zugehörige MQTT-Discovery-Bereinigung lief nie, sodass HA bei aktivem MQTT-Toggle Phantom-Geräte zurückbehielt.
+- Ursache: ``background_tasks.add_task(asyncio.create_task, mqtt_remove_device(uuid))`` ruft die Async-Funktion sofort auf, übergibt die Coroutine an ``asyncio.create_task`` als Argument, und niemand awaited sie. Dasselbe Anti-Pattern stand auch bei Create und Update.
+- Fix: FastAPI's ``BackgroundTasks`` akzeptiert async Funktionen direkt — jetzt wird die Funktion samt Argumenten korrekt übergeben (``add_task(mqtt_remove_device, uuid)``). 4 neue Regressionstests (``test_background_tasks_await.py``).
+
+### HA-Import auf grossen Setups (>300 Geraete)
+
+- ``POST /api/ha/import-devices`` blockierte bei 388+ Geraeten laenger als das HA-Ingress-HTTP-Timeout. Der Client sah ``502 Bad Gateway``, obwohl der Import serverseitig weiterlief.
+- Der Import laeuft jetzt als Background-Task, der Endpoint kehrt sofort mit ``{"status": "started"}`` zurueck. Der neue Endpoint ``GET /api/ha/import-devices/status`` liefert Live-Progress (``stage``, ``progress``, ``total``, Endergebnis oder Fehlertext). Das Frontend pollt alle 2 s und zeigt einen Fortschrittsbalken.
+- Nebenfund beim Debugging: Der Parent-Child-Pass hatte einen ``NameError`` (``for dev in devices:`` statt ``for dev in ha_devices:``) und hat damit seit v2.5.0 still keine ``parent_uuid``-Links geschrieben. Nach dem Fix werden Parent-Child-Beziehungen beim Re-Import korrekt gesetzt.
+
+### Papierkorb — Bulk-Restore gab 404
+
+- Der gruene "X wiederherstellen"-Button in der Papierkorb-Ansicht blieb wirkungslos (404 im Backend-Log), der Per-Zeilen-Button ging. Ursache: Route-Registrierungsreihenfolge — ``POST /{uuid}/restore`` war vor ``POST /bulk/restore`` registriert, FastAPI hat ``/bulk/restore`` als ``uuid="bulk"`` gematcht und 404 zurueckgegeben.
+- Fix: Bulk-Route vor der UUID-Route registriert. Neue Regressionstests (``test_bulk_restore_route.py``): Route-Order-Guard und Handler-Signatur-Guard.
+
+### Settings — Cache leeren vs. Alle Geraete loeschen getrennt
+
+- Frueher war "Cache leeren" unklar — es hat lokale IndexedDB geleert *und* vom Server neu synchronisiert, was bei grossen Inventaren wie "alles weg" aussah. Die Aktion ist jetzt zwei klar getrennte Buttons:
+  - **Cache leeren**: nur lokal (Browser-IndexedDB), Server bleibt unberuehrt. Sofort anschliessend synchronisiert der Client neu.
+  - **Alle Geraete in Papierkorb**: neuer Server-Endpoint ``POST /api/devices/bulk/delete-all``, verschiebt alle aktiven Geraete in den Papierkorb (30 Tage wiederherstellbar). Snapshot wird vorab angelegt. Intended als letzter Reset-Knopf nach einem misslungenen Import.
+
+### Donut-Charts + Count-Cards als Filter nutzbar
+
+- Im Dashboard waren Donut- und Zaehl-Kacheln rein informativ. Jetzt wird der jeweilige Wert beim Klick als Filter uebernommen — z. B. "Klick auf den Hersteller-Donut-Slice *Intel* filtert die Geraeteliste auf alle Intel-Geraete". Per Tastatur erreichbar (``role="button"``, ``tabIndex``, Enter/Space), inkl. Cursor- und Hover-Zustand.
+
+### DeviceList — weitere Filter-Chips
+
+- Chip-Filter bestanden bisher nur fuer Kategorie. Neu: Chips fuer *Integration*, *Hersteller* und *Bereich*. Sichtbar ueber der Liste, klickbar mit X zum Entfernen, durch Kombination mit der Suche drillbar.
+
+### DeviceForm — Dropdown-Listen alphabetisch
+
+- Die Listen fuer Geraetetyp, Integration, Netzwerk und Stromquelle waren bisher in Codierungsreihenfolge. Jetzt alphabetisch per ``localeCompare`` (Locale-bewusst, damit Umlaute richtig einsortieren), wobei "Sonstiges" und "Nicht angebunden" stabil am Ende bleiben.
+
+### Export — Feld-Picker mit Presets
+
+- PDF- und Excel-Export haben jetzt einen Feld-Picker. Default-Preset: 10 Kernfelder. Zwei mitgelieferte Presets: **Versicherung** (Seriennummer, Kaufdatum, Preis, Garantie) und **Nachlass** (Kaufdatum, Preis, Standort, Notizen, Funktion). Auswahl wird in ``localStorage`` gespeichert.
+
+### Device-Detail — Aufraeumarbeiten
+
+- **Dokumente/Einbauort-Bilder in der Detail-Ansicht read-only**: Im reinen Anzeigen-Modus sind Upload-Buttons, Loeschen-Kreuze und Caption-Felder ausgeblendet. Upload/Loeschen/Umbenennen bleibt im Bearbeiten-Modus moeglich.
+- **Back-Pfeil oben entfernt**: Der Zurueck-Pfeil am Titel war doppelt mit dem dedizierten Zurueck-Button unten. Jetzt nur noch der untere Button.
+- **"In HA anzeigen" als eigener Button**: vorher nur als Link im Geraetenamen, oft uebersehen. Jetzt prominent in der Button-Reihe (gruen, oeffnet die HA-Geraeteseite in neuem Tab).
+- **Button-Reihenfolge neu**: ``[Zurueck] [In HA anzeigen] [Bearbeiten] [Loeschen]`` — Konsens-Reihenfolge (von rechts nach links destruktiver), mit dem gruenen "In HA"-Button visuell abgehoben.
+- **Foto-Dokumente mit Thumbnail**: Ist ein hochgeladenes Dokument ein Bild (``mime_type`` beginnt mit ``image/`` oder Dateiendung passt), rendert die Dokumenten-Liste ein 40×40-Vorschaubild (``w-10 h-10``, gerundet, ``object-cover``). Klick auf das Bild oeffnet die Vollansicht. Nicht-Bilder behalten das Standard-Datei-Icon.
+
+### i18n
+
+- Alle 5 Sprachen synchron auf den neuen Umfang (DE, EN, ES, FR, RU).
+
 ## 2.5.2
 
 Kritischer Bugfix-Release. Zwei Community-Reports aus v2.5.1.

@@ -2,8 +2,14 @@
 
 Generates a formatted PDF with device inventory including:
 - Summary statistics
-- Device table with key fields
-- Per-device detail pages (optional, for insurance claims)
+- Device table with selected fields
+- Per-device detail pages (for insurance claims)
+
+v2.5.3: accepts an optional ``fields`` list. When given, the summary table
+and the detail pages render only those fields; column widths are derived
+from a fixed-weight map. Prior versions ignored ``fields=`` entirely — the
+frontend's ExportPicker looked broken because every export came out with
+the same 8 table columns regardless of checkbox state.
 """
 
 from __future__ import annotations
@@ -12,6 +18,67 @@ from datetime import datetime
 from io import BytesIO
 
 from fpdf import FPDF
+
+# English field labels (PDF keeps its existing English UI — the doc is an
+# insurance/estate artefact and the team reading it might not be German).
+FIELD_LABELS_EN: dict[str, str] = {
+    "nr": "#",
+    "typ": "Type",
+    "bezeichnung": "Name",
+    "modell": "Model",
+    "hersteller": "Manufacturer",
+    "standort_name": "Location",
+    "standort_floor_id": "Floor",
+    "standort_area_id": "Area ID",
+    "seriennummer": "Serial No.",
+    "ain_artikelnr": "Article No.",
+    "firmware": "Firmware",
+    "integration": "Integration",
+    "netzwerk": "Network",
+    "stromversorgung": "Power",
+    "ip_adresse": "IP Address",
+    "mac_adresse": "MAC Address",
+    "anschaffungsdatum": "Purchased",
+    "garantie_bis": "Warranty",
+    "ha_device_id": "HA Device ID",
+    "ha_entity_id": "HA Entity ID",
+    "funktion": "Function",
+    "anmerkungen": "Notes",
+}
+
+# Column weight for the summary table (relative, normalised to usable width).
+FIELD_WEIGHTS: dict[str, float] = {
+    "nr": 0.6,
+    "typ": 2.0,
+    "bezeichnung": 3.5,
+    "modell": 2.5,
+    "hersteller": 2.0,
+    "standort_name": 2.2,
+    "standort_floor_id": 1.4,
+    "standort_area_id": 2.0,
+    "seriennummer": 2.0,
+    "ain_artikelnr": 2.0,
+    "firmware": 1.2,
+    "integration": 2.0,
+    "netzwerk": 1.4,
+    "stromversorgung": 1.6,
+    "ip_adresse": 1.6,
+    "mac_adresse": 2.0,
+    "anschaffungsdatum": 1.6,
+    "garantie_bis": 1.6,
+    "ha_device_id": 3.5,
+    "ha_entity_id": 2.8,
+    "funktion": 3.5,
+    "anmerkungen": 3.5,
+}
+
+DEFAULT_FIELDS: list[str] = [
+    "nr", "bezeichnung", "typ", "hersteller",
+    "seriennummer", "standort_name",
+    "anschaffungsdatum", "garantie_bis",
+]
+
+USABLE_WIDTH_MM = 190.0
 
 
 class DevicePDF(FPDF):
@@ -39,11 +106,27 @@ class DevicePDF(FPDF):
         self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
 
 
-def export_devices_to_pdf(devices: list[dict]) -> bytes:
+def _compute_col_widths(fields: list[str]) -> list[float]:
+    weights = [FIELD_WEIGHTS.get(f, 2.0) for f in fields]
+    total = sum(weights) or 1.0
+    return [USABLE_WIDTH_MM * w / total for w in weights]
+
+
+def export_devices_to_pdf(
+    devices: list[dict],
+    fields: list[str] | None = None,
+) -> bytes:
     """Generate a PDF document from device list.
 
-    Returns PDF as bytes.
+    When ``fields`` is provided, the summary table renders exactly those
+    columns (auto-widthed) and the detail pages show the same fields as
+    label/value pairs. When None, the classic 8-column summary + 14-field
+    detail layout is preserved.
     """
+    selected = [f for f in (fields or DEFAULT_FIELDS) if f in FIELD_LABELS_EN]
+    if not selected:
+        selected = DEFAULT_FIELDS
+
     pdf = DevicePDF(title="Device Inventory - Insurance Documentation")
     pdf.alias_nb_pages()
     pdf.set_auto_page_break(auto=True, margin=20)
@@ -73,18 +156,21 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
     pdf.cell(0, 8, "Device List", new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0)
 
-    # Table header
-    col_widths = [8, 40, 25, 25, 22, 25, 22, 23]
-    headers = ["#", "Name", "Type", "Manufacturer", "Serial No.", "Location", "Purchased", "Warranty"]
+    col_widths = _compute_col_widths(selected)
+    headers = [FIELD_LABELS_EN[f] for f in selected]
+    # Per-column truncation proportional to column width (~2mm per char).
+    max_chars = [max(4, int(w / 2.0)) for w in col_widths]
 
-    pdf.set_font("Helvetica", "B", 7)
-    pdf.set_fill_color(31, 78, 121)
-    pdf.set_text_color(255)
-    for i, header in enumerate(headers):
-        pdf.cell(col_widths[i], 6, header, border=1, fill=True, align="C")
-    pdf.ln()
+    def _draw_header() -> None:
+        pdf.set_font("Helvetica", "B", 7)
+        pdf.set_fill_color(31, 78, 121)
+        pdf.set_text_color(255)
+        for i, h in enumerate(headers):
+            pdf.cell(col_widths[i], 6, h, border=1, fill=True, align="C")
+        pdf.ln()
 
-    # Table rows
+    _draw_header()
+
     pdf.set_font("Helvetica", "", 7)
     pdf.set_text_color(0)
     fill = False
@@ -92,35 +178,20 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
     for idx, device in enumerate(devices, 1):
         if pdf.get_y() > 265:
             pdf.add_page()
-            # Re-draw header
-            pdf.set_font("Helvetica", "B", 7)
-            pdf.set_fill_color(31, 78, 121)
-            pdf.set_text_color(255)
-            for i, header in enumerate(headers):
-                pdf.cell(col_widths[i], 6, header, border=1, fill=True, align="C")
-            pdf.ln()
+            _draw_header()
             pdf.set_font("Helvetica", "", 7)
             pdf.set_text_color(0)
             fill = False
 
-        if fill:
-            pdf.set_fill_color(240, 245, 250)
-        else:
-            pdf.set_fill_color(255)
+        pdf.set_fill_color(240, 245, 250) if fill else pdf.set_fill_color(255)
 
-        row = [
-            str(idx),
-            _truncate(device.get("bezeichnung", ""), 28),
-            _truncate(device.get("typ", ""), 16),
-            _truncate(device.get("hersteller", ""), 16),
-            _truncate(device.get("seriennummer", ""), 14),
-            _truncate(device.get("standort_name", ""), 16),
-            device.get("anschaffungsdatum", "") or "",
-            device.get("garantie_bis", "") or "",
-        ]
-
-        for i, val in enumerate(row):
-            pdf.cell(col_widths[i], 5, val, border=1, fill=True, align="L" if i > 0 else "C")
+        for i, f in enumerate(selected):
+            if f == "nr":
+                val = str(idx)
+            else:
+                val = str(device.get(f, "") or "")
+            align = "C" if f == "nr" else "L"
+            pdf.cell(col_widths[i], 5, _truncate(val, max_chars[i]), border=1, fill=True, align=align)
         pdf.ln()
         fill = not fill
 
@@ -131,42 +202,36 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
         pdf.set_text_color(31, 78, 121)
         pdf.cell(0, 8, "Device Details", new_x="LMARGIN", new_y="NEXT")
 
+        # Detail pages show the selected fields as label/value rows. "nr"
+        # and "bezeichnung" are surfaced in the heading, so skip them below.
+        detail_fields = [f for f in selected if f not in ("nr", "bezeichnung", "anmerkungen")]
+
         for idx, device in enumerate(devices, 1):
             if pdf.get_y() > 240:
                 pdf.add_page()
 
             pdf.set_font("Helvetica", "B", 9)
             pdf.set_text_color(31, 78, 121)
-            pdf.cell(0, 7, f"{idx}. {_safe_text(device.get('bezeichnung', 'Unknown'))}", new_x="LMARGIN", new_y="NEXT")
+            pdf.cell(
+                0, 7,
+                f"{idx}. {_safe_text(device.get('bezeichnung', 'Unknown'))}",
+                new_x="LMARGIN", new_y="NEXT",
+            )
 
             pdf.set_font("Helvetica", "", 8)
             pdf.set_text_color(0)
 
-            fields = [
-                ("Type", device.get("typ", "")),
-                ("Model", device.get("modell", "")),
-                ("Manufacturer", device.get("hersteller", "")),
-                ("Serial Number", device.get("seriennummer", "")),
-                ("Location", device.get("standort_name", "")),
-                ("IP Address", device.get("ip_adresse", "")),
-                ("MAC Address", device.get("mac_adresse", "")),
-                ("Network", device.get("netzwerk", "")),
-                ("Power", device.get("stromversorgung", "")),
-                ("Firmware", device.get("firmware", "")),
-                ("Integration", device.get("integration", "")),
-                ("Purchased", device.get("anschaffungsdatum", "")),
-                ("Warranty until", device.get("garantie_bis", "")),
-                ("Article No.", device.get("ain_artikelnr", "")),
-            ]
+            for f in detail_fields:
+                value = device.get(f, "")
+                if not value:
+                    continue
+                pdf.set_font("Helvetica", "B", 8)
+                pdf.cell(30, 5, f"{FIELD_LABELS_EN.get(f, f)}:")
+                pdf.set_font("Helvetica", "", 8)
+                pdf.cell(0, 5, _safe_text(str(value)), new_x="LMARGIN", new_y="NEXT")
 
-            for label, value in fields:
-                if value:
-                    pdf.set_font("Helvetica", "B", 8)
-                    pdf.cell(30, 5, f"{label}:")
-                    pdf.set_font("Helvetica", "", 8)
-                    pdf.cell(0, 5, _safe_text(str(value)), new_x="LMARGIN", new_y="NEXT")
-
-            if device.get("anmerkungen"):
+            # Notes get a multi_cell if they were selected.
+            if "anmerkungen" in selected and device.get("anmerkungen"):
                 pdf.set_font("Helvetica", "B", 8)
                 pdf.cell(30, 5, "Notes:")
                 pdf.set_font("Helvetica", "", 8)
@@ -177,7 +242,6 @@ def export_devices_to_pdf(devices: list[dict]) -> bytes:
             pdf.line(10, pdf.get_y(), 200, pdf.get_y())
             pdf.ln(2)
 
-    # Output
     buf = BytesIO()
     pdf.output(buf)
     return buf.getvalue()

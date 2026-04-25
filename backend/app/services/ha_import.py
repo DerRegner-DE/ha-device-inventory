@@ -717,7 +717,9 @@ def _is_non_physical_device(device: dict, entities: list[dict],
     return False
 
 
-async def import_ha_devices() -> dict[str, Any]:
+async def import_ha_devices(
+    progress_cb: "callable | None" = None,
+) -> dict[str, Any]:
     """
     Import all HA devices into the Geräteverwaltung database.
 
@@ -726,7 +728,23 @@ async def import_ha_devices() -> dict[str, Any]:
     - Maps HA fields to Geräteverwaltung fields using 50+ integration mappings
     - Deduplicates by ha_device_id (skips already imported devices)
     - Returns import statistics
+
+    v2.5.3: ``progress_cb(stage: str, current: int, total: int)`` is called
+    at every meaningful milestone so a background-task wrapper can surface
+    live progress to the frontend. The Forum-reported 502 Bad Gateway on
+    large setups (388 devices) came from a purely synchronous call that
+    blocked the HTTP response past the HA Ingress timeout — this decouples
+    the long work from the HTTP request.
     """
+    def _report(stage: str, current: int = 0, total: int = 0) -> None:
+        if progress_cb:
+            try:
+                progress_cb(stage, current, total)
+            except Exception:
+                pass  # progress reporting must never break the import
+
+    _report("fetching_registry")
+
     # Respect the user's auto-categorize preference.
     from app.routers.settings import get_bool_setting
     auto_categorize = get_bool_setting("auto_categorize", True)
@@ -774,6 +792,7 @@ async def import_ha_devices() -> dict[str, Any]:
 
     total = len(ha_devices)
     logger.info("HA import starting: %d HA devices to process", total)
+    _report("processing", 0, total)
 
     with get_db() as conn:
         for idx, dev in enumerate(ha_devices):
@@ -783,6 +802,7 @@ async def import_ha_devices() -> dict[str, Any]:
                     "HA import progress: %d/%d processed (imported=%d, dup=%d, non_phys=%d, err=%d)",
                     idx, total, imported, skipped_duplicates, skipped_non_physical, len(errors),
                 )
+                _report("processing", idx, total)
 
             # Per-device try/except so one broken device cannot abort the whole import
             try:
@@ -910,6 +930,10 @@ async def import_ha_devices() -> dict[str, Any]:
     # HA sets via_device_id on sub-devices (e.g. Shelly channels point to the
     # Shelly main device). After all rows are inserted, we can resolve the
     # inventory UUID of each parent and wire the relationship.
+    # v2.5.3: the loop variable was ``devices`` — a NameError in Python since
+    # the local name was never bound. Fixed to ``ha_devices`` (the registry
+    # list) so parent-child links actually get written on import.
+    _report("linking_parents", total, total)
     linked_parents = 0
     with get_db() as conn:
         # Map ha_device_id -> inventory uuid for every imported device.
@@ -919,7 +943,7 @@ async def import_ha_devices() -> dict[str, Any]:
         ).fetchall())
         ha_id_to_uuid = {r["ha_device_id"]: r["uuid"] for r in rows}
 
-        for dev in devices:
+        for dev in ha_devices:
             via = dev.get("via_device_id")
             if not via:
                 continue

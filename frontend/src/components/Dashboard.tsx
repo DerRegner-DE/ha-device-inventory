@@ -95,9 +95,29 @@ export function Dashboard() {
     sessionStorage.removeItem("gv_filter_netzwerk");
     sessionStorage.removeItem("gv_filter_power");
     sessionStorage.removeItem("gv_filter_warranty");
+    sessionStorage.removeItem("gv_filter_integration");
+    sessionStorage.removeItem("gv_filter_manufacturer");
+    sessionStorage.removeItem("gv_filter_area");
     sessionStorage.removeItem("gv_filter_search");
     if (value) sessionStorage.setItem(key, value);
     navigate("/devices");
+  };
+
+  // v2.5.3: Bug 5 — bar-chart rows (Nach Hersteller / Nach Integration /
+  // Nach Standort) are clickable now, matching the donuts. Maps the row's
+  // ``filterKey`` + ``filterValue`` to the appropriate sessionStorage
+  // filter and jumps to the device list.
+  const applyCountFilter = (filterKey: string, filterValue: string) => {
+    const key =
+      filterKey === "integration"
+        ? "gv_filter_integration"
+        : filterKey === "manufacturer"
+          ? "gv_filter_manufacturer"
+          : filterKey === "area"
+            ? "gv_filter_area"
+            : null;
+    if (!key) return;
+    applyFilterAndGo(key as DonutFilterKey, filterValue);
   };
 
   return (
@@ -146,15 +166,15 @@ export function Dashboard() {
       )}
 
       {areaCounts.length > 0 && (
-        <CountSection title={t("dashboard.byLocation")} items={areaCounts} />
+        <CountSection title={t("dashboard.byLocation")} items={areaCounts} onItemClick={applyCountFilter} />
       )}
 
       {manufacturerCounts.length > 0 && (
-        <CountSection title={t("dashboard.byManufacturer")} items={manufacturerCounts} />
+        <CountSection title={t("dashboard.byManufacturer")} items={manufacturerCounts} onItemClick={applyCountFilter} />
       )}
 
       {integrationCounts.length > 0 && (
-        <CountSection title={t("dashboard.byIntegration")} items={integrationCounts} />
+        <CountSection title={t("dashboard.byIntegration")} items={integrationCounts} onItemClick={applyCountFilter} />
       )}
 
       {recentDevices.length > 0 && (
@@ -188,9 +208,11 @@ export function Dashboard() {
 function CountSection({
   title,
   items,
+  onItemClick,
 }: {
   title: string;
   items: CountItem[];
+  onItemClick?: (filterKey: string, filterValue: string) => void;
 }) {
   const maxCount = Math.max(...items.map((i) => i.count));
 
@@ -198,18 +220,41 @@ function CountSection({
     <div>
       <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{title}</h3>
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-50 dark:divide-gray-700">
-        {items.map((item) => (
-          <div key={item.label} class="flex items-center gap-3 px-4 py-2.5">
-            <span class="text-xs text-gray-600 dark:text-gray-400 w-28 truncate shrink-0">{item.label}</span>
-            <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-              <div
-                class="h-full bg-[#1F4E79] dark:bg-[#4a90c4] rounded-full transition-all"
-                style={{ width: `${(item.count / maxCount) * 100}%` }}
-              />
+        {items.map((item) => {
+          const clickable = onItemClick && item.filterKey && item.filterValue;
+          return (
+            <div
+              key={item.label}
+              role={clickable ? "button" : undefined}
+              tabIndex={clickable ? 0 : undefined}
+              onClick={clickable ? () => onItemClick!(item.filterKey!, item.filterValue!) : undefined}
+              onKeyDown={
+                clickable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onItemClick!(item.filterKey!, item.filterValue!);
+                      }
+                    }
+                  : undefined
+              }
+              class={`flex items-center gap-3 px-4 py-2.5 ${
+                clickable
+                  ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/60 focus:bg-gray-50 dark:focus:bg-gray-700/60 focus:outline-none"
+                  : ""
+              }`}
+            >
+              <span class="text-xs text-gray-600 dark:text-gray-400 w-28 truncate shrink-0">{item.label}</span>
+              <div class="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-[#1F4E79] dark:bg-[#4a90c4] rounded-full transition-all"
+                  style={{ width: `${(item.count / maxCount) * 100}%` }}
+                />
+              </div>
+              <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 w-8 text-right">{item.count}</span>
             </div>
-            <span class="text-xs font-semibold text-gray-700 dark:text-gray-300 w-8 text-right">{item.count}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

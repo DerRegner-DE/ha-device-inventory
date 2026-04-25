@@ -30,7 +30,12 @@ export type DonutFilterKey =
   | "gv_filter_type"
   | "gv_filter_netzwerk"
   | "gv_filter_power"
-  | "gv_filter_warranty";
+  | "gv_filter_warranty"
+  // v2.5.3: Bug 5 — dashboard bar-chart rows now navigate into the list
+  // with one of these keys set.
+  | "gv_filter_integration"
+  | "gv_filter_manufacturer"
+  | "gv_filter_area";
 
 function warrantyDays(garantieBis: string | undefined | null): number | null {
   if (!garantieBis) return null;

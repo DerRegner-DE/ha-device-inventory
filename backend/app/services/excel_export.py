@@ -35,14 +35,70 @@ THIN_BORDER = Border(
     bottom=Side(style="thin", color="B4C6E7"),
 )
 
-HEADERS = [
-    "Nr", "Typ", "Bezeichnung", "Modell", "Hersteller", "Standort",
-    "Seriennummer", "MAC-Adresse", "IP-Adresse", "Firmware",
-    "Integration (HA)", "Netzwerk", "Stromversorgung", "AIN/Artikelnr.",
-    "Funktion", "Anmerkungen",
-]
+# v2.5.3: Field-to-label map + widths covers every exportable field. The
+# frontend's ExportPicker lets the user pick any subset of these; previously
+# the exporter silently ignored the ``fields=`` parameter because HEADERS
+# was hardcoded to 16 columns and unused fields just came out as empty cells.
+#
+# Default column set (used when no ``fields`` is passed) matches the pre-v2.5.3
+# behaviour so existing PDF/XLSX exports are visually unchanged.
+FIELD_LABELS: dict[str, str] = {
+    "nr": "Nr",
+    "typ": "Typ",
+    "bezeichnung": "Bezeichnung",
+    "modell": "Modell",
+    "hersteller": "Hersteller",
+    "standort_name": "Standort",
+    "standort_floor_id": "Etage",
+    "standort_area_id": "Bereich-ID",
+    "seriennummer": "Seriennummer",
+    "ain_artikelnr": "AIN/Artikelnr.",
+    "firmware": "Firmware",
+    "integration": "Integration (HA)",
+    "netzwerk": "Netzwerk",
+    "stromversorgung": "Stromversorgung",
+    "ip_adresse": "IP-Adresse",
+    "mac_adresse": "MAC-Adresse",
+    "anschaffungsdatum": "Anschaffung",
+    "garantie_bis": "Garantie bis",
+    "ha_device_id": "HA Device ID",
+    "ha_entity_id": "HA Entity ID",
+    "funktion": "Funktion",
+    "anmerkungen": "Anmerkungen",
+}
 
-COL_WIDTHS = [5, 14, 32, 28, 20, 24, 22, 20, 14, 10, 22, 14, 16, 24, 38, 36]
+# Column widths in Excel units, keyed by DB field name.
+FIELD_WIDTHS: dict[str, int] = {
+    "nr": 5,
+    "typ": 14,
+    "bezeichnung": 32,
+    "modell": 28,
+    "hersteller": 20,
+    "standort_name": 24,
+    "standort_floor_id": 14,
+    "standort_area_id": 22,
+    "seriennummer": 22,
+    "ain_artikelnr": 24,
+    "firmware": 10,
+    "integration": 22,
+    "netzwerk": 14,
+    "stromversorgung": 16,
+    "ip_adresse": 14,
+    "mac_adresse": 20,
+    "anschaffungsdatum": 14,
+    "garantie_bis": 14,
+    "ha_device_id": 36,
+    "ha_entity_id": 28,
+    "funktion": 38,
+    "anmerkungen": 36,
+}
+
+DEFAULT_FIELDS: list[str] = [
+    "nr", "typ", "bezeichnung", "modell", "hersteller", "standort_name",
+    "seriennummer", "mac_adresse", "ip_adresse", "firmware",
+    "integration", "netzwerk", "stromversorgung", "ain_artikelnr",
+    "funktion", "anmerkungen",
+]
 
 # Mapping from integration DB field to category label for grouping
 INTEGRATION_CATEGORIES: list[tuple[str, list[str]]] = [
@@ -59,26 +115,21 @@ INTEGRATION_CATEGORIES: list[tuple[str, list[str]]] = [
 ]
 
 
-def _device_to_row(device: dict[str, Any], nr: int) -> list[Any]:
-    """Convert a device dict to a 16-column row."""
-    return [
-        nr,
-        device.get("typ", ""),
-        device.get("bezeichnung", ""),
-        device.get("modell", ""),
-        device.get("hersteller", ""),
-        device.get("standort_name", ""),
-        device.get("seriennummer", ""),
-        device.get("mac_adresse", ""),
-        device.get("ip_adresse", ""),
-        device.get("firmware", ""),
-        device.get("integration", ""),
-        device.get("netzwerk", ""),
-        device.get("stromversorgung", ""),
-        device.get("ain_artikelnr", ""),
-        device.get("funktion", ""),
-        device.get("anmerkungen", ""),
-    ]
+def _device_to_row(
+    device: dict[str, Any], nr: int, fields: list[str]
+) -> list[Any]:
+    """Convert a device dict to a row with exactly the requested fields.
+
+    ``nr`` is synthesised (not stored on the device), so the "nr" field is
+    filled from the caller, not from the dict.
+    """
+    out: list[Any] = []
+    for f in fields:
+        if f == "nr":
+            out.append(nr)
+        else:
+            out.append(device.get(f, ""))
+    return out
 
 
 def _categorize_devices(devices: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
@@ -112,14 +163,28 @@ def _categorize_devices(devices: list[dict[str, Any]]) -> list[tuple[str, list[d
     return result
 
 
-def export_devices_to_xlsx(devices: list[dict[str, Any]]) -> bytes:
-    """Export devices to Excel bytes matching the Geraeteuebersicht format."""
+def export_devices_to_xlsx(
+    devices: list[dict[str, Any]],
+    fields: list[str] | None = None,
+) -> bytes:
+    """Export devices to Excel bytes.
+
+    ``fields`` is the list of DB field names to include (in that order).
+    When None, the default 16-column set from pre-v2.5.3 is used so existing
+    user workflows don't suddenly change.
+    """
+    selected = [f for f in (fields or DEFAULT_FIELDS) if f in FIELD_LABELS]
+    if not selected:
+        selected = DEFAULT_FIELDS
+    headers = [FIELD_LABELS[f] for f in selected]
+    widths = [FIELD_WIDTHS.get(f, 18) for f in selected]
+
     wb = Workbook()
     ws = wb.active
     ws.title = "Geraeteuebersicht"
 
     # --- Header row ---
-    for col, h in enumerate(HEADERS, 1):
+    for col, h in enumerate(headers, 1):
         c = ws.cell(row=1, column=col, value=h)
         c.font = HEADER_FONT
         c.fill = HEADER_FILL
@@ -136,13 +201,13 @@ def export_devices_to_xlsx(devices: list[dict[str, Any]]) -> bytes:
 
     for cat_name, cat_devices in categories:
         # Category header row
-        for col in range(1, len(HEADERS) + 1):
+        for col in range(1, len(selected) + 1):
             c = ws.cell(row=row, column=col)
             c.fill = CATEGORY_FILL
             c.font = CATEGORY_FONT
             c.border = THIN_BORDER
 
-        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=len(HEADERS))
+        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=max(2, len(selected)))
         cell = ws.cell(row=row, column=2, value=cat_name)
         cell.font = CATEGORY_FONT
         cell.fill = CATEGORY_FILL
@@ -152,7 +217,7 @@ def export_devices_to_xlsx(devices: list[dict[str, Any]]) -> bytes:
         data_row_idx = 0
         for device in cat_devices:
             nr += 1
-            values = _device_to_row(device, nr)
+            values = _device_to_row(device, nr, selected)
             fill = ROW_FILL_ALT if data_row_idx % 2 == 0 else ROW_FILL_WHITE
 
             for col, val in enumerate(values, 1):
@@ -166,11 +231,11 @@ def export_devices_to_xlsx(devices: list[dict[str, Any]]) -> bytes:
             data_row_idx += 1
 
     # --- Column widths ---
-    for i, w in enumerate(COL_WIDTHS, 1):
+    for i, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
     # --- Filters & freeze ---
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(HEADERS))}{row - 1}"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(selected))}{row - 1}"
     ws.freeze_panes = "A2"
     ws.sheet_properties.tabColor = "1F4E79"
 

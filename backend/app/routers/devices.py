@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import math
 from typing import Any
 from uuid import uuid4
@@ -159,8 +158,11 @@ def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
         )
         result = _build_device_response(row, conn)
 
-    # Publish to HA via MQTT discovery (non-blocking)
-    background_tasks.add_task(asyncio.create_task, publish_device(result))
+    # Publish to HA via MQTT discovery (non-blocking).
+    # FastAPI's BackgroundTasks accepts the async function reference
+    # directly — passing the *called* coroutine instead would never get
+    # awaited (RuntimeWarning, MQTT side-effect silently skipped).
+    background_tasks.add_task(publish_device, result)
     return result
 
 
@@ -217,8 +219,9 @@ def update_device(uuid: str, body: DeviceUpdate, background_tasks: BackgroundTas
         )
         result = _build_device_response(row, conn)
 
-    # Re-publish to HA via MQTT discovery (non-blocking)
-    background_tasks.add_task(asyncio.create_task, publish_device(result))
+    # Re-publish to HA via MQTT discovery (non-blocking).
+    # See note at create_device — pass the function, not the called coro.
+    background_tasks.add_task(publish_device, result)
     return result
 
 
@@ -240,8 +243,10 @@ def delete_device(uuid: str, background_tasks: BackgroundTasks):
             (uuid,),
         )
 
-    # Remove from HA via MQTT discovery (non-blocking)
-    background_tasks.add_task(asyncio.create_task, mqtt_remove_device(uuid))
+    # Remove from HA via MQTT discovery (non-blocking).
+    # See note at create_device — pass the function, not the called coro,
+    # otherwise the cleanup never runs (RuntimeWarning + dangling MQTT topic).
+    background_tasks.add_task(mqtt_remove_device, uuid)
 
 
 @router.get("/{uuid}/children")
@@ -280,6 +285,33 @@ def list_trash():
     return {"items": rows, "total": len(rows)}
 
 
+# NOTE: "/bulk/restore" MUST be registered before "/{uuid}/restore" —
+# FastAPI matches routes in registration order, and the latter (path
+# parameter version) would otherwise swallow "/bulk/restore" with
+# uuid="bulk" and return 404 ("Device not found"). v2.5.3 bugfix.
+@router.post("/bulk/restore")
+def bulk_restore_devices(body: BulkRestoreBody):
+    """Restore multiple soft-deleted devices at once."""
+    if not body.uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+    placeholders = ", ".join(["?"] * len(body.uuids))
+    with get_db() as conn:
+        cursor = conn.execute(
+            f"UPDATE devices SET deleted_at = NULL, sync_version = sync_version + 1, "
+            f"updated_at = datetime('now') WHERE uuid IN ({placeholders}) "
+            f"AND deleted_at IS NOT NULL",
+            body.uuids,
+        )
+        # Restore the photos of every restored device.
+        conn.execute(
+            f"UPDATE photos SET deleted_at = NULL WHERE device_id IN "
+            f"(SELECT id FROM devices WHERE uuid IN ({placeholders})) "
+            f"AND deleted_at IS NOT NULL",
+            body.uuids,
+        )
+    return {"restored": cursor.rowcount, "total": len(body.uuids)}
+
+
 @router.post("/{uuid}/restore")
 def restore_device(uuid: str):
     """Un-delete a single device. Also restores its photos that were
@@ -307,29 +339,6 @@ def restore_device(uuid: str):
             (row["id"],),
         )
     return {"status": "ok", "restored": cursor.rowcount}
-
-
-@router.post("/bulk/restore")
-def bulk_restore_devices(body: BulkRestoreBody):
-    """Restore multiple soft-deleted devices at once."""
-    if not body.uuids:
-        raise HTTPException(status_code=400, detail="No UUIDs provided")
-    placeholders = ", ".join(["?"] * len(body.uuids))
-    with get_db() as conn:
-        cursor = conn.execute(
-            f"UPDATE devices SET deleted_at = NULL, sync_version = sync_version + 1, "
-            f"updated_at = datetime('now') WHERE uuid IN ({placeholders}) "
-            f"AND deleted_at IS NOT NULL",
-            body.uuids,
-        )
-        # Restore the photos of every restored device.
-        conn.execute(
-            f"UPDATE photos SET deleted_at = NULL WHERE device_id IN "
-            f"(SELECT id FROM devices WHERE uuid IN ({placeholders})) "
-            f"AND deleted_at IS NOT NULL",
-            body.uuids,
-        )
-    return {"restored": cursor.rowcount, "total": len(body.uuids)}
 
 
 @router.delete("/trash/{uuid}", status_code=204)
@@ -419,3 +428,28 @@ def bulk_delete_devices(body: BulkDeleteBody):
             body.uuids,
         )
         return {"deleted": cursor.rowcount, "total": len(body.uuids)}
+
+
+@router.post("/bulk/delete-all")
+def bulk_delete_all_devices():
+    """Soft-delete *every* active device. Intended as a danger-zone reset
+    button in the Settings page for users who want a fresh start after a
+    bad import (classic case: pre-v2.5.2 self-import loops). Devices land
+    in the trash and are recoverable for 30 days — no hard delete here.
+    """
+    create_snapshot("bulk_delete_all")
+
+    with get_db() as conn:
+        cursor = conn.execute(
+            "UPDATE devices SET deleted_at = datetime('now'), "
+            "sync_version = sync_version + 1 "
+            "WHERE deleted_at IS NULL"
+        )
+        # Soft-delete photos of every row that was just soft-deleted.
+        conn.execute(
+            "UPDATE photos SET deleted_at = datetime('now') "
+            "WHERE deleted_at IS NULL AND device_id IN ("
+            "  SELECT id FROM devices WHERE deleted_at IS NOT NULL"
+            ")"
+        )
+        return {"deleted": cursor.rowcount}

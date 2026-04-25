@@ -30,6 +30,8 @@ export function Settings() {
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [confirmImport, setConfirmImport] = useState(false);
+  // v2.5.3: live progress for the async HA-import poll loop.
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmMqtt, setConfirmMqtt] = useState(false);
   const [mqttEnabled, setMqttEnabled] = useState(false);
@@ -92,7 +94,47 @@ export function Settings() {
     await db.devices.clear();
     await db.photos.clear();
     await db.syncQueue.clear();
+    // v2.5.3: Bug 1A — repopulate from the server so the list doesn't look
+    // mysteriously empty. The old behaviour left everything blank, which
+    // users mistook for a destructive "delete all devices" action.
+    try {
+      await syncFromServer();
+    } catch {
+      // If we're offline, the list will fill on the next sync tick. No
+      // error UI — the button text already flipped back to its default.
+    }
     setClearing(false);
+  };
+
+  // v2.5.3: Bug 1B — real "delete every device" for users who actually want
+  // a fresh start (typical case: after a bad HA-import cycle pre-v2.5.2 that
+  // left hundreds of self-import dubletten). Server-side soft-delete, 30-day
+  // trash retention.
+  const [wiping, setWiping] = useState(false);
+  const [wipeResult, setWipeResult] = useState<string | null>(null);
+  const [confirmWipe, setConfirmWipe] = useState(false);
+  const handleWipeAll = async () => {
+    if (!confirmWipe) {
+      setConfirmWipe(true);
+      return;
+    }
+    setConfirmWipe(false);
+    setWiping(true);
+    setWipeResult(null);
+    try {
+      const res = await apiPost<{ deleted: number }>("/devices/bulk/delete-all", {});
+      if (res && typeof res.deleted === "number") {
+        setWipeResult(t("settings.wipeDone", { count: res.deleted }));
+        await db.devices.clear();
+        await db.photos.clear();
+        await db.syncQueue.clear();
+      } else {
+        setWipeResult(t("settings.wipeFailed"));
+      }
+    } catch {
+      setWipeResult(t("settings.wipeFailed"));
+    }
+    setWiping(false);
   };
 
   const handleImportHA = async () => {
@@ -103,24 +145,46 @@ export function Settings() {
     setConfirmImport(false);
     setImporting(true);
     setImportResult(null);
+    setImportProgress(null);
     try {
-      // Use longer timeout for import (can take 5 min+ for large device registries with 500+ devices)
-      const res = await fetch(`${getApiBase()}/ha/import-devices`, {
+      // v2.5.3: async import — kick off, then poll /status. The old
+      // synchronous POST ran into HA Ingress timeouts (~60 s) on large
+      // device registries and returned 502 Bad Gateway while the import
+      // itself quietly finished.
+      const start = await fetch(`${getApiBase()}/ha/import-devices`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
-        signal: AbortSignal.timeout(300000),
+        signal: AbortSignal.timeout(30000),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const result = await res.json();
-      if (!result) {
+      if (!start.ok) throw new Error(`HTTP ${start.status}`);
+
+      // Poll /status until the task finishes (running flips to false).
+      const deadline = Date.now() + 30 * 60 * 1000; // absolute cap at 30 min
+      let state: any = null;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 2000));
+        const res = await fetch(`${getApiBase()}/ha/import-devices/status`, {
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!res.ok) continue; // transient hiccup, keep polling
+        state = await res.json();
+        if (state.stage === "processing" && state.total > 0) {
+          setImportProgress({ current: state.progress, total: state.total });
+        }
+        if (!state.running) break;
+      }
+
+      if (!state) {
         setImportResult(t("settings.haImportFailed"));
-      } else if (result.status === "error") {
-        // Backend reported structured error (e.g. HA registry unreachable)
+      } else if (state.stage === "error") {
         setImportResult(
-          `${t("settings.haImportFailed")} ${result.message ? `— ${result.message}` : ""}`.trim()
+          `${t("settings.haImportFailed")}${state.error ? ` — ${state.error}` : ""}`.trim()
         );
+      } else if (state.stage !== "done") {
+        setImportResult(t("settings.haImportFailed"));
       } else {
+        const result = state.result || {};
         // Pull imported devices into local IndexedDB
         await syncFromServer();
         const imported = result.imported || 0;
@@ -130,27 +194,18 @@ export function Settings() {
 
         let resultText: string;
         if (total === 0) {
-          // HA returned zero devices — likely token/connection issue.
           resultText = t("settings.haImportNoDevices")
             || "No HA devices found — check HA connection & token";
         } else if (imported === 0 && duplicates === total) {
-          // Everything already imported on a previous run.
           resultText = t("settings.haImportAllDuplicates", { total })
-            || `All ${total} HA devices already imported (re-import uses device id, nothing new).`;
+            || `All ${total} HA devices already imported.`;
         } else if (imported === 0 && nonPhysical === total) {
-          // Everything was filtered out.
           resultText = t("settings.haImportAllNonPhysical", { total })
-            || `All ${total} HA entries were non-physical (automations, helpers) and skipped.`;
+            || `All ${total} HA entries were non-physical.`;
         } else {
-          resultText = t("settings.haImportResult", {
-            imported,
-            duplicates,
-            total,
-          });
+          resultText = t("settings.haImportResult", { imported, duplicates, total });
           if (nonPhysical > 0) {
-            resultText += t("settings.haImportSkippedNonPhysical", {
-              nonPhysical,
-            });
+            resultText += t("settings.haImportSkippedNonPhysical", { nonPhysical });
           }
         }
         if (result.error_count > 0) {
@@ -162,6 +217,7 @@ export function Settings() {
       setImportResult(t("settings.haImportFailed"));
     }
     setImporting(false);
+    setImportProgress(null);
   };
 
   const handleRecategorize = async () => {
@@ -390,6 +446,25 @@ export function Settings() {
             >
               {t("common.cancel")}
             </button>
+          )}
+          {/* v2.5.3: live progress bar while an async import is polling. */}
+          {importing && importProgress && importProgress.total > 0 && (
+            <div class="mt-2">
+              <div class="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 mb-1">
+                <span>
+                  {importProgress.current} / {importProgress.total}
+                </span>
+                <span>
+                  {Math.round((importProgress.current / importProgress.total) * 100)}%
+                </span>
+              </div>
+              <div class="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  class="h-full bg-[#4CAF50] transition-all"
+                  style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
           )}
           {importResult && (
             <div class="mt-2 text-center">
@@ -635,7 +710,7 @@ export function Settings() {
         <DiagnosticPanel />
 
         <div class="p-4">
-          <h3 class="text-sm font-medium text-red-600 mb-1">{t("settings.clearData")}</h3>
+          <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.clearData")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.clearDataDesc")}
           </p>
@@ -644,8 +719,8 @@ export function Settings() {
             disabled={clearing}
             class={`w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 ${
               confirmClear
-                ? "bg-red-500 text-white hover:bg-red-600"
-                : "border border-red-200 text-red-600 hover:bg-red-50"
+                ? "bg-blue-500 text-white hover:bg-blue-600"
+                : "border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
             }`}
           >
             {clearing
@@ -661,6 +736,40 @@ export function Settings() {
             >
               {t("common.cancel")}
             </button>
+          )}
+        </div>
+
+        {/* v2.5.3: Bug 1B — danger zone: wipe all devices on the server */}
+        <div class="p-4 border-t border-red-100 dark:border-red-900/30">
+          <h3 class="text-sm font-medium text-red-600 mb-1">{t("settings.wipeData")}</h3>
+          <p class="text-xs text-gray-400 mb-3">
+            {t("settings.wipeDataDesc")}
+          </p>
+          <button
+            onClick={handleWipeAll}
+            disabled={wiping}
+            class={`w-full py-2.5 rounded-xl text-sm font-medium disabled:opacity-50 ${
+              confirmWipe
+                ? "bg-red-500 text-white hover:bg-red-600"
+                : "border border-red-200 text-red-600 hover:bg-red-50"
+            }`}
+          >
+            {wiping
+              ? t("settings.wiping")
+              : confirmWipe
+              ? t("settings.wipeConfirm")
+              : t("settings.wipeButton")}
+          </button>
+          {confirmWipe && (
+            <button
+              onClick={() => setConfirmWipe(false)}
+              class="w-full mt-1 text-xs text-gray-400 hover:text-gray-600 text-center"
+            >
+              {t("common.cancel")}
+            </button>
+          )}
+          {wipeResult && (
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{wipeResult}</p>
           )}
         </div>
       </div>

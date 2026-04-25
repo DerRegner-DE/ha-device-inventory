@@ -1,4 +1,4 @@
-import { useState, useRef } from "preact/hooks";
+import { useState, useRef, useMemo } from "preact/hooks";
 import { navigate } from "../utils/navigate";
 import { db, type Device, type Photo } from "../db/schema";
 import { apiPost, apiPut, uploadPhoto, getPhotoUrl } from "../api/client";
@@ -13,6 +13,8 @@ import { AreaPicker } from "./AreaPicker";
 import { useCategories } from "./CategoryManager";
 import { CameraCapture } from "./CameraCapture";
 import { BarcodeScanner } from "./BarcodeScanner";
+import { AttachmentsSection } from "./AttachmentsSection";
+import { DocumentsSection } from "./DeviceDetail";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
 import { hasFeature, canAddDevice } from "../license";
@@ -79,6 +81,24 @@ const inputClass =
 const selectClass =
   "w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#1F4E79]/30 focus:border-[#1F4E79] appearance-none";
 
+// v2.5.3: Bug 4 — every dropdown is sorted alphabetically by the rendered
+// label, with a "catch-all" entry (Sonstiges / Other / Nicht angebunden)
+// parked at the end so users can still find it in the usual place.
+const OTHER_IDS = new Set(["Sonstiges", "Nicht angebunden"]);
+
+function sortByLabel<T extends { id: string }>(
+  items: T[],
+  labelOf: (item: T) => string,
+): T[] {
+  return [...items].sort((a, b) => {
+    const aOther = OTHER_IDS.has(a.id);
+    const bOther = OTHER_IDS.has(b.id);
+    if (aOther && !bOther) return 1;
+    if (!aOther && bOther) return -1;
+    return labelOf(a).localeCompare(labelOf(b), undefined, { sensitivity: "base" });
+  });
+}
+
 export function DeviceForm({ device }: DeviceFormProps) {
   useLanguage();
   const isEdit = !!device;
@@ -86,6 +106,37 @@ export function DeviceForm({ device }: DeviceFormProps) {
   const allCategoryIds = categories.length
     ? categories.map((c) => c.name)
     : DEVICE_TYPES.map((dt) => dt.id);
+
+  // v2.5.3: Bug 4 — precompute alphabetically sorted dropdown option lists.
+  // useMemo on the translated labels so sort order follows the active language.
+  const sortedCategories = useMemo(
+    () => [...categories].sort((a, b) => {
+      const aOther = a.name === "Sonstiges";
+      const bOther = b.name === "Sonstiges";
+      if (aOther && !bOther) return 1;
+      if (!aOther && bOther) return -1;
+      const aL = a.label_key ? t(a.label_key) || a.name : a.name;
+      const bL = b.label_key ? t(b.label_key) || b.name : b.name;
+      return aL.localeCompare(bL, undefined, { sensitivity: "base" });
+    }),
+    [categories],
+  );
+  const sortedDeviceTypes = useMemo(
+    () => sortByLabel(DEVICE_TYPES, (dt) => t(dt.labelKey)),
+    [],
+  );
+  const sortedIntegrations = useMemo(
+    () => sortByLabel(INTEGRATIONS, (i) => t(i.labelKey) || i.id),
+    [],
+  );
+  const sortedNetworks = useMemo(
+    () => sortByLabel(NETWORKS, (n) => t(n.labelKey)),
+    [],
+  );
+  const sortedPowers = useMemo(
+    () => sortByLabel(POWER_SOURCES, (p) => t(p.labelKey)),
+    [],
+  );
 
   const [form, setForm] = useState({
     typ: device?.typ ?? "",
@@ -377,13 +428,13 @@ export function DeviceForm({ device }: DeviceFormProps) {
               required
             >
               <option value="">{t("form.selectType")}</option>
-              {categories.map((c) => (
+              {sortedCategories.map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.label_key ? t(c.label_key) : c.name}
                 </option>
               ))}
               {/* Back-compat: keep static types visible if backend hasn't seeded yet */}
-              {categories.length === 0 && DEVICE_TYPES.map((dt) => (
+              {categories.length === 0 && sortedDeviceTypes.map((dt) => (
                 <option key={dt.id} value={dt.id}>{t(dt.labelKey)}</option>
               ))}
             </select>
@@ -451,7 +502,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
               class={selectClass}
             >
               <option value="">{t("form.selectIntegration")}</option>
-              {INTEGRATIONS.map((i) => (
+              {sortedIntegrations.map((i) => (
                 <option key={i.id} value={i.id}>{t(i.labelKey)}</option>
               ))}
             </select>
@@ -463,7 +514,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
               class={selectClass}
             >
               <option value="">{t("form.selectNetwork")}</option>
-              {NETWORKS.map((n) => (
+              {sortedNetworks.map((n) => (
                 <option key={n.id} value={n.id}>{t(n.labelKey)}</option>
               ))}
             </select>
@@ -475,7 +526,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
               class={selectClass}
             >
               <option value="">{t("form.selectPower")}</option>
-              {POWER_SOURCES.map((p) => (
+              {sortedPowers.map((p) => (
                 <option key={p.id} value={p.id}>{t(p.labelKey)}</option>
               ))}
             </select>
@@ -584,6 +635,16 @@ export function DeviceForm({ device }: DeviceFormProps) {
             />
           </Field>
         </Section>
+
+        {/* v2.5.3: Bug 6 — installation photos + documents live in the edit
+            form so all mutating actions are in one place. In view mode they
+            appear read-only on DeviceDetail. */}
+        {isEdit && device?.uuid && (
+          <div class="space-y-3">
+            <AttachmentsSection deviceUuid={device.uuid} />
+            <DocumentsSection deviceUuid={device.uuid} />
+          </div>
+        )}
 
         <div class="flex gap-3 pt-2 pb-6">
           <button

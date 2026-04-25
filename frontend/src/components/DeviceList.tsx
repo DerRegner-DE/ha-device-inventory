@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "preact/hooks";
+import { useState, useCallback, useEffect, useRef, useMemo } from "preact/hooks";
 import { liveQuery } from "dexie";
 import { useDevices, type WarrantyStatus, type SortKey } from "../hooks/useDevices";
 import { DeviceCard } from "./DeviceCard";
@@ -20,9 +20,33 @@ const WARRANTY_LABEL_KEY: Record<string, string> = {
   none: "dashboard.warrantyNone",
 };
 
+// v2.5.3: Bug 4 — sort Bulk-Edit dropdowns alphabetically by label.
+const OTHER_BULK_IDS = new Set(["Sonstiges", "Nicht angebunden"]);
+
 export function DeviceList() {
   useLanguage();
   const license = useLicense();
+
+  const sortedTypes = useMemo(
+    () => [...DEVICE_TYPES].sort((a, b) => {
+      const ao = OTHER_BULK_IDS.has(a.id);
+      const bo = OTHER_BULK_IDS.has(b.id);
+      if (ao && !bo) return 1;
+      if (!ao && bo) return -1;
+      return t(a.labelKey).localeCompare(t(b.labelKey), undefined, { sensitivity: "base" });
+    }),
+    [],
+  );
+  const sortedIntegrations = useMemo(
+    () => [...INTEGRATIONS].sort((a, b) => {
+      const ao = OTHER_BULK_IDS.has(a.id);
+      const bo = OTHER_BULK_IDS.has(b.id);
+      if (ao && !bo) return 1;
+      if (!ao && bo) return -1;
+      return a.id.localeCompare(b.id, undefined, { sensitivity: "base" });
+    }),
+    [],
+  );
   const [search, _setSearch] = useState(() => sessionStorage.getItem("gv_filter_search") || "");
   const [activeType, _setActiveType] = useState(() => sessionStorage.getItem("gv_filter_type") || "");
   const [sortKey, _setSortKey] = useState<SortKey>(() =>
@@ -35,11 +59,19 @@ export function DeviceList() {
   const [activeNetwork, _setActiveNetwork] = useState(() => sessionStorage.getItem("gv_filter_netzwerk") || "");
   const [activePower, _setActivePower] = useState(() => sessionStorage.getItem("gv_filter_power") || "");
   const [activeWarranty, _setActiveWarranty] = useState(() => sessionStorage.getItem("gv_filter_warranty") || "");
+  // v2.5.3: Bug 5 — integration/manufacturer/area filters land from the
+  // clickable bar charts on the Dashboard.
+  const [activeIntegration, _setActiveIntegration] = useState(() => sessionStorage.getItem("gv_filter_integration") || "");
+  const [activeManufacturer, _setActiveManufacturer] = useState(() => sessionStorage.getItem("gv_filter_manufacturer") || "");
+  const [activeArea, _setActiveArea] = useState(() => sessionStorage.getItem("gv_filter_area") || "");
   const setSearch = useCallback((v: string) => { sessionStorage.setItem("gv_filter_search", v); _setSearch(v); }, []);
   const setActiveType = useCallback((v: string) => { sessionStorage.setItem("gv_filter_type", v); _setActiveType(v); }, []);
   const clearNetwork = useCallback(() => { sessionStorage.removeItem("gv_filter_netzwerk"); _setActiveNetwork(""); }, []);
   const clearPower = useCallback(() => { sessionStorage.removeItem("gv_filter_power"); _setActivePower(""); }, []);
   const clearWarranty = useCallback(() => { sessionStorage.removeItem("gv_filter_warranty"); _setActiveWarranty(""); }, []);
+  const clearIntegration = useCallback(() => { sessionStorage.removeItem("gv_filter_integration"); _setActiveIntegration(""); }, []);
+  const clearManufacturer = useCallback(() => { sessionStorage.removeItem("gv_filter_manufacturer"); _setActiveManufacturer(""); }, []);
+  const clearArea = useCallback(() => { sessionStorage.removeItem("gv_filter_area"); _setActiveArea(""); }, []);
   const deviceLimit = getDeviceLimit();
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -65,6 +97,9 @@ export function DeviceList() {
     netzwerk: activeNetwork || undefined,
     stromversorgung: activePower || undefined,
     warranty: (activeWarranty || undefined) as WarrantyStatus | undefined,
+    integration: activeIntegration || undefined,
+    hersteller: activeManufacturer || undefined,
+    standort_area_id: activeArea || undefined,
     search: search || undefined,
     sort: sortKey,
   });
@@ -75,16 +110,25 @@ export function DeviceList() {
     sessionStorage.removeItem("gv_filter_netzwerk");
     sessionStorage.removeItem("gv_filter_power");
     sessionStorage.removeItem("gv_filter_warranty");
+    sessionStorage.removeItem("gv_filter_integration");
+    sessionStorage.removeItem("gv_filter_manufacturer");
+    sessionStorage.removeItem("gv_filter_area");
     _setActiveType("");
     _setActiveNetwork("");
     _setActivePower("");
     _setActiveWarranty("");
+    _setActiveIntegration("");
+    _setActiveManufacturer("");
+    _setActiveArea("");
     if (!value) return;
     sessionStorage.setItem(key, value);
     if (key === "gv_filter_type") _setActiveType(value);
     else if (key === "gv_filter_netzwerk") _setActiveNetwork(value);
     else if (key === "gv_filter_power") _setActivePower(value);
     else if (key === "gv_filter_warranty") _setActiveWarranty(value);
+    else if (key === "gv_filter_integration") _setActiveIntegration(value);
+    else if (key === "gv_filter_manufacturer") _setActiveManufacturer(value);
+    else if (key === "gv_filter_area") _setActiveArea(value);
   }, []);
 
   const extraChips: { label: string; onClear: () => void }[] = [];
@@ -94,6 +138,9 @@ export function DeviceList() {
     label: `${t("dashboard.warrantyStatus")}: ${t(WARRANTY_LABEL_KEY[activeWarranty] ?? activeWarranty)}`,
     onClear: clearWarranty,
   });
+  if (activeIntegration) extraChips.push({ label: `${t("dashboard.byIntegration")}: ${activeIntegration}`, onClear: clearIntegration });
+  if (activeManufacturer) extraChips.push({ label: `${t("dashboard.byManufacturer")}: ${activeManufacturer}`, onClear: clearManufacturer });
+  if (activeArea) extraChips.push({ label: `${t("dashboard.byLocation")}: ${activeArea}`, onClear: clearArea });
 
   const toggleSelect = (uuid: string) => {
     setSelected((prev) => {
@@ -270,7 +317,8 @@ export function DeviceList() {
               />
             </svg>
             <p class="text-sm">{t("devices.noDevicesFound")}</p>
-            {(search || activeType || activeNetwork || activePower || activeWarranty) && (
+            {(search || activeType || activeNetwork || activePower || activeWarranty ||
+              activeIntegration || activeManufacturer || activeArea) && (
               <button
                 onClick={() => {
                   setSearch("");
@@ -278,6 +326,9 @@ export function DeviceList() {
                   clearNetwork();
                   clearPower();
                   clearWarranty();
+                  clearIntegration();
+                  clearManufacturer();
+                  clearArea();
                 }}
                 class="mt-2 text-[#1F4E79] text-sm font-medium"
               >
@@ -355,13 +406,13 @@ export function DeviceList() {
               >
                 <option value="">{t("bulk.selectValue")}</option>
                 {bulkAction === "typ" &&
-                  DEVICE_TYPES.map((dt) => (
+                  sortedTypes.map((dt) => (
                     <option key={dt.id} value={dt.id}>
                       {t(dt.labelKey)}
                     </option>
                   ))}
                 {bulkAction === "integration" &&
-                  INTEGRATIONS.map((i) => (
+                  sortedIntegrations.map((i) => (
                     <option key={i.id} value={i.id}>{i.id}</option>
                   ))}
               </select>

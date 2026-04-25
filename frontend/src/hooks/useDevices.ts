@@ -32,6 +32,7 @@ export function useDevices(
   filter?: {
     typ?: string;
     integration?: string;
+    hersteller?: string;
     standort_area_id?: string;
     netzwerk?: string;
     stromversorgung?: string;
@@ -67,6 +68,17 @@ export function useDevices(
       }
       if (filter?.stromversorgung) {
         result = result.filter((d) => d.stromversorgung === filter.stromversorgung);
+      }
+      // v2.5.3: Bug 5 — apply integration/hersteller as post-filters so they
+      // compose with the other picked indexes.
+      if (filter?.integration) {
+        result = result.filter((d) => d.integration === filter.integration);
+      }
+      if (filter?.hersteller) {
+        result = result.filter((d) => d.hersteller === filter.hersteller);
+      }
+      if (filter?.standort_area_id) {
+        result = result.filter((d) => d.standort_area_id === filter.standort_area_id);
       }
       if (filter?.warranty) {
         result = result.filter((d) => warrantyBucket(d.garantie_bis) === filter.warranty);
@@ -132,6 +144,7 @@ export function useDevices(
   }, [
     filter?.typ,
     filter?.integration,
+    filter?.hersteller,
     filter?.standort_area_id,
     filter?.netzwerk,
     filter?.stromversorgung,
