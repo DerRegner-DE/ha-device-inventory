@@ -230,7 +230,7 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
         conn.execute("CREATE INDEX IF NOT EXISTS idx_device_history_changed_at ON device_history(changed_at)")
 
     # v2.5.0: attachments — per-device installation photos with captions
-    # (Todo82 feature). Distinct from the existing ``photos`` table which
+    # (forum-requested feature). Distinct from the existing ``photos`` table which
     # holds a single representative image per device; attachments are many,
     # captioned, and intended for Einbauort-Doku.
     if "attachments" not in tables:

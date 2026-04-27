@@ -14,7 +14,7 @@ from app.services.pdf_export import export_devices_to_pdf
 router = APIRouter(prefix="/export", tags=["export"])
 
 
-# v2.5.0: field presets for the export-picker (Bacardi feature request).
+# v2.5.0: field presets for the export-picker (forum feature request).
 # "all" is the default; "versicherung" and "nachlass" are insurance- and
 # estate-planning-oriented subsets. The frontend shows them as radio-buttons
 # that seed the checkbox list; individual tweaks are free-form.

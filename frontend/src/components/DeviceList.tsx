@@ -64,6 +64,17 @@ export function DeviceList() {
   const [activeIntegration, _setActiveIntegration] = useState(() => sessionStorage.getItem("gv_filter_integration") || "");
   const [activeManufacturer, _setActiveManufacturer] = useState(() => sessionStorage.getItem("gv_filter_manufacturer") || "");
   const [activeArea, _setActiveArea] = useState(() => sessionStorage.getItem("gv_filter_area") || "");
+  // v2.6.0 (Forum): collapse multi-channel groups by default? Persisted in
+  // sessionStorage so it survives accidental tab navigation but resets on
+  // a fresh session.
+  const [parentsOnly, _setParentsOnly] = useState(
+    () => sessionStorage.getItem("gv_filter_parents_only") === "1",
+  );
+  const setParentsOnly = useCallback((on: boolean) => {
+    if (on) sessionStorage.setItem("gv_filter_parents_only", "1");
+    else sessionStorage.removeItem("gv_filter_parents_only");
+    _setParentsOnly(on);
+  }, []);
   const setSearch = useCallback((v: string) => { sessionStorage.setItem("gv_filter_search", v); _setSearch(v); }, []);
   const setActiveType = useCallback((v: string) => { sessionStorage.setItem("gv_filter_type", v); _setActiveType(v); }, []);
   const clearNetwork = useCallback(() => { sessionStorage.removeItem("gv_filter_netzwerk"); _setActiveNetwork(""); }, []);
@@ -102,7 +113,25 @@ export function DeviceList() {
     standort_area_id: activeArea || undefined,
     search: search || undefined,
     sort: sortKey,
+    parentsOnly: parentsOnly || undefined,
   });
+
+  // Count children we're hiding so the toggle UI can show how many are
+  // collapsed (e.g. "Nur Hauptgeräte (24 Kinder ausgeblendet)").
+  const hiddenChildrenCount = parentsOnly
+    ? allDevices.filter((d) => !!d.parent_uuid).length
+    : 0;
+
+  // v2.6.0: pass the set of populated device types to FilterBar so it can
+  // suppress empty chips. Built from the unfiltered list so the chip count
+  // stays stable as the user filters around.
+  const usedTypeSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const d of allDevices) {
+      if (d.typ) s.add(d.typ);
+    }
+    return s;
+  }, [allDevices]);
 
   // Donut segment click: replaces whatever was active, stays on the list view.
   const applyDonutFilter = useCallback((key: DonutFilterKey, value: string) => {
@@ -226,6 +255,7 @@ export function DeviceList() {
         onSearchChange={setSearch}
         activeType={activeType}
         onTypeChange={setActiveType}
+        usedTypes={usedTypeSet}
       />
 
       {allDevices.length > 0 && (
@@ -263,24 +293,56 @@ export function DeviceList() {
               : t("devices.countSingular", { count: devices.length })}
           </p>
           {!selectMode && (
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey((e.target as HTMLSelectElement).value as SortKey)}
-              class="text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1"
-              title={t("devices.sortBy")}
-            >
-              <option value="updated_desc">{t("devices.sort.updated_desc")}</option>
-              <option value="bezeichnung_asc">{t("devices.sort.bezeichnung_asc")}</option>
-              <option value="bezeichnung_desc">{t("devices.sort.bezeichnung_desc")}</option>
-              <option value="typ_asc">{t("devices.sort.typ_asc")}</option>
-              <option value="hersteller_asc">{t("devices.sort.hersteller_asc")}</option>
-              <option value="standort_asc">{t("devices.sort.standort_asc")}</option>
-              <option value="warranty_soonest">{t("devices.sort.warranty_soonest")}</option>
-            </select>
+            <>
+              {/* v2.6.0 (Forum): only render the parents-only toggle if at
+                  least one parent-child relation exists in the dataset —
+                  otherwise it's just clutter. */}
+              {allDevices.some((d) => d.parent_uuid) && (
+                <button
+                  type="button"
+                  onClick={() => setParentsOnly(!parentsOnly)}
+                  class={`text-xs px-2 py-1 rounded-lg border ${
+                    parentsOnly
+                      ? "bg-[#1F4E79] text-white border-[#1F4E79]"
+                      : "border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800"
+                  }`}
+                  title={
+                    parentsOnly
+                      ? t("devices.parentsOnlyOff")
+                      : t("devices.parentsOnlyOn")
+                  }
+                >
+                  {parentsOnly
+                    ? t("devices.parentsOnlyActive", { count: hiddenChildrenCount })
+                    : t("devices.parentsOnlyToggle")}
+                </button>
+              )}
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey((e.target as HTMLSelectElement).value as SortKey)}
+                class="text-xs rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-2 py-1"
+                title={t("devices.sortBy")}
+              >
+                <option value="updated_desc">{t("devices.sort.updated_desc")}</option>
+                <option value="bezeichnung_asc">{t("devices.sort.bezeichnung_asc")}</option>
+                <option value="bezeichnung_desc">{t("devices.sort.bezeichnung_desc")}</option>
+                <option value="typ_asc">{t("devices.sort.typ_asc")}</option>
+                <option value="hersteller_asc">{t("devices.sort.hersteller_asc")}</option>
+                <option value="standort_asc">{t("devices.sort.standort_asc")}</option>
+                <option value="warranty_soonest">{t("devices.sort.warranty_soonest")}</option>
+              </select>
+            </>
           )}
+          {/* v2.6.0 (Forum): "Auswählen"-Button präsenter — als Ghost-Button
+              mit Border, sodass User ihn beim ersten Hingucken finden. */}
           <button
+            type="button"
             onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-            class="text-xs text-[#1F4E79] font-medium"
+            class={`text-xs px-3 py-1 rounded-lg font-medium border transition-colors ${
+              selectMode
+                ? "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200"
+                : "border-[#1F4E79] text-[#1F4E79] hover:bg-[#1F4E79] hover:text-white"
+            }`}
           >
             {selectMode ? t("bulk.cancel") : t("bulk.select")}
           </button>
@@ -365,30 +427,46 @@ export function DeviceList() {
         )}
       </div>
 
-      {/* Bulk action bar */}
-      {selectMode && selected.size > 0 && (
+      {/* Bulk action bar — v2.6.0 (Forum): now mirrors the DeviceDetail
+          bottom action row (same fixed-bar style + flex-1 button slots),
+          and is always visible while in select mode so the user can see
+          the available actions even before picking devices. Action buttons
+          stay disabled until at least one device is checked. */}
+      {selectMode && (
         <div
-          class="fixed bottom-24 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 shadow-lg z-40 px-4 py-3"
-          style="padding-bottom: max(env(safe-area-inset-bottom, 0px), 4px);"
+          class="fixed left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 z-40"
+          style="bottom: calc(4rem + max(env(safe-area-inset-bottom, 0px), 12px));"
         >
           {!bulkAction ? (
-            <div class="flex gap-2 justify-center items-center">
+            <div class="flex gap-3">
               <button
+                type="button"
+                onClick={exitSelectMode}
+                class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+              >
+                {t("bulk.cancel")}
+              </button>
+              <button
+                type="button"
                 onClick={() => setBulkAction("typ")}
-                class="px-4 py-2 rounded-lg bg-[#1F4E79] text-white text-xs font-medium hover:bg-[#1a4268] cursor-pointer"
+                disabled={selected.size === 0}
+                class="flex-1 py-2.5 rounded-xl bg-[#1F4E79] text-white text-sm font-medium hover:bg-[#1a4268] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {t("bulk.changeType")}
               </button>
               <button
+                type="button"
                 onClick={() => setBulkAction("integration")}
-                class="px-4 py-2 rounded-lg bg-[#2d6da3] text-white text-xs font-medium hover:bg-[#245d8e] cursor-pointer"
+                disabled={selected.size === 0}
+                class="flex-1 py-2.5 rounded-xl bg-[#2d6da3] text-white text-sm font-medium hover:bg-[#245d8e] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {t("bulk.changeIntegration")}
               </button>
               <button
+                type="button"
                 onClick={handleBulkDeleteClick}
-                disabled={bulkBusy}
-                class={`px-4 py-2 rounded-lg text-white text-xs font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors ${
+                disabled={bulkBusy || selected.size === 0}
+                class={`py-2.5 px-4 rounded-xl text-white text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${
                   confirmDelete
                     ? "bg-red-700 hover:bg-red-800 ring-2 ring-red-300"
                     : "bg-red-500 hover:bg-red-600"
@@ -417,6 +495,7 @@ export function DeviceList() {
                   ))}
               </select>
               <button
+                type="button"
                 onClick={() => handleBulkUpdate(bulkAction, bulkValue)}
                 disabled={!bulkValue || bulkBusy}
                 class="px-4 py-2 rounded-lg bg-[#1F4E79] text-white text-xs font-medium disabled:opacity-50"
@@ -424,6 +503,7 @@ export function DeviceList() {
                 {t("bulk.apply")}
               </button>
               <button
+                type="button"
                 onClick={() => { setBulkAction(null); setBulkValue(""); }}
                 class="px-3 py-2 text-gray-500 text-xs"
               >

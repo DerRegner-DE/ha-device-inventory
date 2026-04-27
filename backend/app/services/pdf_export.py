@@ -231,11 +231,43 @@ def export_devices_to_pdf(
                 pdf.cell(0, 5, _safe_text(str(value)), new_x="LMARGIN", new_y="NEXT")
 
             # Notes get a multi_cell if they were selected.
+            #
+            # v2.6.0: Forum report — at ~3000 characters the layout
+            # broke because fpdf2's auto_page_break interacts badly with the
+            # custom header() when a multi_cell straddles a page boundary,
+            # producing a header that overlaps the continuing notes block.
+            # We cap the PDF rendering at NOTES_PDF_MAX_LEN and point users
+            # to the Excel export for the full text. Excel handles arbitrary
+            # cell length without layout damage.
             if "anmerkungen" in selected and device.get("anmerkungen"):
+                NOTES_PDF_MAX_LEN = 1000
+                full_notes = _safe_text(str(device["anmerkungen"]))
+                truncated = len(full_notes) > NOTES_PDF_MAX_LEN
+                shown = (
+                    full_notes[:NOTES_PDF_MAX_LEN].rsplit(" ", 1)[0] + "..."
+                    if truncated else full_notes
+                )
+
+                # If we're already deep on the page, force a fresh one before
+                # rendering the notes block — keeps the "Notes:" label and
+                # at least the first lines together.
+                if pdf.get_y() > 240:
+                    pdf.add_page()
+
                 pdf.set_font("Helvetica", "B", 8)
                 pdf.cell(30, 5, "Notes:")
                 pdf.set_font("Helvetica", "", 8)
-                pdf.multi_cell(0, 5, _safe_text(device["anmerkungen"]))
+                pdf.multi_cell(0, 5, shown)
+
+                if truncated:
+                    pdf.set_font("Helvetica", "I", 7)
+                    pdf.set_text_color(120)
+                    pdf.cell(
+                        0, 4,
+                        f"... ({len(full_notes)} chars total — full text in Excel export)",
+                        new_x="LMARGIN", new_y="NEXT",
+                    )
+                    pdf.set_text_color(0)
 
             pdf.ln(3)
             pdf.set_draw_color(200)

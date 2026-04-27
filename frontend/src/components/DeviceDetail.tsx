@@ -196,12 +196,27 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
     );
   };
 
-  // v2.5.3: Bug 8 — open the HA device page in a new tab so users don't
-  // lose the Geräteverwaltung view (they used to be yanked out via
-  // ``window.top.location.assign``).
+  // v2.5.3 (Bug 8): open the HA device page in a new tab so desktop users
+  // don't lose the Geräteverwaltung view (used to be yanked out via
+  // window.top.location.assign).
+  //
+  // v2.6.0 (forum report): in the HA Companion App on mobile,
+  // window.open() escapes the in-app webview and launches the device's
+  // default browser, where the user is then prompted to log in to HA again.
+  // Detect the Companion's user-agent ("Home Assistant/...") and stay in
+  // the in-app webview by navigating window.top — the user can come back
+  // via the app's hardware/back-gesture.
   const openInHA = () => {
     const url = getHaSetupUrl(device);
-    if (url) window.open(url, "_blank", "noopener,noreferrer");
+    if (!url) return;
+    const isHaCompanion = /Home\s*Assistant/i.test(
+      navigator.userAgent || "",
+    );
+    if (isHaCompanion && window.top) {
+      window.top.location.href = url;
+    } else {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
@@ -325,8 +340,14 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
           belongs with the other nav actions (back / edit) and works better
           as a middle button between them. */}
       <div class="fixed left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-3 flex gap-3 z-30" style="bottom: calc(4rem + max(env(safe-area-inset-bottom, 0px), 12px));">
+        {/* v2.6.0: when this device is a child of another (parent_uuid set),
+            "Zurück" should land on the parent — not jump straight to the
+            global list. Forum feedback: drilling Parent → Child → Back used
+            to skip the parent and dump the user one level too high. */}
         <button
-          onClick={() => navigate("/devices")}
+          onClick={() => navigate(
+            device.parent_uuid ? `/devices/${device.parent_uuid}` : "/devices",
+          )}
           class="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
         >
           {t("common.back")}
@@ -435,13 +456,20 @@ export function DocumentsSection({
         </h3>
         {canEdit && (
           <div class="flex gap-2">
+            {/* type="button" is critical: this section is mounted inside the
+                DeviceForm's <form>, where the HTML default for <button> is
+                "submit". Without it, clicking "Dokument hochladen" or "Link
+                hinzufügen" submits the form and bounces the user back to the
+                detail view before they can pick a file (Forum-Report v2.5.3). */}
             <button
+              type="button"
               onClick={() => { setShowUpload(true); setShowLink(false); }}
               class="text-xs text-[#1F4E79] dark:text-[#7ab5d6] font-medium cursor-pointer"
             >
               {t("form.uploadDocument")}
             </button>
             <button
+              type="button"
               onClick={() => { setShowLink(true); setShowUpload(false); }}
               class="text-xs text-[#1F4E79] dark:text-[#7ab5d6] font-medium cursor-pointer"
             >
@@ -475,6 +503,7 @@ export function DocumentsSection({
           />
           <div class="flex gap-2">
             <button
+              type="button"
               onClick={handleAddLink}
               disabled={!linkUrl || uploading}
               class="px-4 py-2 rounded-lg bg-[#1F4E79] text-white text-xs font-medium cursor-pointer disabled:opacity-50"
@@ -482,6 +511,7 @@ export function DocumentsSection({
               {t("common.save")}
             </button>
             <button
+              type="button"
               onClick={() => setShowLink(false)}
               class="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 cursor-pointer"
             >
@@ -537,6 +567,7 @@ export function DocumentsSection({
                 </div>
                 {canEdit && (
                   <button
+                    type="button"
                     onClick={() => handleDelete(doc.uuid)}
                     class="text-red-400 hover:text-red-600 cursor-pointer shrink-0 ml-2"
                   >

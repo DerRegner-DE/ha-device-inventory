@@ -111,6 +111,7 @@ export function AttachmentsSection({
               )}
               {!readOnly && (
                 <button
+                  type="button"
                   onClick={() => handleDelete(a.uuid)}
                   class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                   title={t("common.delete")}

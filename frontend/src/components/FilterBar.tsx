@@ -9,6 +9,12 @@ interface FilterBarProps {
   onSearchChange: (val: string) => void;
   activeType: string;
   onTypeChange: (val: string) => void;
+  /** v2.6.0 (Forum): set of device-type values that have at least one device
+   * in the current inventory. When provided, the chip row hides categories
+   * with zero devices to declutter the horizontal scrollbar (typical user
+   * uses 8–12 of 32 categories). The currently active filter chip is always
+   * kept visible so the user can still clear it. */
+  usedTypes?: Set<string>;
 }
 
 export function FilterBar({
@@ -16,6 +22,7 @@ export function FilterBar({
   onSearchChange,
   activeType,
   onTypeChange,
+  usedTypes,
 }: FilterBarProps) {
   useLanguage();
   const categories = useCategories();
@@ -38,8 +45,17 @@ export function FilterBar({
         entries.push({ value: dt.id, label: t(dt.labelKey) });
       }
     }
-    return entries.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
-  }, [categories]);
+    const sorted = entries.sort((a, b) =>
+      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
+    );
+    // v2.6.0: drop categories that aren't represented in the current dataset.
+    // Keep the currently active filter visible regardless so the user can
+    // tap it again to clear.
+    if (!usedTypes) return sorted;
+    return sorted.filter(
+      (e) => usedTypes.has(e.value) || e.value === activeType,
+    );
+  }, [categories, usedTypes, activeType]);
   return (
     <div class="space-y-3 p-4">
       <div class="relative">

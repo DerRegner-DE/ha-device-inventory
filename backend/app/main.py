@@ -177,6 +177,7 @@ from app.services.mqtt_discovery import (
     sync_all_devices as mqtt_sync_all,
     publish_device as mqtt_publish,
     test_connection as mqtt_test_connection,
+    purge_discovery as mqtt_purge_discovery,
 )
 
 
@@ -231,6 +232,39 @@ async def mqtt_sync():
             conn.execute("SELECT * FROM devices WHERE deleted_at IS NULL").fetchall()
         )
     result = await mqtt_sync_all(rows)
+    return result
+
+
+class MqttPurgeBody(BaseModel):
+    """v2.6.0 (Forum-Report): scope='orphans' clears MQTT-Discovery topics
+    for devices that the inventory no longer knows about (hard-deleted but
+    the broker still has retained config payloads). scope='all' clears
+    everything we ever published — useful when the user wants to disable
+    MQTT-Discovery completely and start clean.
+    """
+    scope: str = "orphans"
+
+
+@app.post("/api/mqtt/purge-discovery")
+async def mqtt_purge(body: MqttPurgeBody):
+    """Clean up retained MQTT-Discovery messages on the broker.
+
+    Forum context: a community report described 282 retained discovery
+    topics under ``homeassistant/+/geraeteverwaltung/+/config`` that
+    survived even after emptying the inventory's trash. Until now, the
+    only way to clear them was MQTT Explorer — manual topic-by-topic.
+    This endpoint does the same in one call: subscribe → collect
+    retained → publish empty payload to each.
+    """
+    from app.database import get_db
+
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT uuid FROM devices WHERE deleted_at IS NULL"
+        ).fetchall()
+        active_uuids = {r["uuid"] for r in rows}
+
+    result = await mqtt_purge_discovery(body.scope, active_uuids)
     return result
 
 

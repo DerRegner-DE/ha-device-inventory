@@ -1,4 +1,4 @@
-"""Per-device image attachments (v2.5.0, Todo82 feature).
+"""Per-device image attachments (v2.5.0, forum feature request).
 
 Distinct from ``photos`` — which holds a single representative image.
 Attachments are many, captioned, and meant for Einbauort-/Nachlass-Doku

@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.6.0
+
+UX-Release. Sammelt Forum-Feedback aus den ersten Tagen nach v2.5.3 zu drei akuten Bugs und sieben Verbesserungen, plus erstes dediziertes Benutzerhandbuch.
+
+### Neu: Benutzerhandbuch + Settings-Link
+
+Das wiederkehrende Forum-Muster „dieser Toggle, was tut der eigentlich?" hat ein zentrales Handbuch unter `docs/HANDBUCH.md` bekommen, mit den im Forum am häufigsten erfragten Themen: MQTT-Discovery (was passiert beim Aktivieren, wann sinnvoll, wie aufräumen), Multi-Channel-Geräte, Versicherungs- und Nachlass-Workflows, FAQ. Im Settings-View oben rechts ein direkter Link „Handbuch öffnen", der das gerenderte Markdown auf GitHub aufmacht.
+
+### Neu: MQTT-Discovery-Cleanup-Buttons
+
+Community-Bericht: HA behielt nach dem Deaktivieren des MQTT-Toggles bzw. nach dem Löschen einzelner Geräte die retained Discovery-Topics. Bisher half nur MQTT Explorer mit Topic-für-Topic-Löschen. In der MQTT-Sektion der Einstellungen jetzt zwei Buttons:
+
+- **„Verwaiste Einträge aufräumen"** — entfernt nur retained Topics von UUIDs, die nicht mehr im Inventar sind. Sicher als Routine-Aktion.
+- **„Alle MQTT-Einträge entfernen"** (rot, mit Bestätigung) — räumt jede vom Add-on publizierte Discovery-Message vom Broker. Sinnvoll vor dem dauerhaften Deaktivieren von MQTT-Discovery.
+
+Neuer Endpoint `POST /api/mqtt/purge-discovery` mit Body `{scope: "orphans"|"all"}`. Default-Scope: `orphans` (POST ohne Body löscht nichts Aktives). 5 neue Regressions-Tests.
+
+### Neu: Beispiel-Aufklapper bei „Geräte in HA veröffentlichen"
+
+Direkt unter dem Toggle ein einklappbarer Block „Was passiert beim Aktivieren?" mit drei konkreten Beispielen (Garantie-Sensor, Dashboard-Karte, Automation) und einem Hinweis aufs Cleanup nach dem Deaktivieren. Adressiert die wiederkehrende Einsteiger-Frage „was bringt mir das?".
+
+### Bugs
+
+- **Dokument- und Link-Buttons im Bearbeiten-Modus haben das Form abgesendet.** Klick auf "Dokument hochladen" oder "Link hinzufügen" sprang zurück in die Detail-Ansicht, ohne die Datei aufnehmen zu können. Ursache: HTML-Default für `<button>` innerhalb eines `<form>` ist `submit` — fehlte überall im DocumentsSection und AttachmentsSection. Fix: explizit `type="button"` an alle relevanten Buttons.
+- **Zurück-Button im Untergerät landete eine Ebene zu hoch.** Bei einem Multi-Channel-Gerät (Shelly 2PM o.Ä.) drückt der Nutzer auf einem Kanal "Zurück" und wollte zurück zum Hauptgerät — landete aber direkt in der globalen Geräteliste. Jetzt: wenn `parent_uuid` gesetzt ist, springt "Zurück" zum Parent; sonst weiterhin zur Liste.
+- **PDF-Export überlappte sich bei langen Notizen.** Ab ~3000 Zeichen rutschte der Header der Folgeseite in den weiterlaufenden Notes-Block hinein. fpdf2's `auto_page_break` interagiert schlecht mit dem Custom-Header bei `multi_cell`-Übergaben über die Seitengrenze. Die PDF-Notes werden jetzt nach 1000 Zeichen mit Hinweis "weiter im Excel-Export" gekappt; Excel führt den vollen Text weiterhin in einer Zelle.
+
+### Forum-Wünsche
+
+- **"In HA anzeigen" bleibt in der HA Companion App.** Vorher hat der Klick einen externen Browser geöffnet, der dann nach Login fragte. Jetzt erkennt das Add-on die Companion am User-Agent und navigiert die ganze App zur HA-Geräteseite — Rückkehr per Geste/Hardware-Back. Im Desktop-Browser bleibt das Verhalten "neuer Tab".
+- **Toggle "Nur Hauptgeräte".** Multi-Channel-Familien (Shelly 2PM, Tuya-Hubs) blasen die Liste auf — drei Zeilen für ein physisches Gerät. Neuer Button neben der Sortierung blendet Untergeräte aus; Anzahl der versteckten Children steht im Button-Label.
+- **Ungenutzte Kategorie-Chips fallen weg.** Die horizontale Kategorien-Scrollbar zeigte alle 32 Kategorien selbst bei 5 Geräten. Jetzt erscheinen nur Kategorien mit mindestens einem Gerät — der aktive Filter bleibt sichtbar, damit man ihn entfernen kann.
+- **Bulk-Action-Bar konsistent.** Der Auswählen-Button war ein dezenter Textlink; die Bulk-Action-Bar tauchte erst bei einer Auswahl auf. Jetzt: "Auswählen" als Button mit Border, und im Auswahl-Modus erscheint die Action-Bar permanent (mit "Abbrechen" links und disabled-Action-Buttons rechts solange nichts ausgewählt ist) — analog zur Bottom-Bar im Detail-View.
+- **Vererbung an Untergeräte.** Beim Bearbeiten eines Hauptgerätes mit Untergeräten erscheint ein Toggle "Auch auf N Untergeräte anwenden". Aktiviert wird beim Speichern Hersteller, Anschaffungsdatum, Garantie-bis, Stromversorgung und AIN-Artikelnummer per Bulk-Update auf alle Children gespiegelt. Bezeichnung, Seriennummer, MAC, IP, HA-IDs und Standort bleiben pro Kanal individuell.
+
+### i18n
+
+- Neue Strings (Parents-Only-Toggle + Apply-To-Children-Hint) in DE/EN/ES/FR/RU synchron.
+
 ## 2.5.3
 
 Breites Bugfix- und UX-Release. Sammelt Community-Reports aus v2.5.1/2.5.2 plus drei während der Beta-Runde gefundene Regressions.

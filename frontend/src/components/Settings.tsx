@@ -38,6 +38,12 @@ export function Settings() {
   const [mqttSyncing, setMqttSyncing] = useState(false);
   const [mqttResult, setMqttResult] = useState<string | null>(null);
   const [mqttLoaded, setMqttLoaded] = useState(false);
+  // v2.6.0 (Forum-Bericht): MQTT discovery cleanup. Two scopes —
+  // "orphans" (silent default) and "all" (confirm because it wipes
+  // every entity we ever published, including the ones still in the
+  // active inventory).
+  const [mqttPurging, setMqttPurging] = useState(false);
+  const [confirmPurgeAll, setConfirmPurgeAll] = useState(false);
   const [mqttTesting, setMqttTesting] = useState(false);
   const [recategorizing, setRecategorizing] = useState(false);
   const [recategorizeResult, setRecategorizeResult] = useState<string | null>(null);
@@ -317,6 +323,37 @@ export function Settings() {
     setMqttSyncing(false);
   };
 
+  // v2.6.0 (Forum-Bericht): clean retained discovery topics on the broker.
+  // scope="orphans" silently removes config payloads for UUIDs no longer
+  // in our DB. scope="all" wipes the lot — useful right before the user
+  // disables MQTT-Discovery for good.
+  const handleMqttPurge = async (scope: "orphans" | "all") => {
+    setMqttPurging(true);
+    setMqttResult(null);
+    try {
+      const result = await apiPost<any>(
+        "/mqtt/purge-discovery", { scope }, undefined, undefined, 30000,
+      );
+      if (result) {
+        if (result.error) {
+          setMqttResult(`${t("settings.mqttPurgeFailed")}: ${result.error}`);
+        } else {
+          setMqttResult(
+            t("settings.mqttPurgeResult", {
+              purged: result.purged || 0,
+              discovered: result.discovered || 0,
+              scope: scope === "all" ? t("settings.mqttPurgeScopeAll") : t("settings.mqttPurgeScopeOrphans"),
+            }),
+          );
+        }
+      }
+    } catch {
+      setMqttResult(t("settings.mqttPurgeFailed"));
+    }
+    setMqttPurging(false);
+    setConfirmPurgeAll(false);
+  };
+
   const handleExport = async () => {
     const devices = await db.devices.toArray();
     const blob = new Blob([JSON.stringify(devices, null, 2)], {
@@ -347,7 +384,23 @@ export function Settings() {
 
   return (
     <div class="p-4 space-y-6">
-      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{t("settings.title")}</h2>
+      <div class="flex items-baseline justify-between gap-2">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{t("settings.title")}</h2>
+        {/* v2.6.0 (Forum): direkter Link aufs Handbuch — wer im Settings
+            auf einen Toggle starrt und sich fragt "was tut das?", findet
+            so die Erklärung in einem Klick. */}
+        <a
+          href="https://github.com/DerRegner-DE/ha-device-inventory/blob/main/docs/HANDBUCH.md"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-xs text-[#1F4E79] dark:text-[#7ab5d6] hover:underline inline-flex items-center gap-1"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          {t("settings.openHandbook")}
+        </a>
+      </div>
 
       <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50 dark:divide-gray-700">
         {/* License section */}
@@ -552,7 +605,7 @@ export function Settings() {
 
         {/* DB snapshots (v2.4.2) — lists and restores pre-action snapshots
             created automatically before destructive bulk operations.
-            Default-collapsed (v2.4.4, der_micro feedback) — most sessions
+            Default-collapsed (v2.4.4, forum feedback) — most sessions
             don't need it and it used to push everything else down. */}
         <details class="p-4 group">
           <summary class="cursor-pointer list-none flex items-center justify-between">
@@ -634,6 +687,20 @@ export function Settings() {
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.mqttDesc")}
           </p>
+          {/* v2.6.0 (Forum-Bericht): Beispiel-Box damit Einsteiger ein
+              konkretes Bild davon haben, was passiert, wenn der Toggle
+              aktiviert wird, und wo die HA-Entities danach auftauchen. */}
+          <details class="mb-3 text-xs text-gray-500 dark:text-gray-400">
+            <summary class="cursor-pointer text-[#1F4E79] dark:text-[#7ab5d6] hover:underline">
+              {t("settings.mqttExampleSummary")}
+            </summary>
+            <div class="mt-2 space-y-1 pl-1 leading-relaxed">
+              <p>{t("settings.mqttExample1")}</p>
+              <p>{t("settings.mqttExample2")}</p>
+              <p>{t("settings.mqttExample3")}</p>
+              <p class="text-amber-600 dark:text-amber-400">{t("settings.mqttExampleCleanup")}</p>
+            </div>
+          </details>
           <div class="flex items-center justify-between mb-3">
             <span class="text-sm text-gray-600 dark:text-gray-300">{t("settings.mqttPublish")}</span>
             <div class="flex items-center gap-2">
@@ -676,6 +743,52 @@ export function Settings() {
               {mqttSyncing ? t("settings.mqttSyncing") : t("settings.mqttSyncButton")}
             </button>
           )}
+          {/* v2.6.0 (Forum-Bericht) — MQTT-Discovery cleanup. Sichtbar
+              auch ohne aktivierten Toggle, weil das genau die Situation
+              ist, in der man verwaiste Topics aufräumen will (User hat
+              MQTT erst deaktiviert und sieht nun die Phantom-Geräte). */}
+          <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
+            <p class="text-xs text-gray-400 dark:text-gray-500">
+              {t("settings.mqttPurgeDesc")}
+            </p>
+            <button
+              type="button"
+              onClick={() => handleMqttPurge("orphans")}
+              disabled={mqttPurging}
+              class="w-full py-2 rounded-xl border border-gray-200 dark:border-gray-600 text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              {mqttPurging
+                ? t("settings.mqttPurging")
+                : t("settings.mqttPurgeOrphansButton")}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                confirmPurgeAll
+                  ? handleMqttPurge("all")
+                  : setConfirmPurgeAll(true)
+              }
+              disabled={mqttPurging}
+              class={`w-full py-2 rounded-xl text-xs font-medium disabled:opacity-50 ${
+                confirmPurgeAll
+                  ? "bg-red-700 text-white hover:bg-red-800 ring-2 ring-red-300"
+                  : "border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+              }`}
+            >
+              {confirmPurgeAll
+                ? t("settings.mqttPurgeAllConfirm")
+                : t("settings.mqttPurgeAllButton")}
+            </button>
+            {confirmPurgeAll && !mqttPurging && (
+              <button
+                type="button"
+                onClick={() => setConfirmPurgeAll(false)}
+                class="w-full text-xs text-gray-400 hover:text-gray-600"
+              >
+                {t("common.cancel")}
+              </button>
+            )}
+          </div>
           {mqttResult && (
             <p class="text-xs text-gray-500 mt-2 text-center whitespace-pre-line">{mqttResult}</p>
           )}

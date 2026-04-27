@@ -1,7 +1,7 @@
-import { useState, useRef, useMemo } from "preact/hooks";
+import { useState, useRef, useMemo, useEffect } from "preact/hooks";
 import { navigate } from "../utils/navigate";
 import { db, type Device, type Photo } from "../db/schema";
-import { apiPost, apiPut, uploadPhoto, getPhotoUrl } from "../api/client";
+import { apiGet, apiPost, apiPut, uploadPhoto, getPhotoUrl } from "../api/client";
 import {
   DEVICE_TYPES,
   INTEGRATIONS,
@@ -168,7 +168,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
     network: false,
     details: false,
     ha: false,
-    notes: true,  // v2.5.0: open by default — Bacardi feedback. Notes turned
+    notes: true,  // v2.5.0: open by default — forum feedback. Notes turned
                    // out to be the key use-case for Nachlass/Versicherungs-Doku
                    // but were hidden behind a collapsed section nobody expanded.
   });
@@ -179,6 +179,22 @@ export function DeviceForm({ device }: DeviceFormProps) {
   const [saving, setSaving] = useState(false);
   const directFileRef = useRef<HTMLInputElement>(null);
   const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+  // v2.6.0 (Forum-Nachtrag): wenn dieses Gerät Untergeräte hat
+  // (Shelly 2PM, Tuya-Hub usw.), bekommt die Edit-Form unten einen Toggle
+  // "Auch auf Untergeräte anwenden". Bei Speichern werden dann genau die
+  // Felder, die laut Forum sinnvoll vererbt werden ("Anleitung, Garantie,
+  // Stromversorgung etc."), per Bulk-Update auf die Children gespiegelt.
+  // Default off — der User entscheidet, weil der Use-Case "Kanal-A hat
+  // andere Seriennummer als Kanal-B" weiter funktionieren muss.
+  const [childUuids, setChildUuids] = useState<string[]>([]);
+  const [applyToChildren, setApplyToChildren] = useState(false);
+  useEffect(() => {
+    if (!isEdit || !device?.uuid) return;
+    apiGet<{ children: { uuid: string }[] }>(`/devices/${device.uuid}/children`)
+      .then((r) => setChildUuids((r?.children || []).map((c) => c.uuid)))
+      .catch(() => setChildUuids([]));
+  }, [isEdit, device?.uuid]);
 
   const toggleSection = (key: keyof typeof sections) => {
     setSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -293,6 +309,37 @@ export function DeviceForm({ device }: DeviceFormProps) {
       await apiPut(`/devices/${uuid}`, deviceData, "device", uuid);
     } else {
       await apiPost("/devices", deviceData, "device", uuid);
+    }
+
+    // v2.6.0: optional bulk-update on this device's children. Only the
+    // fields that genuinely make sense to inherit are propagated — name,
+    // serial, MAC, IP, HA-IDs, and location stay per-channel.
+    if (isEdit && applyToChildren && childUuids.length > 0) {
+      const inheritedUpdates: Record<string, unknown> = {};
+      const inheritFields = [
+        "hersteller",
+        "anschaffungsdatum",
+        "garantie_bis",
+        "stromversorgung",
+        "ain_artikelnr",
+      ] as const;
+      for (const f of inheritFields) {
+        const v = (deviceData as any)[f];
+        if (v !== undefined && v !== null && v !== "") {
+          inheritedUpdates[f] = v;
+        }
+      }
+      if (Object.keys(inheritedUpdates).length > 0) {
+        try {
+          await apiPut("/devices/bulk/update", {
+            uuids: childUuids,
+            updates: inheritedUpdates,
+          });
+        } catch {
+          // Silent — main save succeeded; an inherit failure shouldn't
+          // block the user's primary action.
+        }
+      }
     }
 
     if (photoBlob) {
@@ -643,6 +690,33 @@ export function DeviceForm({ device }: DeviceFormProps) {
           <div class="space-y-3">
             <AttachmentsSection deviceUuid={device.uuid} />
             <DocumentsSection deviceUuid={device.uuid} />
+          </div>
+        )}
+
+        {/* v2.6.0 (Forum-Nachtrag): nur sichtbar wenn dieses Device
+            ein Parent mit mind. einem Untergerät ist. Vererbt beim Speichern
+            Hersteller, Anschaffungsdatum, Garantie, Stromversorgung und
+            AIN-Artikelnummer auf alle Children. */}
+        {isEdit && childUuids.length > 0 && (
+          <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-gray-50 dark:bg-gray-800/50">
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={applyToChildren}
+                onChange={(e) =>
+                  setApplyToChildren((e.target as HTMLInputElement).checked)
+                }
+                class="mt-0.5 w-4 h-4 accent-[#1F4E79]"
+              />
+              <span class="text-xs text-gray-600 dark:text-gray-300">
+                <span class="font-medium block mb-0.5">
+                  {t("form.applyToChildren", { count: childUuids.length })}
+                </span>
+                <span class="text-gray-400 dark:text-gray-500">
+                  {t("form.applyToChildrenHint")}
+                </span>
+              </span>
+            </label>
           </div>
         )}
 

@@ -24,6 +24,9 @@ export interface Device {
   ha_device_id?: string;
   ain_artikelnr?: string;
   standort_floor_id?: string;
+  // v2.5.0: link to parent device (Shelly 2PM channels, Tuya hubs etc.)
+  // populated from HA's via_device_id during import.
+  parent_uuid?: string;
   reviewed?: number;
   created_at: string;
   updated_at: string;

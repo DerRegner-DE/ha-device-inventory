@@ -26,7 +26,7 @@ export type SortKey =
   | "typ_asc"
   | "hersteller_asc"
   | "standort_asc"
-  | "warranty_soonest";  // v2.5.0 Bacardi request
+  | "warranty_soonest";  // v2.5.0 forum request
 
 export function useDevices(
   filter?: {
@@ -39,6 +39,10 @@ export function useDevices(
     warranty?: WarrantyStatus;
     search?: string;
     sort?: SortKey;
+    /** v2.6.0 (Forum): hide rows whose ``parent_uuid`` is set, so multi-channel
+     * Shelly/Tuya groups collapse to the parent only. Children remain reachable
+     * via the parent's detail page. */
+    parentsOnly?: boolean;
   }
 ) {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -82,6 +86,9 @@ export function useDevices(
       }
       if (filter?.warranty) {
         result = result.filter((d) => warrantyBucket(d.garantie_bis) === filter.warranty);
+      }
+      if (filter?.parentsOnly) {
+        result = result.filter((d) => !d.parent_uuid);
       }
 
       if (filter?.search) {
@@ -151,6 +158,7 @@ export function useDevices(
     filter?.warranty,
     filter?.search,
     filter?.sort,
+    filter?.parentsOnly,
   ]);
 
   return { devices, loading };

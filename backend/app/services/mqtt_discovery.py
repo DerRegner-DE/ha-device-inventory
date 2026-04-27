@@ -362,6 +362,129 @@ async def remove_device(device_uuid: str) -> bool:
         return False
 
 
+# Entity suffixes that publish_device emits — kept as a single source of
+# truth so remove_device, purge_discovery and the discovery probe agree on
+# what topics belong to us.
+_ENTITY_SUFFIXES: list[tuple[str, str]] = [
+    ("sensor", "warranty"),
+    ("sensor", "warranty_days"),
+    ("sensor", "purchase"),
+    ("sensor", "type"),
+    ("sensor", "location"),
+    ("binary_sensor", "warranty_active"),
+]
+
+# UUID = 32 hex chars (uuid4().hex). Anything before that prefix in an
+# entity-id is suspect.
+_UUID_LEN = 32
+
+
+async def _publish_remove(client: aiomqtt.Client, device_uuid: str) -> None:
+    """Empty retained payload on every entity-config + state topic."""
+    for component, suffix in _ENTITY_SUFFIXES:
+        topic = (
+            f"{DISCOVERY_PREFIX}/{component}/geraeteverwaltung/"
+            f"{device_uuid}_{suffix}/config"
+        )
+        await client.publish(topic, b"", retain=True)
+    await client.publish(
+        f"{STATE_PREFIX}/{device_uuid}/state", b"", retain=True,
+    )
+
+
+async def purge_discovery(
+    scope: str,
+    active_uuids: set[str],
+    collect_seconds: float = 3.0,
+) -> dict:
+    """Sweep ``homeassistant/+/geraeteverwaltung/+/config`` for retained
+    discovery messages we previously published, and clear them.
+
+    scope == 'orphans': clear topics whose UUID is *not* in active_uuids
+        (i.e. devices that were hard-deleted while their MQTT-discovery
+        topic stayed retained on the broker — this is the Forum-report
+        case from a forum report).
+    scope == 'all': clear every geraeteverwaltung-published topic, even
+        for devices that are still in the inventory. Use this when the
+        user wants to disable MQTT-Discovery completely and start clean
+        — the next "Veröffentlichen"-toggle re-publish fills it back up.
+
+    Works regardless of the current MQTT_DISCOVERY_ENABLED flag — the
+    user typically toggles MQTT off *before* asking us to clean up.
+
+    Returns a dict with `purged`, `discovered`, `scope`, `error`.
+    """
+    if scope not in ("orphans", "all"):
+        return {"purged": 0, "discovered": 0, "scope": scope,
+                "error": "scope must be 'orphans' or 'all'"}
+
+    discovered: set[str] = set()
+    try:
+        async with aiomqtt.Client(**_connect_kwargs()) as client:
+            # Subscribe to every config topic under our namespace. Retained
+            # messages get delivered immediately on subscribe.
+            sub_topic = f"{DISCOVERY_PREFIX}/+/geraeteverwaltung/+/config"
+            await client.subscribe(sub_topic)
+
+            # Collect for a short window — retained messages arrive in a
+            # burst at subscribe time, so a few seconds is plenty.
+            try:
+                async with asyncio.timeout(collect_seconds):
+                    async for msg in client.messages:
+                        if not msg.payload:
+                            # Already cleared by a previous purge. Skip.
+                            continue
+                        # Topic: homeassistant/<comp>/geraeteverwaltung/<entity_id>/config
+                        parts = msg.topic.value.split("/")
+                        if len(parts) < 5 or parts[2] != "geraeteverwaltung":
+                            continue
+                        entity_id = parts[3]
+                        if len(entity_id) < _UUID_LEN + 1:
+                            continue
+                        # First UUID_LEN chars are the device uuid, then "_<suffix>".
+                        candidate = entity_id[:_UUID_LEN]
+                        if all(c in "0123456789abcdef" for c in candidate):
+                            discovered.add(candidate)
+            except (asyncio.TimeoutError, TimeoutError):
+                pass
+
+            if scope == "orphans":
+                to_purge = discovered - active_uuids
+            else:
+                to_purge = set(discovered)
+
+            for uuid in to_purge:
+                try:
+                    await _publish_remove(client, uuid)
+                except Exception as e:  # pragma: no cover - defensive
+                    logger.warning(
+                        "purge_discovery: remove failed for %s: %s",
+                        uuid, e,
+                    )
+
+        logger.info(
+            "purge_discovery scope=%s discovered=%d active=%d purged=%d",
+            scope, len(discovered), len(active_uuids), len(to_purge),
+        )
+        return {
+            "purged": len(to_purge),
+            "discovered": len(discovered),
+            "scope": scope,
+        }
+
+    except Exception as e:
+        logger.warning(
+            "purge_discovery failed @ %s: %s: %s",
+            _broker_descr(), type(e).__name__, e,
+        )
+        return {
+            "purged": 0,
+            "discovered": len(discovered),
+            "scope": scope,
+            "error": f"{type(e).__name__}: {e}",
+        }
+
+
 async def sync_all_devices(devices: list[dict]) -> dict:
     """Publish MQTT discovery for all devices. Returns stats."""
     if not settings.MQTT_DISCOVERY_ENABLED:
