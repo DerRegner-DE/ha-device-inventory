@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.6.1
+
+Bugfix-Release: behebt ein Cache-Problem, durch das ein zweiter Browser nach einem Update auf v2.6.0 noch das alte Frontend-Bundle ausgeliefert bekam — die neuen Features (Filter „Nur Hauptgeräte", Child→Parent-Switching) erschienen dann erst nach manuellem Hard-Reload.
+
+### Bugfix: SPA-Cache-Header für `index.html`
+
+Im Add-on-Nginx war der `no-cache`-Header nur am exakten Match `location = /index.html` gesetzt. Der SPA-Fallback (`try_files $uri $uri/ /index.html`) liefert `index.html` aber unter beliebigen URIs (`/`, `/devices/abc`) — und für die griff der Header nicht. Browser und HA-Ingress-Proxy konnten dadurch ein altes `index.html` mit Verweisen auf alte Asset-Hashes festhalten.
+
+Fix: SPA-Fallback in einen named location `@spa_fallback` ausgelagert, der die `Cache-Control: no-cache, no-store, must-revalidate`, `Pragma: no-cache` und `Expires: 0` Header **immer** setzt, unabhängig vom Request-URI. `manifest.json` ebenfalls auf no-cache gestellt. Dieselbe Korrektur in `deploy/nginx.conf`.
+
+Hashed Asset-Bundles (`*.js`, `*.css`) bleiben mit `expires 30d; immutable` aggressiv gecacht — das Cache-Busting läuft weiter über die Vite-Hash-Filenames im Build-Output, was ja schon vorher korrekt war. Es fehlte nur die Zustellgarantie für ein frisches `index.html`, das auf die aktuellen Hashes zeigt.
+
+### Migration
+
+Keine. Beim nächsten Add-on-Update kommt der Fix automatisch. Bestehende Browser, die bereits ein altes `index.html` gecacht haben, bekommen mit dem Update ein frisches HTML mit den richtigen Hashes — ein Hard-Reload ist einmalig nötig, falls der Browser die alten Header-Direktiven noch respektiert (Strg+F5 / Cmd+Shift+R).
+
 ## 2.6.0
 
 UX-Release. Sammelt Forum-Feedback aus den ersten Tagen nach v2.5.3 zu drei akuten Bugs und sieben Verbesserungen, plus erstes dediziertes Benutzerhandbuch.
