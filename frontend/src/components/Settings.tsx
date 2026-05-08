@@ -196,23 +196,32 @@ export function Settings() {
         const imported = result.imported || 0;
         const duplicates = result.skipped_duplicates || 0;
         const nonPhysical = result.skipped_non_physical || 0;
+        const noName = result.skipped_no_name || 0;
         const total = result.total_ha_devices || 0;
 
+        // v2.6.2: Always show a structured breakdown headline + bracketed parts.
+        // Pre-2.6.2 had separate "all duplicates" and "all non-physical" branches,
+        // but those were unreachable as soon as `nonPhysical > 0` AND `noName > 0`
+        // both held — the user then saw a bare "0 imported, X duplicates" string
+        // that read like a failure even though the import was correct. The
+        // skipped-no-name bucket was also never surfaced.
         let resultText: string;
         if (total === 0) {
           resultText = t("settings.haImportNoDevices")
             || "No HA devices found — check HA connection & token";
-        } else if (imported === 0 && duplicates === total) {
-          resultText = t("settings.haImportAllDuplicates", { total })
-            || `All ${total} HA devices already imported.`;
-        } else if (imported === 0 && nonPhysical === total) {
-          resultText = t("settings.haImportAllNonPhysical", { total })
-            || `All ${total} HA entries were non-physical.`;
         } else {
-          resultText = t("settings.haImportResult", { imported, duplicates, total });
-          if (nonPhysical > 0) {
-            resultText += t("settings.haImportSkippedNonPhysical", { nonPhysical });
-          }
+          const headline = imported > 0
+            ? t("settings.haImportNewHeadline", { imported, total })
+            : t("settings.haImportNoNewHeadline", { total });
+
+          const breakdownParts: string[] = [];
+          if (duplicates > 0) breakdownParts.push(t("settings.haImportPartDuplicates", { count: duplicates }));
+          if (nonPhysical > 0) breakdownParts.push(t("settings.haImportPartNonPhysical", { count: nonPhysical }));
+          if (noName > 0) breakdownParts.push(t("settings.haImportPartNoName", { count: noName }));
+
+          resultText = breakdownParts.length > 0
+            ? `${headline} (${breakdownParts.join(" · ")})`
+            : headline;
         }
         if (result.error_count > 0) {
           resultText += ` (${result.error_count} errors — see logs)`;

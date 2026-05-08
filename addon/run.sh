@@ -75,6 +75,22 @@ fi
 export GV_MQTT_CLIENT_ID="$MQTT_CID_OPT"
 echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous}, client_id: ${GV_MQTT_CLIENT_ID:-auto})"
 
+# v2.6.2: Loud warning when no MQTT credentials are loaded. Mosquitto with the
+# default ACL config rejects anonymous (rc=135 "Not authorized"), and the
+# user typically only sees a cryptic stack trace much later. Surfacing this
+# at startup with an actionable hint shortens diagnosis time massively.
+if [ -z "$GV_MQTT_USER" ]; then
+    echo "WARNING: MQTT user is empty — connection will be anonymous."
+    echo "         If your broker requires authentication, the connect will fail with"
+    echo "         'Not authorized' (rc=135). Two ways to provide credentials:"
+    echo "         1. Add-on options:  set 'mqtt_user' and 'mqtt_password' in the"
+    echo "            add-on configuration tab and restart the add-on."
+    echo "         2. Supervisor MQTT service: install the official Mosquitto add-on"
+    echo "            and link it as the MQTT service via Supervisor (auto-discovery)."
+    echo "         An anonymous connection is fine if your broker explicitly allows it"
+    echo "         (allow_anonymous true in mosquitto.conf)."
+fi
+
 # Quick TCP reachability check (does not verify auth, only network path).
 # Helps distinguish "broker unreachable" from "auth failed" in logs.
 if timeout 3 bash -c "exec 3<>/dev/tcp/$GV_MQTT_HOST/$GV_MQTT_PORT" 2>/dev/null; then
