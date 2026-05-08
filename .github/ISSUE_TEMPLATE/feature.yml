@@ -1,0 +1,54 @@
+name: "Feature-Wunsch"
+description: "Schlage eine neue Funktion oder Verbesserung vor."
+title: "[Feature] "
+labels:
+    - enhancement
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Schön, dass du eine Idee hast!
+
+              Dieses Template ist auf Deutsch. English, español, français, русский reports are also welcome — feel free to write in your preferred language.
+
+              Bitte beschreibe zuerst das **Problem**, das gelöst werden soll — nicht direkt die Lösung. Das hilft uns, die beste Umsetzung zu finden.
+
+    - type: textarea
+      id: problem
+      attributes:
+          label: "Welches Problem löst das Feature?"
+          description: "Beschreibe den Use-Case: Was möchtest du erreichen, was funktioniert aktuell nicht oder ist umständlich? Use-Case zuerst — nicht direkt die Lösung."
+          placeholder: |
+              Aktuell muss ich für jedes Gerät die Seriennummer manuell eintippen.
+              Bei 80 Geräten ist das fehleranfällig und zeitaufwändig.
+      validations:
+          required: true
+
+    - type: textarea
+      id: proposal
+      attributes:
+          label: "Wie würde das Feature aussehen?"
+          description: "Wie stellst du dir die Lösung vor? UI-Position, Verhalten, Eingaben/Ausgaben."
+          placeholder: |
+              Im Geräte-Detail-Dialog ein Feld 'Seriennummer' mit Kamera-Icon,
+              das den QR-/Barcode-Scanner öffnet und den Wert automatisch übernimmt.
+      validations:
+          required: true
+
+    - type: textarea
+      id: alternatives
+      attributes:
+          label: "Hast du Alternativen erwogen?"
+          description: "Gibt es andere Wege, dein Problem zu lösen? Workarounds, andere Tools, andere Umsetzungs-Varianten?"
+          placeholder: "Aktuell nutze ich eine Excel-Liste parallel, das ist aber doppelter Aufwand."
+      validations:
+          required: false
+
+    - type: textarea
+      id: mockup
+      attributes:
+          label: "Skizze/Mockup"
+          description: "Bilder können per Drag-and-Drop eingefügt werden. Auch eine Handzeichnung oder ein Screenshot mit Markierungen hilft."
+          placeholder: "Bild hier hinziehen oder einfügen."
+      validations:
+          required: false

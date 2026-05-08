@@ -1,0 +1,93 @@
+name: "Bug melden"
+description: "Melde einen Fehler oder ein unerwartetes Verhalten im Add-on."
+title: "[Bug] "
+labels:
+    - bug
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Danke, dass du dir die Zeit nimmst, einen Bug zu melden!
+
+              Dieses Template ist auf Deutsch. English, español, français, русский reports are also welcome — feel free to write in your preferred language.
+
+              Bitte fülle die mit `*` markierten Felder aus. Je konkreter, desto schneller können wir helfen.
+
+    - type: textarea
+      id: expected
+      attributes:
+          label: "Was hast du erwartet?"
+          description: "Beschreibe in deinen eigenen Worten, was passieren sollte. Ein Diagnose-Bericht alleine reicht nicht — wir brauchen deine Sicht auf das Problem."
+          placeholder: "Beim Klick auf 'Speichern' sollte das Gerät in der Liste erscheinen."
+      validations:
+          required: true
+
+    - type: textarea
+      id: actual
+      attributes:
+          label: "Was ist tatsächlich passiert?"
+          description: "Was hast du stattdessen beobachtet? Fehlermeldung, leerer Bildschirm, falsche Anzeige?"
+          placeholder: "Die Seite zeigt 'Network error' und das Gerät erscheint nicht in der Liste."
+      validations:
+          required: true
+
+    - type: textarea
+      id: steps
+      attributes:
+          label: "Schritte zur Reproduktion"
+          description: "Wie können wir den Fehler nachstellen? Bitte nummerierte Liste."
+          placeholder: |
+              1. Öffne das Add-on über die Sidebar
+              2. Klicke auf '+ Neues Gerät'
+              3. Fülle Name und Typ aus
+              4. Klicke auf 'Speichern'
+              5. Fehler erscheint
+      validations:
+          required: true
+
+    - type: input
+      id: addon-version
+      attributes:
+          label: "Add-on-Version"
+          description: "Welche Version der Geräteverwaltung ist installiert? Findest du im Add-on-Store oder unten links im UI."
+          placeholder: "z. B. 2.6.2"
+      validations:
+          required: true
+
+    - type: input
+      id: ha-version
+      attributes:
+          label: "Home Assistant-Version"
+          description: "Welche HA-Version läuft? Findest du unter Einstellungen → Über."
+          placeholder: "z. B. 2026.5.0"
+      validations:
+          required: true
+
+    - type: textarea
+      id: diagnostics
+      attributes:
+          label: "Diagnose-Bericht"
+          description: "Den findest du unter Einstellungen → Diagnose. Wichtig: keine sensiblen Daten teilen — der Bericht filtert Tokens, IPs, Passwörter automatisch."
+          placeholder: "Hier den Inhalt des Diagnose-Berichts einfügen oder als JSON-Datei anhängen."
+          render: json
+      validations:
+          required: false
+
+    - type: textarea
+      id: logs
+      attributes:
+          label: "Add-on-Logs"
+          description: "Relevante Log-Einträge aus dem Add-on. Am einfachsten via Log-Viewer-Add-on oder über Einstellungen → Add-ons → Geräteverwaltung → Logs."
+          placeholder: "Log-Ausschnitt mit Zeitstempel rund um den Fehler."
+          render: shell
+      validations:
+          required: false
+
+    - type: textarea
+      id: context
+      attributes:
+          label: "Sonstiger Kontext"
+          description: "Browser, Betriebssystem, mobile vs. Desktop, besondere Setup-Details (z. B. Reverse Proxy, Multi-User), Screenshots? Bilder können per Drag-and-Drop eingefügt werden."
+          placeholder: "Optional: Browser, OS, Screenshots, weitere Hinweise."
+      validations:
+          required: false

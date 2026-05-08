@@ -1,0 +1,45 @@
+name: "Frage stellen"
+description: "Du hast eine Frage zur Nutzung, Konfiguration oder zum Verhalten des Add-ons."
+title: "[Frage] "
+labels:
+    - question
+body:
+    - type: markdown
+      attributes:
+          value: |
+              Hi! Du hast eine Frage — gerne.
+
+              Dieses Template ist auf Deutsch. English, español, français, русский reports are also welcome — feel free to write in your preferred language.
+
+              **Tipp vorab:** Schau kurz in die [README](https://github.com/DerRegner-DE/ha-device-inventory#readme) und ins Benutzerhandbuch. Viele Antworten stehen schon dort. Für allgemeine Diskussionen ist auch der [simon42-Forum-Thread](https://community.simon42.com/t/83177) ein guter Ort.
+
+    - type: textarea
+      id: question
+      attributes:
+          label: "Deine Frage"
+          description: "Was möchtest du wissen? Je konkreter, desto besser können wir helfen."
+          placeholder: |
+              Wie kann ich beim Excel-Export nur bestimmte Felder auswählen,
+              z. B. nur Name, Seriennummer und Einbauort?
+      validations:
+          required: true
+
+    - type: textarea
+      id: tried
+      attributes:
+          label: "Was hast du schon ausprobiert?"
+          description: "Hast du schon in der README, im Handbuch oder im Forum nachgeschaut? Welche Einstellungen oder Schritte hast du bereits versucht?"
+          placeholder: |
+              README gelesen, im Settings-Dialog 'Export' geprüft.
+              Habe nur eine Checkbox 'PDF/Excel' gefunden, aber keine Feld-Auswahl.
+      validations:
+          required: false
+
+    - type: input
+      id: addon-version
+      attributes:
+          label: "Add-on-Version"
+          description: "Optional — nur relevant, wenn deine Frage versionsspezifisch ist."
+          placeholder: "z. B. 2.6.2"
+      validations:
+          required: false

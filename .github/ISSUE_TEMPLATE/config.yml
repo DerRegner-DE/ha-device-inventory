@@ -1,0 +1,13 @@
+blank_issues_enabled: false
+contact_links:
+    - name: "Allgemeine Diskussion (simon42-Forum, Deutsch)"
+      url: "https://community.simon42.com/t/83177"
+      about: "Für allgemeine Diskussionen, Erfahrungsaustausch und Feedback nutze bitte den simon42-Forum-Thread. Dort lesen auch andere Anwender und Mitwirkende mit."
+
+    - name: "Setup-Hilfe und Dokumentation (README)"
+      url: "https://github.com/DerRegner-DE/ha-device-inventory#readme"
+      about: "Bevor du ein Issue eröffnest: Schau kurz in die README. Installation, MQTT-Setup, Lizenz-Aktivierung und die häufigsten Stolpersteine sind dort beschrieben."
+
+    - name: "Home Assistant Community Forum (Englisch)"
+      url: "https://community.home-assistant.io/"
+      about: "For broader Home Assistant discussions in English, please use the official HA Community Forum. Bug reports specific to this add-on still belong here on GitHub."
