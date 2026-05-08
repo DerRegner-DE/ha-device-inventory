@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.6.3
+
+Bugfix-Release. Eine gezielte Korrektur am „In HA anzeigen"-Button für die HA Companion App auf Tablets.
+
+### Bugfix: „In HA anzeigen" sprang auf manchen Tablets in den System-Browser
+
+In der HA Companion App auf Mobilgeräten soll der Button die Geräte-Detailseite *innerhalb* der App öffnen. Auf einem Galaxy-Tab-Setup mit Android 16 Companion 2026.4.4 (UA enthält `Home Assistant/2026.4.4-21576`) hat das nicht funktioniert: Der Klick verließ die WebView, der Browser öffnete sich, der User landete im HA-Login.
+
+Bisher hat der Code im Companion-Fall `window.top.location.href` aus dem Ingress-iframe heraus gesetzt. Das funktioniert auf Handy-Companion zuverlässig, schlägt aber auf der Tablet-WebView durch zum Link-Interceptor des System-Browsers — vermutlich, weil die Tablet-Companion Top-Frame-Navigation aus einem Ingress-iframe als externe Navigation klassifiziert.
+
+Fix: Im Companion-Fall (UA matcht `/Home\s*Assistant/i`) wird die Navigation jetzt über das offizielle Deep-Link-Schema `homeassistant://navigate/<path>` ausgelöst. Das OS reicht die URL an die Companion App weiter, die nativ in den Geräte-Screen navigiert — ohne den WebView-Stack zu verlassen. Die Geräteverwaltung-Ingress-Session bleibt im Hintergrund stehen, der Rückweg geht über die Back-Geste. Außerhalb der Companion (Desktop/Browser) bleibt das Verhalten unverändert (`window.open` in neuem Tab).
+
+Code: `frontend/src/components/DeviceDetail.tsx`, Funktion `openInHA`.
+
 ## 2.6.2
 
 Bugfix-Release. Drei Korrekturen rund um Diagnose-Bericht, HA-Import-Feedback und MQTT-Auth-Setup. Auslöser war ein Community-Bug-Report, dessen mitgeschickter Diagnose-Bericht eine wichtige Information über den Auth-Status verschluckt hatte.

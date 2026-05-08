@@ -200,20 +200,28 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
   // don't lose the Geräteverwaltung view (used to be yanked out via
   // window.top.location.assign).
   //
-  // v2.6.0 (forum report): in the HA Companion App on mobile,
-  // window.open() escapes the in-app webview and launches the device's
-  // default browser, where the user is then prompted to log in to HA again.
-  // Detect the Companion's user-agent ("Home Assistant/...") and stay in
-  // the in-app webview by navigating window.top — the user can come back
-  // via the app's hardware/back-gesture.
+  // v2.6.0: detect the Companion App via UA and navigate window.top to keep
+  // the in-app webview. Tablet field report showed this still escapes to
+  // the system browser on Android tablet Companion — likely because writing
+  // window.top.location from inside the Ingress iframe is routed by the
+  // WebView's link interceptor as an external navigation.
+  //
+  // v2.6.3: use HA Companion's homeassistant:// deep-link scheme when the UA
+  // matches. The OS hands the URL to the Companion, which performs the
+  // navigation natively without leaving the app. The Geräteverwaltung
+  // iframe stays mounted in the background and the user returns via the
+  // back gesture.
   const openInHA = () => {
     const url = getHaSetupUrl(device);
     if (!url) return;
     const isHaCompanion = /Home\s*Assistant/i.test(
       navigator.userAgent || "",
     );
-    if (isHaCompanion && window.top) {
-      window.top.location.href = url;
+    if (isHaCompanion) {
+      // Strip the leading slash so the deep-link path is well-formed:
+      //   homeassistant://navigate/config/devices/device/<id>
+      const path = url.startsWith("/") ? url.slice(1) : url;
+      window.location.href = `homeassistant://navigate/${path}`;
     } else {
       window.open(url, "_blank", "noopener,noreferrer");
     }
