@@ -1,5 +1,36 @@
 # Changelog
 
+## 2.6.2
+
+Bugfix-Release. Drei Korrekturen rund um Diagnose-Bericht, HA-Import-Feedback und MQTT-Auth-Setup. Auslöser war ein Community-Bug-Report, dessen mitgeschickter Diagnose-Bericht eine wichtige Information über den Auth-Status verschluckt hatte.
+
+### Bugfix: Diagnose-Bericht hat „MQTT Auth: ja/nein" geschwärzt
+
+Der Diagnose-Bericht generiert eine Konfigurations-Zeile mit dem Wortlaut `MQTT Auth: ja` oder `MQTT Auth: nein` — als Hinweis darauf, ob MQTT-Credentials konfiguriert sind. Die Schutz-Regex, die Klartext-Credentials in den ausgehenden Berichten unkenntlich macht, hat das Wort `auth` zu breit erkannt und das nachfolgende Wort durch `[REDACTED]` ersetzt. In Bug-Reports stand dann immer `MQTT Auth: [REDACTED]` — auch wenn der User gar keine Credentials konfiguriert hatte. Genau die Information, die wir bei Auth-Problemen am dringendsten brauchen, war damit unsichtbar.
+
+Fix: Der Keyword-Filter in `_REDACT_PATTERNS` (`backend/app/main.py`) trifft jetzt nur noch explizite Credential-Schlüssel — `authorization`, `auth_key`, `auth_token`, `auth-key`, `auth-token`. Das ungebundene Wort `auth` ist raus. Bearer-Tokens werden weiterhin durch das dedizierte Bearer-Pattern abgefangen, Header wie `Authorization: Bearer …` bleiben also korrekt geschwärzt. 11 neue Regressionstests in `test_diagnostic_redaction.py` prüfen positive (Credentials-Schwärzung weiter aktiv) und negative Fälle (`MQTT Auth: ja` bleibt sichtbar, `Authentication failed` bleibt unverändert).
+
+### Bugfix: HA-Import-Resultat zeigte nicht, was wirklich passiert ist
+
+Wenn der HA-Import keine neuen Geräte fand (z. B. weil bereits alle in der Inventory sind), zeigte das Frontend bisher nur „0 importiert, X Duplikate übersprungen (von Y HA-Geräten)". Aus User-Sicht las sich das wie ein Fehlschlag, obwohl das Verhalten korrekt ist. Außerdem hat das Frontend den vom Backend zurückgegebenen Bucket `skipped_no_name` komplett ignoriert — Geräte ohne sinnvollen Namen verschwanden in einem unsichtbaren Bucket, sodass die Summe der angezeigten Zahlen kleiner als `total_ha_devices` war. Drittens waren die Sonderpfade `haImportAllDuplicates` und `haImportAllNonPhysical` faktisch unerreichbar, weil sie auf `duplicates === total` bzw. `nonPhysical === total` prüften — Bedingungen, die in jeder realen Installation mit gemischten Buckets nie zutrafen.
+
+Fix: Neuer einheitlicher Output mit klarer Hauptzeile und optionaler Aufschlüsselung in Klammern.
+
+- Hauptzeile: „X neue Geräte importiert (Y HA-Geräte geprüft)" oder „Kein neues Gerät hinzugefügt — Y HA-Geräte geprüft".
+- Aufschlüsselung in Klammern: bereits bekannt · nicht-physisch · ohne Namen — jeweils nur, wenn der Bucket > 0 ist.
+
+Neue i18n-Keys: `haImportNewHeadline`, `haImportNoNewHeadline`, `haImportPartDuplicates`, `haImportPartNonPhysical`, `haImportPartNoName`. Alle 5 Sprachen synchron (DE/EN/ES/FR/RU). Die alten Strings (`haImportResult`, `haImportAllDuplicates`, `haImportAllNonPhysical`, `haImportSkippedNonPhysical`) bleiben für Rückwärtskompatibilität in den i18n-Dateien, werden aber nicht mehr genutzt.
+
+### Bugfix: MQTT-Setup-Hinweis bei leerem User
+
+Wenn das Add-on weder eine `mqtt_user`-Add-on-Option findet noch via Supervisor-MQTT-Service-Discovery Credentials zugewiesen bekommt, läuft `aiomqtt.connect()` als anonymer Client gegen den Broker. Mosquitto mit Default-ACL lehnt das mit `[code:135] Not authorized` ab, was der User als kryptischen Stack-Trace im Backend-Log Stunden später sieht — der eigentliche Verursacher (`GV_MQTT_USER` ist leer) steht zu dem Zeitpunkt schon längst aus dem Sichtfeld.
+
+Fix: `addon/run.sh` schreibt jetzt direkt nach der MQTT-Host-Zeile eine deutlich sichtbare `WARNING:`-Zeile in das Add-on-Log, wenn `GV_MQTT_USER` leer ist — inklusive zwei konkreter Lösungswege (Add-on-Option `mqtt_user` setzen oder Mosquitto-Add-on als Supervisor-MQTT-Service einbinden) und einem Hinweis darauf, dass anonymous-Verbindungen mit `allow_anonymous true` legitim sein können. Der Add-on-Start läuft normal weiter, aber die Diagnose ist sofort nachvollziehbar.
+
+### Migration
+
+Keine. Bei aktualisierten Add-on-Instanzen erscheinen die neuen Meldungen ab dem nächsten Start, Diagnose-Berichte zeigen `MQTT Auth: ja/nein` wieder im Klartext.
+
 ## 2.6.1
 
 Bugfix-Release: behebt ein Cache-Problem, durch das ein zweiter Browser nach einem Update auf v2.6.0 noch das alte Frontend-Bundle ausgeliefert bekam — die neuen Features (Filter „Nur Hauptgeräte", Child→Parent-Switching) erschienen dann erst nach manuellem Hard-Reload.

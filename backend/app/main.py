@@ -608,30 +608,9 @@ async def ls_deactivate(body: LicenseKeyBody):
 
 # ----- Diagnostic report ------------------------------------------------------
 
-# Regex patterns to redact sensitive data from the diagnostic report.
-# Applied to both config values and log lines before the report leaves the backend.
-_REDACT_PATTERNS: list[tuple[re.Pattern[str], str]] = [
-    # Passwords / tokens / secrets in "key=value", "key: value", "key":"value" form
-    (re.compile(r'(?i)(password|passwd|pwd|secret|token|api[_-]?key|auth)([\'"]?\s*[:=]\s*[\'"]?)([^\s\'",}]+)'),
-     r'\1\2[REDACTED]'),
-    # Bearer tokens
-    (re.compile(r'(?i)bearer\s+[A-Za-z0-9._\-]+'), 'Bearer [REDACTED]'),
-    # JWT-like tokens (three base64url segments separated by dots)
-    (re.compile(r'\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\b'), '[REDACTED_JWT]'),
-    # Email addresses
-    (re.compile(r'\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b'), '[REDACTED_EMAIL]'),
-    # IPv4 addresses (mask last two octets)
-    (re.compile(r'\b(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}\b'), r'\1.\2.***.***'),
-    # License keys (payload.signature, base64url with a dot separator, >=40 chars)
-    (re.compile(r'\b[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\b'), '[REDACTED_LICENSE]'),
-]
-
-
-def _sanitize_text(text: str) -> str:
-    """Strip secrets, emails, IPs, and license keys from arbitrary text."""
-    for pattern, replacement in _REDACT_PATTERNS:
-        text = pattern.sub(replacement, text)
-    return text
+# Regex patterns and the sanitize function live in app.redaction so they can
+# be imported by unit tests without dragging in FastAPI router init.
+from app.redaction import sanitize_text as _sanitize_text  # noqa: E402
 
 
 class DiagnosticBody(BaseModel):
