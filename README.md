@@ -7,7 +7,7 @@
 <h3 align="center">Smart Home Device Inventory for Home Assistant</h3>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.4.0-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.6.2-blue.svg" />
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-41BDF5?logo=homeassistant&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-Source%20Available-orange.svg" />
   <img alt="GitHub Stars" src="https://img.shields.io/github/stars/DerRegner-DE/ha-device-inventory?style=social" />
@@ -24,7 +24,17 @@
 
 ---
 
-![Geräteverwaltung Dashboard](docs/screenshots/de_dashboard.png)
+![Geräteverwaltung Dashboard — 530 devices, multiple integrations, breakdown by type, network and warranty status](docs/screenshots/de_dashboard_v2.6.png)
+
+---
+
+## What's new
+
+**v2.6** (May 2026) — Built-in user manual, MQTT-Discovery cleanup buttons (orphan + full purge), smarter Companion-app deep-link, "Parents only" filter to collapse multi-channel device families, dynamic category chips, consistent bulk-action bar, and an "Apply to children" toggle that propagates manufacturer/warranty/power-source from a parent device to its sub-channels.
+
+**v2.5** (April 2026) — Multi-channel device grouping via HA's `via_device_id` (Shelly 2PM and similar appear as one logical device with sub-channel children). Up to 20 attachment images per device for installation-location documentation. Per-device change history with field-level revert. Custom Excel/PDF export with built-in Insurance and Estate-planning presets, plus seven sort orders.
+
+For the full list see [`addon/CHANGELOG.md`](addon/CHANGELOG.md). Bugs and feature requests via [GitHub Issues](https://github.com/DerRegner-DE/ha-device-inventory/issues).
 
 ---
 
