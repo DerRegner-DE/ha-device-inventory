@@ -380,7 +380,7 @@ export function DeviceList() {
             </svg>
             <p class="text-sm">{t("devices.noDevicesFound")}</p>
             {(search || activeType || activeNetwork || activePower || activeWarranty ||
-              activeIntegration || activeManufacturer || activeArea) && (
+              activeIntegration || activeManufacturer || activeArea || parentsOnly) && (
               <button
                 onClick={() => {
                   setSearch("");
@@ -391,6 +391,7 @@ export function DeviceList() {
                   clearIntegration();
                   clearManufacturer();
                   clearArea();
+                  setParentsOnly(false);
                 }}
                 class="mt-2 text-[#1F4E79] text-sm font-medium"
               >

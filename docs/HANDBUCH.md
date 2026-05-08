@@ -89,6 +89,8 @@ Beispiele: Shelly 2PM (zwei Steckdosen-Kanäle in einem Gehäuse), Tuya-Hubs, US
 
 Bei Multi-Channel-Setups bläht die Liste schnell auf — drei Zeilen für ein physisches Gerät. In der Liste rechts neben der Sortierung gibt es den Button **„Nur Hauptgeräte"**. Aktiv: Untergeräte sind versteckt, das Button-Label zeigt die Anzahl der versteckten Children. Filter ist Session-persistent.
 
+**Routing-Hubs werden nicht versteckt:** HA setzt `via_device_id` auch für Geräte, die über eine Bridge angebunden sind (Zigbee2MQTT-Bridge → Hue/IKEA/Aqara, ZHA-Coordinator → Endgeräte, Z-Wave-JS-Stick → Endgeräte, Matter-Server → Endgeräte). Diese „Children" sind eigene Hardware, nur die Bridge ist Software. Der Filter behandelt Geräte mit Integration `mqtt`, `zha`, `zwave_js` oder `matter` deshalb wie Hauptgeräte — sonst würde der Hauptgeräte-Filter die echten Lampen verstecken und nur die Bridge übrig lassen.
+
 ### Bearbeitung auf alle Kinder anwenden
 
 Beim Bearbeiten eines Hauptgeräts mit Untergeräten erscheint am Ende der Form eine Checkbox **„Auch auf N Untergeräte anwenden"**. Aktiviert wird beim Speichern *zusätzlich* zu dem Hauptgerät ein Bulk-Update mit folgenden Feldern auf alle Children gespiegelt:

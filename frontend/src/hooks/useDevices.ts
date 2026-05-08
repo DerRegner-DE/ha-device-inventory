@@ -88,7 +88,18 @@ export function useDevices(
         result = result.filter((d) => warrantyBucket(d.garantie_bis) === filter.warranty);
       }
       if (filter?.parentsOnly) {
-        result = result.filter((d) => !d.parent_uuid);
+        // v2.6.4: parent_uuid is set both for hardware multi-channel devices
+        // (Shelly 2PM channels, Bosch SHC sub-sensors — these *should* hide
+        // when "main devices only" is on) and for routing-hub children
+        // (everything paired through Zigbee2MQTT, ZHA, Z-Wave, Matter — these
+        // are independent hardware that just happen to be wired through a
+        // bridge). Hiding the latter makes the list collapse to bridges only,
+        // which is the opposite of what users expect. Routing-integration
+        // children are treated as main devices.
+        const ROUTING_INTEGRATIONS = new Set(["mqtt", "zha", "zwave_js", "matter"]);
+        result = result.filter(
+          (d) => !d.parent_uuid || (d.integration && ROUTING_INTEGRATIONS.has(d.integration)),
+        );
       }
 
       if (filter?.search) {

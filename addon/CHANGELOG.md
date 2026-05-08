@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.6.4
+
+Bugfix-Release. Zwei Korrekturen am „Nur Hauptgeräte"-Filter, die zusammen verhindert haben, dass die Geräteliste in MQTT-/Zigbee-/Z-Wave-/Matter-Setups noch sinnvoll nutzbar war, sobald der Filter einmal aktiviert war.
+
+### Bugfix: „Nur Hauptgeräte"-Filter blendete echte Hardware-Geräte aus
+
+Der Filter sollte ursprünglich nur Hardware-Multi-Channel-Setups zusammenklappen — z.B. Shelly 2PM, das in HA als Hauptgerät plus zwei Sub-Channels erscheint, oder Bosch SHC mit angebundenen Thermostaten. Geräte mit gesetztem `parent_uuid` wurden ausgeblendet, alles andere blieb sichtbar.
+
+HA verwendet `via_device_id` (woraus wir `parent_uuid` ableiten) aber auch für eine zweite Sache: Routing-Hubs. Zigbee2MQTT setzt die Bridge als Parent für jedes angebundene Gerät, ZHA tut das mit dem Coordinator, Z-Wave-JS mit dem Stick, Matter-Server mit dem Server-Add-on. Heißt: alle Hue-Lampen, IKEA-Tradfri-Sensoren, Aqara-Schalter etc. haben in einem Standard-Setup eine `parent_uuid`, die auf eine Software-Bridge zeigt — obwohl sie eigene physische Geräte sind.
+
+In der Praxis: bei einem Setup mit 30 Z2M-Lampen und 1 Bridge zeigte der Hauptgeräte-Filter eine Liste mit der Bridge — alle 30 Lampen waren weg. Das ist genau die falsche Richtung.
+
+Fix: Der Filter behandelt jetzt Geräte mit Integration `mqtt`, `zha`, `zwave_js` oder `matter` als Hauptgeräte, auch wenn sie eine `parent_uuid` haben. Hardware-Multi-Channel-Setups (Shelly, Bosch SHC etc.) verhalten sich unverändert — diese Integrations sind nicht in der Allowlist und werden weiterhin korrekt collapsed. Code: `frontend/src/hooks/useDevices.ts`.
+
+### Bugfix: „Filter zurücksetzen" hat den Hauptgeräte-Toggle ignoriert
+
+Wenn die Geräteliste durch einen aktiven Filter leer war, erschien ein „Filter zurücksetzen"-Button. Der prüfte aber nur die acht „klassischen" Filter (Suche, Typ, Netzwerk, Stromversorgung, Garantie, Integration, Hersteller, Standort) — den Hauptgeräte-Toggle hat er weder bei der Sichtbarkeit berücksichtigt noch bei Klick zurückgesetzt. Effekt: war der Hauptgeräte-Filter alleinige Ursache der leeren Liste, gab es entweder gar keinen Reset-Button (unsichtbar), oder ein Klick darauf brachte nichts (Toggle blieb an).
+
+Fix: Sichtbarkeitsprüfung und onClick-Handler in `frontend/src/components/DeviceList.tsx` schließen `parentsOnly` jetzt mit ein.
+
+### Migration
+
+Keine. Der Fix wird beim nächsten Add-on-Update wirksam, kein Re-Import nötig — die Filterlogik liest bestehende Felder (`parent_uuid`, `integration`) aus der lokalen IndexedDB.
+
 ## 2.6.3
 
 Bugfix-Release. Eine gezielte Korrektur am „In HA anzeigen"-Button für die HA Companion App auf Tablets.
