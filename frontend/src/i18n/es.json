@@ -358,6 +358,8 @@
   "settings.diagnosticGithubButton": "Reportar problema en GitHub",
   "settings.diagnosticGithubDesc": "Recomendado — rastreable. Se necesita cuenta de GitHub (gratuita).",
   "settings.diagnosticGithubHint": "Describa el problema arriba. El informe de diagnóstico a continuación ayuda con la depuración.",
+  "settings.diagnosticGithubPasteHint": "Describa el problema aquí. El informe de diagnóstico está en su portapapeles — péguelo entre los ``` de abajo (Ctrl+V / Cmd+V).",
+  "settings.diagnosticGithubClipboardFailed": "No se pudo copiar el informe automáticamente. Haga clic en \"Copiar al portapapeles\" primero y vuelva a intentarlo.",
   "settings.diagnosticClipboardButton": "Copiar al portapapeles",
   "settings.diagnosticClipboardDesc": "Para publicaciones en foros, correo electrónico o chat. No se necesita cuenta.",
   "settings.diagnosticCopied": "¡Copiado!",
