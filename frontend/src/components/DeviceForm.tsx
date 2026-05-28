@@ -180,6 +180,24 @@ export function DeviceForm({ device }: DeviceFormProps) {
   const directFileRef = useRef<HTMLInputElement>(null);
   const isMobile = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
+  // GH #18: "Sonstiges"-Custom-Type-Input verlor Focus nach erstem Zeichen.
+  // Vorher hing die render-condition am form.typ-Wert — sobald getippt wurde,
+  // wechselte typ vom Sentinel "Sonstiges" auf den Buchstaben, condition wurde
+  // false, input unmounted und beim nächsten render neu gemountet ohne Focus.
+  // Lösung: getrennter Schalter, der nicht vom Tippen abhängt.
+  const [isCustomType, setIsCustomType] = useState(() => {
+    const initial = device?.typ ?? "";
+    if (!initial) return false;
+    const fallback = DEVICE_TYPES.map((dt) => dt.id);
+    return !fallback.includes(initial);
+  });
+  useEffect(() => {
+    if (categories.length > 0 && form.typ && !allCategoryIds.includes(form.typ)) {
+      setIsCustomType(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categories.length]);
+
   // v2.6.0 (Forum-Nachtrag): wenn dieses Gerät Untergeräte hat
   // (Shelly 2PM, Tuya-Hub usw.), bekommt die Edit-Form unten einen Toggle
   // "Auch auf Untergeräte anwenden". Bei Speichern werden dann genau die
@@ -469,8 +487,17 @@ export function DeviceForm({ device }: DeviceFormProps) {
         <Section title={t("form.sectionBasic")} open={sections.basic} onToggle={() => toggleSection("basic")}>
           <Field label={t("form.deviceType")}>
             <select
-              value={allCategoryIds.includes(form.typ) ? form.typ : (form.typ ? "Sonstiges" : "")}
-              onChange={(e) => updateField("typ", (e.target as HTMLSelectElement).value)}
+              value={isCustomType ? "Sonstiges" : (allCategoryIds.includes(form.typ) ? form.typ : "")}
+              onChange={(e) => {
+                const v = (e.target as HTMLSelectElement).value;
+                if (v === "Sonstiges") {
+                  setIsCustomType(true);
+                  updateField("typ", "");
+                } else {
+                  setIsCustomType(false);
+                  updateField("typ", v);
+                }
+              }}
               class={selectClass}
               required
             >
@@ -485,15 +512,14 @@ export function DeviceForm({ device }: DeviceFormProps) {
                 <option key={dt.id} value={dt.id}>{t(dt.labelKey)}</option>
               ))}
             </select>
-            {form.typ === "Sonstiges" && (
+            {isCustomType && (
               <input
                 type="text"
-                onInput={(e) => {
-                  const v = (e.target as HTMLInputElement).value;
-                  if (v) updateField("typ", v);
-                }}
+                value={form.typ}
+                onInput={(e) => updateField("typ", (e.target as HTMLInputElement).value)}
                 class={inputClass + " mt-2"}
                 placeholder="z.B. Wallbox, NAS, Wetterstation..."
+                autoFocus
               />
             )}
           </Field>
