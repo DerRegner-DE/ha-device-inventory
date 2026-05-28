@@ -248,6 +248,8 @@
   "trash.empty": "Papierkorb ist leer.",
   "trash.restoreButton": "Wiederherstellen",
   "trash.bulkRestore": "{count} wiederherstellen",
+  "trash.bulkPurge": "{count} endgültig löschen",
+  "trash.bulkPurgeConfirm": "Wirklich endgültig löschen?",
   "trash.restored": "{count} Gerät(e) wiederhergestellt",
   "trash.restoreFailed": "Wiederherstellung fehlgeschlagen",
   "trash.purgeButton": "Endgültig löschen",

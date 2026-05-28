@@ -397,6 +397,19 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
 // error; a thumbnail sidesteps that completely.
 const IMAGE_RE = /\.(jpe?g|png|gif|webp|bmp)$/i;
 
+// Render-time safety net for links saved before v2.6.6, when a bare host like
+// "heise.de" was stored verbatim. Without a scheme the browser treats it as a
+// relative URL, which resolves into the HA Ingress path and 401s. New links are
+// already normalized server-side; this fixes the historical rows on display.
+const SCHEME_RE = /^[a-z][a-z0-9+.-]*:\/\//i;
+function absoluteLinkUrl(url: string): string {
+  const u = url.trim();
+  if (!u) return u;
+  if (SCHEME_RE.test(u) || /^(mailto:|tel:)/i.test(u)) return u;
+  if (u.startsWith("//")) return "https:" + u;
+  return "https://" + u;
+}
+
 function isImageDoc(doc: DocumentItem): boolean {
   if (doc.url) return false;
   if (doc.mime_type && doc.mime_type.startsWith("image/")) return true;
@@ -536,7 +549,7 @@ export function DocumentsSection({
       {docs.length > 0 && (
         <div class="space-y-2">
           {docs.map((doc) => {
-            const href = doc.url || getDocumentUrl(doc.uuid);
+            const href = doc.url ? absoluteLinkUrl(doc.url) : getDocumentUrl(doc.uuid);
             const showThumb = isImageDoc(doc);
             return (
               <div key={doc.uuid} class="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-700 last:border-b-0">

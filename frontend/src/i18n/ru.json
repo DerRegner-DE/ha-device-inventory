@@ -248,6 +248,8 @@
   "trash.empty": "Корзина пуста.",
   "trash.restoreButton": "Восстановить",
   "trash.bulkRestore": "Восстановить {count}",
+  "trash.bulkPurge": "Удалить {count} навсегда",
+  "trash.bulkPurgeConfirm": "Удалить навсегда?",
   "trash.restored": "{count} устройств(а) восстановлено",
   "trash.restoreFailed": "Ошибка восстановления",
   "trash.purgeButton": "Удалить навсегда",

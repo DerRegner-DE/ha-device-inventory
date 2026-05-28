@@ -248,6 +248,8 @@
   "trash.empty": "La papelera está vacía.",
   "trash.restoreButton": "Restaurar",
   "trash.bulkRestore": "Restaurar {count}",
+  "trash.bulkPurge": "Eliminar {count} definitivamente",
+  "trash.bulkPurgeConfirm": "¿Eliminar definitivamente?",
   "trash.restored": "{count} dispositivo(s) restaurados",
   "trash.restoreFailed": "Error al restaurar",
   "trash.purgeButton": "Eliminar permanentemente",
