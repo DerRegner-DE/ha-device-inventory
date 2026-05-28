@@ -32,12 +32,14 @@ export function TrashView() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [purgeConfirm, setPurgeConfirm] = useState<string | null>(null);
+  const [bulkPurgeConfirm, setBulkPurgeConfirm] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   async function refresh() {
     const data = await apiGet<{ items: DeletedDevice[] }>("/devices/trash/list");
     setItems(data?.items || []);
     setSelected(new Set());
+    setBulkPurgeConfirm(false);
     setLoading(false);
   }
 
@@ -50,11 +52,13 @@ export function TrashView() {
     if (next.has(uuid)) next.delete(uuid);
     else next.add(uuid);
     setSelected(next);
+    setBulkPurgeConfirm(false);
   };
 
   const selectAll = () => {
     if (selected.size === items.length) setSelected(new Set());
     else setSelected(new Set(items.map((i) => i.uuid)));
+    setBulkPurgeConfirm(false);
   };
 
   const handleRestore = async (uuid: string) => {
@@ -83,6 +87,29 @@ export function TrashView() {
       await refresh();
     } else {
       setResult(t("trash.restoreFailed"));
+    }
+    setBusy(false);
+  };
+
+  const handleBulkPurge = async () => {
+    if (selected.size === 0) return;
+    // Two-step confirm: first click arms the button, second click purges.
+    if (!bulkPurgeConfirm) {
+      setBulkPurgeConfirm(true);
+      return;
+    }
+    setBulkPurgeConfirm(false);
+    setBusy(true);
+    setResult(null);
+    const res = await apiPost<{ purged: number; total: number }>(
+      "/devices/trash/purge",
+      { uuids: [...selected] },
+    );
+    if (res) {
+      setResult(t("trash.purged", { count: res.purged }));
+      await refresh();
+    } else {
+      setResult(t("trash.purgeFailed"));
     }
     setBusy(false);
   };
@@ -125,13 +152,28 @@ export function TrashView() {
             : t("bulk.selectAll")}
         </button>
         {selected.size > 0 && (
-          <button
-            onClick={handleBulkRestore}
-            disabled={busy}
-            class="text-xs px-3 py-1.5 rounded-lg bg-[#4CAF50] text-white hover:bg-[#43A047] disabled:opacity-50"
-          >
-            {t("trash.bulkRestore", { count: selected.size })}
-          </button>
+          <div class="flex gap-2">
+            <button
+              onClick={handleBulkRestore}
+              disabled={busy}
+              class="text-xs px-3 py-1.5 rounded-lg bg-[#4CAF50] text-white hover:bg-[#43A047] disabled:opacity-50"
+            >
+              {t("trash.bulkRestore", { count: selected.size })}
+            </button>
+            <button
+              onClick={handleBulkPurge}
+              disabled={busy}
+              class={`text-xs px-3 py-1.5 rounded-lg disabled:opacity-50 ${
+                bulkPurgeConfirm
+                  ? "bg-red-500 text-white hover:bg-red-600"
+                  : "border border-red-300 dark:border-red-700 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+              }`}
+            >
+              {bulkPurgeConfirm
+                ? t("trash.bulkPurgeConfirm")
+                : t("trash.bulkPurge", { count: selected.size })}
+            </button>
+          </div>
         )}
       </div>
       <div class="space-y-2">

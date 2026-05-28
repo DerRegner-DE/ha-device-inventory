@@ -363,6 +363,48 @@ def hard_delete_device(uuid: str):
         conn.execute("DELETE FROM devices WHERE id = ?", (row["id"],))
 
 
+@router.post("/trash/purge")
+def bulk_purge_trash(body: BulkDeleteBody):
+    """Permanently delete several already-trashed devices in one call.
+
+    Used by the Papierkorb view's "endgültig löschen" bulk action — selecting
+    everything and purging is how a user empties the whole trash. Only rows
+    that are actually in the trash (``deleted_at IS NOT NULL``) are removed;
+    live devices in the list are ignored, so a stale UUID can never wipe an
+    active device.
+
+    Child rows must go before the device rows: the foreign keys on photos,
+    documents and attachments have no ``ON DELETE CASCADE``, so deleting the
+    device first would fail with ``foreign_keys=ON``.
+    """
+    if not body.uuids:
+        raise HTTPException(status_code=400, detail="No UUIDs provided")
+
+    placeholders = ", ".join(["?"] * len(body.uuids))
+
+    with get_db() as conn:
+        ids = [
+            r["id"]
+            for r in conn.execute(
+                f"SELECT id FROM devices WHERE uuid IN ({placeholders}) "
+                f"AND deleted_at IS NOT NULL",
+                body.uuids,
+            ).fetchall()
+        ]
+        if not ids:
+            return {"purged": 0, "total": len(body.uuids)}
+
+        id_placeholders = ", ".join(["?"] * len(ids))
+        for table in ("photos", "documents", "attachments"):
+            conn.execute(
+                f"DELETE FROM {table} WHERE device_id IN ({id_placeholders})", ids
+            )
+        cursor = conn.execute(
+            f"DELETE FROM devices WHERE id IN ({id_placeholders})", ids
+        )
+        return {"purged": cursor.rowcount, "total": len(body.uuids)}
+
+
 @router.put("/bulk/update")
 def bulk_update_devices(body: BulkUpdateBody):
     """Update multiple devices with the same field values."""

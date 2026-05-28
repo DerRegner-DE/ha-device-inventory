@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.6.6
+
+Bugfix-Release. Zwei Korrekturen am Papierkorb und an der Link-Eingabe in der Gerätedetail-Ansicht.
+
+### Neu: Papierkorb sammelweise endgültig leeren
+
+Der Papierkorb hatte einen „Alle auswählen"- und einen „Auswahl wiederherstellen"-Button, aber kein Gegenstück zum endgültigen Löschen — wer den Papierkorb leeren wollte, musste jedes Gerät einzeln über den „Endgültig löschen"-Button entfernen.
+
+Neu: Bei aktiver Auswahl erscheint neben „Wiederherstellen" ein roter „Endgültig löschen"-Button (mit Zwei-Klick-Bestätigung). Alle auswählen + endgültig löschen leert damit den kompletten Papierkorb in einem Schritt. Server-seitig entfernt der neue Endpoint `POST /devices/trash/purge` ausschließlich Geräte, die wirklich im Papierkorb liegen (`deleted_at IS NOT NULL`) — eine versehentlich mitgeschickte UUID eines aktiven Geräts kann nichts löschen. Zugehörige Fotos, Dokumente und Anhänge werden vor dem Gerät entfernt (Fremdschlüssel ohne `ON DELETE CASCADE`).
+
+### Bugfix: Links ohne Schema liefen im Ingress-iframe auf 401
+
+Ein als `heise.de` oder `www.heise.de` eingegebener Link wurde unverändert gespeichert und als relativer Verweis gerendert. Im HA-Ingress-iframe löst ein relativer Link gegen den Add-on-Pfad auf und liefert 401 — der Link wirkte kaputt.
+
+Fix: Beim Speichern wird ein fehlendes Schema ergänzt (`heise.de` → `https://heise.de`); `http(s)://`, `mailto:` und `tel:` bleiben unangetastet, `//host` bekommt `https:`. Bereits gespeicherte Alt-Links werden zusätzlich beim Anzeigen absolut gemacht, sodass auch bestehende Einträge ohne Re-Import funktionieren. Code: `backend/app/routers/documents.py`, `frontend/src/components/DeviceDetail.tsx`.
+
+### Migration
+
+Keine. Neue Links werden korrekt gespeichert, alte beim Anzeigen repariert.
+
 ## 2.6.4
 
 Bugfix-Release. Zwei Korrekturen am „Nur Hauptgeräte"-Filter, die zusammen verhindert haben, dass die Geräteliste in MQTT-/Zigbee-/Z-Wave-/Matter-Setups noch sinnvoll nutzbar war, sobald der Filter einmal aktiviert war.

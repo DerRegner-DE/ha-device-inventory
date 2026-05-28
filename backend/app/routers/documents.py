@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
@@ -28,6 +29,31 @@ DOCS_DIR = settings.PHOTOS_DIR.parent / "documents"
 class DocumentLinkBody(BaseModel):
     url: str
     caption: str | None = None
+
+
+_SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.\-]*://")
+
+
+def normalize_link_url(url: str) -> str:
+    """Make a user-entered link absolute so it opens as an external page.
+
+    A bare host like ``heise.de`` is rendered as ``<a href="heise.de">``, which
+    the browser resolves *relative to the current page*. Inside the HA Ingress
+    iframe that points back at the add-on path and returns 401, so the link
+    looks broken. Prepending a scheme turns it into an absolute URL.
+
+    ``http(s)://``-style links and ``mailto:``/``tel:`` are left untouched;
+    protocol-relative ``//host`` gets ``https:``; everything else gets
+    ``https://``.
+    """
+    url = url.strip()
+    if not url:
+        return url
+    if _SCHEME_RE.match(url) or url.lower().startswith(("mailto:", "tel:")):
+        return url
+    if url.startswith("//"):
+        return "https:" + url
+    return "https://" + url
 
 
 @router.get("/devices/{device_uuid}/documents")
@@ -125,11 +151,15 @@ def add_document_link(device_uuid: str, body: DocumentLinkBody):
         if not device:
             raise HTTPException(status_code=404, detail="Device not found")
 
+        url = normalize_link_url(body.url)
+        if not url:
+            raise HTTPException(status_code=400, detail="Empty URL")
+
         doc_uuid = uuid4().hex
         conn.execute(
             "INSERT INTO documents (uuid, device_id, filename, mime_type, file_size, caption, url) "
             "VALUES (?, ?, ?, ?, 0, ?, ?)",
-            (doc_uuid, device["id"], body.url.split("/")[-1] or "Link", "text/uri-list", body.caption, body.url),
+            (doc_uuid, device["id"], url.split("/")[-1] or "Link", "text/uri-list", body.caption, url),
         )
         conn.execute(
             "UPDATE devices SET sync_version = sync_version + 1, updated_at = datetime('now') WHERE id = ?",

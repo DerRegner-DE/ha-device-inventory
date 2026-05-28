@@ -248,6 +248,8 @@
   "trash.empty": "Trash is empty.",
   "trash.restoreButton": "Restore",
   "trash.bulkRestore": "Restore {count}",
+  "trash.bulkPurge": "Delete {count} permanently",
+  "trash.bulkPurgeConfirm": "Delete permanently?",
   "trash.restored": "{count} device(s) restored",
   "trash.restoreFailed": "Restore failed",
   "trash.purgeButton": "Delete permanently",
