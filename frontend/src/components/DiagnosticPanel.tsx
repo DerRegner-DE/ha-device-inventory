@@ -41,12 +41,37 @@ export function DiagnosticPanel() {
   async function handleGithub() {
     const md = await ensureReport();
     if (!md) return;
+
+    // GH #19: GitHub lehnt URLs > ~8 KB mit HTTP 414 "URL too long" ab.
+    // Vorher wurde der komplette Diagnose-Bericht als URL-Param body
+    // angehaengt — bei realen Reports immer ueber dem Limit. Jetzt: Bericht
+    // in die Zwischenablage kopieren, leere Issue-Vorlage oeffnen, User
+    // fuegt selbst ein.
+    let clipboardOk = false;
+    try {
+      await navigator.clipboard.writeText(md);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+      clipboardOk = true;
+    } catch {
+      // Clipboard API blockiert (HTTP context, alte Browser). Hinweis geben,
+      // damit der User den Copy-Button darunter benutzt.
+      alert(
+        t("settings.diagnosticGithubClipboardFailed") ||
+          "Konnte den Bericht nicht automatisch kopieren. Bitte zuerst auf 'In Zwischenablage kopieren' klicken und dann erneut versuchen.",
+      );
+      return;
+    }
+
     const title = encodeURIComponent("[Bug] ");
-    const body = encodeURIComponent(
-      `<!-- ${t("settings.diagnosticGithubHint") || "Bitte beschreibe das Problem oben. Der Diagnose-Bericht unten hilft bei der Fehlersuche."} -->\n\n\n\n---\n\n<details><summary>Diagnose-Bericht</summary>\n\n\`\`\`\n${md}\n\`\`\`\n\n</details>\n`
-    );
+    const bodyHint =
+      t("settings.diagnosticGithubPasteHint") ||
+      "Beschreibe das Problem hier. Der Diagnose-Bericht liegt in deiner Zwischenablage — bitte zwischen die ``` unten einfuegen (Strg+V / Cmd+V).";
+    const bodyTemplate = `${bodyHint}\n\n---\n\n<details><summary>Diagnose-Bericht (hier einfuegen)</summary>\n\n\`\`\`\n\n\`\`\`\n\n</details>\n`;
+    const body = encodeURIComponent(bodyTemplate);
     const url = `https://github.com/${GITHUB_REPO}/issues/new?title=${title}&body=${body}`;
     window.open(url, "_blank", "noopener,noreferrer");
+    void clipboardOk;
   }
 
   async function handleClipboard() {

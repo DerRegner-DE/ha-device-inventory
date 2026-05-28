@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.6.5
+
+Bugfix-Release. Zwei unabhängige Fixes am Geräte-Editor und am GitHub-Issue-Workflow.
+
+### Bugfix: „Sonstiges"-Eingabefeld verlor nach dem ersten Zeichen den Focus
+
+Beim Anlegen oder Bearbeiten eines Geräts mit eigenem Typ (Dropdown auf „Sonstiges" → Texteingabe darunter) klappte das Eingabefeld nach jedem Tastendruck wieder zu. Es wurde nur der erste Buchstabe übernommen, der Cursor verschwand, Weitertippen ging nur durch erneutes Klicken ins Feld — und das nach jedem Zeichen.
+
+Ursache: Das Texteingabefeld war an die Bedingung `form.typ === "Sonstiges"` gekoppelt. Sobald der erste Buchstabe getippt wurde, wechselte `form.typ` vom Sentinel-Wert „Sonstiges" auf den eingegebenen Buchstaben, die Bedingung wurde falsch, der Input wurde aus dem DOM entfernt. Der Select rechnete „Sonstiges" dann zwar wieder zurück (Wert nicht in der Kategorieliste → Anzeige „Sonstiges"), und der Input wurde neu gemountet — aber als frisch erzeugtes DOM-Element ohne Focus.
+
+Fix: Der Custom-Type-Modus wird jetzt über einen eigenen `isCustomType`-Schalter gesteuert, der nicht vom Tippen abhängt. Beim ersten Auswählen von „Sonstiges" wird er aktiviert, beim Tippen bleibt er aktiv, beim Auswählen einer regulären Kategorie wird er zurückgesetzt. Der Input ist kontrolliert (`value={form.typ}`) und bleibt über den gesamten Tippvorgang im DOM. Code: `frontend/src/components/DeviceForm.tsx`.
+
+### Bugfix: „Problem auf GitHub melden" lieferte URL too long (HTTP 414)
+
+Der Button auf der Diagnose-Seite hat den kompletten Diagnose-Bericht (Add-on-Version, MQTT-Status, Geräte-Anzahl, letzte ~200 Log-Zeilen) als URL-Parameter `body=` an `github.com/.../issues/new` angehängt. GitHub akzeptiert solche URLs nur bis ~8 KB; reale Berichte überschreiten das immer und führten zur Fehlerseite *„Whoa there! Your request URL is too long."* — der Bug-Report-Workflow war damit blockiert.
+
+Fix: Der Diagnose-Bericht wird beim Klick zunächst in die Zwischenablage kopiert. Anschließend öffnet sich ein leeres Issue-Template mit einer kurzen Anleitung im Body und einem `<details>`-Block, in den der User den Bericht zwischen die Backticks pastet. Wenn die Clipboard-API blockiert ist (HTTP-Kontext, alte Browser), erscheint eine Hinweisbox und kein leeres Template wird geöffnet. Code: `frontend/src/components/DiagnosticPanel.tsx`, Funktion `handleGithub`. Neue i18n-Keys `settings.diagnosticGithubPasteHint` und `settings.diagnosticGithubClipboardFailed` in allen fünf Sprachen ergänzt.
+
+### Migration
+
+Keine. Beide Fixes wirken sofort beim nächsten Add-on-Update.
+
 ## 2.6.4
 
 Bugfix-Release. Zwei Korrekturen am „Nur Hauptgeräte"-Filter, die zusammen verhindert haben, dass die Geräteliste in MQTT-/Zigbee-/Z-Wave-/Matter-Setups noch sinnvoll nutzbar war, sobald der Filter einmal aktiviert war.
