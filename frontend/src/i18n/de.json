@@ -362,6 +362,8 @@
   "settings.diagnosticGithubHint": "Bitte beschreibe das Problem oben. Der Diagnose-Bericht unten hilft bei der Fehlersuche.",
   "settings.diagnosticGithubPasteHint": "Beschreibe das Problem hier. Der Diagnose-Bericht liegt in deiner Zwischenablage — bitte zwischen die ``` unten einfügen (Strg+V / Cmd+V).",
   "settings.diagnosticGithubClipboardFailed": "Konnte den Bericht nicht automatisch kopieren. Bitte zuerst auf „In Zwischenablage kopieren\" klicken und dann erneut versuchen.",
+  "settings.diagnosticGithubOpenFallback": "GitHub hat sich nicht geöffnet?",
+  "settings.diagnosticGithubOpenLink": "Issue-Seite manuell öffnen",
   "settings.diagnosticClipboardButton": "In Zwischenablage kopieren",
   "settings.diagnosticClipboardDesc": "Für Forum-Posts, E-Mail oder Chat. Kein Account nötig.",
   "settings.diagnosticCopied": "Kopiert!",

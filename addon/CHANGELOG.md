@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.6.6
+
+Bugfix-Release.
+
+### Bugfix: „Problem auf GitHub melden" öffnete GitHub nicht (Popup-Blocker / Companion-App)
+
+Der mit v2.6.5 umgebaute GitHub-Issue-Workflow (Bericht in Zwischenablage, leeres Issue-Template öffnen) scheiterte bei einigen Nutzern am letzten Schritt: Die GitHub-Seite öffnete sich nicht, obwohl der Hinweis erschien und der Bericht in der Zwischenablage lag.
+
+Zwei Ursachen: (1) `window.open` wurde erst nach zwei `await`-Aufrufen (Bericht generieren, Zwischenablage beschreiben) ausgeführt — die transiente User-Aktivierung des Klicks ist zu dem Zeitpunkt in manchen Browsern verbraucht, der Popup-Blocker verwirft das Fenster ohne Rückmeldung. (2) In der WebView der HA-Companion-App ist `window.open` generell wirkungslos. Zusätzlich lieferte der Feature-String `"noopener"` per Spezifikation immer `null` zurück, sodass eine Blockierung nicht erkennbar war.
+
+Fix: `window.open` wird weiterhin versucht (jetzt ohne Feature-String, `opener` wird manuell gekappt). Unabhängig vom Ergebnis erscheint unter dem Button ein sichtbarer Link „Issue-Seite manuell öffnen" — ein echter Anker-Tap ist eine frische User-Geste, die Popup-Blocker durchlassen und die die Companion-App an den System-Browser weiterreicht. Code: `frontend/src/components/DiagnosticPanel.tsx`. Neue i18n-Keys `settings.diagnosticGithubOpenFallback` und `settings.diagnosticGithubOpenLink` in allen fünf Sprachen ergänzt.
+
 ## 2.6.5
 
 Bugfix-Release. Vier unabhängige Fixes: Geräte-Editor, GitHub-Issue-Workflow, Papierkorb und Link-Eingabe.

@@ -10,6 +10,7 @@ export function DiagnosticPanel() {
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [issueUrl, setIssueUrl] = useState<string | null>(null);
 
   async function ensureReport(): Promise<string | null> {
     if (report) return report;
@@ -38,21 +39,27 @@ export function DiagnosticPanel() {
     setShowPreview((v) => !v);
   }
 
+  function buildIssueUrl(): string {
+    const title = encodeURIComponent("[Bug] ");
+    const bodyHint =
+      t("settings.diagnosticGithubPasteHint") ||
+      "Beschreibe das Problem hier. Der Diagnose-Bericht liegt in deiner Zwischenablage — bitte zwischen die ``` unten einfügen (Strg+V / Cmd+V).";
+    const bodyTemplate = `${bodyHint}\n\n---\n\n<details><summary>Diagnose-Bericht (hier einfügen)</summary>\n\n\`\`\`\n\n\`\`\`\n\n</details>\n`;
+    const body = encodeURIComponent(bodyTemplate);
+    return `https://github.com/${GITHUB_REPO}/issues/new?title=${title}&body=${body}`;
+  }
+
   async function handleGithub() {
     const md = await ensureReport();
     if (!md) return;
 
     // GH #19: GitHub lehnt URLs > ~8 KB mit HTTP 414 "URL too long" ab.
-    // Vorher wurde der komplette Diagnose-Bericht als URL-Param body
-    // angehaengt — bei realen Reports immer ueber dem Limit. Jetzt: Bericht
-    // in die Zwischenablage kopieren, leere Issue-Vorlage oeffnen, User
-    // fuegt selbst ein.
-    let clipboardOk = false;
+    // Daher: Bericht in die Zwischenablage kopieren, leere Issue-Vorlage
+    // öffnen, User fügt selbst ein.
     try {
       await navigator.clipboard.writeText(md);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-      clipboardOk = true;
     } catch {
       // Clipboard API blockiert (HTTP context, alte Browser). Hinweis geben,
       // damit der User den Copy-Button darunter benutzt.
@@ -63,15 +70,21 @@ export function DiagnosticPanel() {
       return;
     }
 
-    const title = encodeURIComponent("[Bug] ");
-    const bodyHint =
-      t("settings.diagnosticGithubPasteHint") ||
-      "Beschreibe das Problem hier. Der Diagnose-Bericht liegt in deiner Zwischenablage — bitte zwischen die ``` unten einfuegen (Strg+V / Cmd+V).";
-    const bodyTemplate = `${bodyHint}\n\n---\n\n<details><summary>Diagnose-Bericht (hier einfuegen)</summary>\n\n\`\`\`\n\n\`\`\`\n\n</details>\n`;
-    const body = encodeURIComponent(bodyTemplate);
-    const url = `https://github.com/${GITHUB_REPO}/issues/new?title=${title}&body=${body}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-    void clipboardOk;
+    const url = buildIssueUrl();
+    // GH #19 (Nachgang): window.open steht hier NACH zwei awaits — die
+    // transiente User-Aktivierung des Klicks ist da in manchen Browsern
+    // schon verbraucht, Popup-Blocker schlucken das Fenster kommentarlos.
+    // In der HA-Companion-WebView ist window.open generell wirkungslos.
+    // "noopener" im Feature-String liefert zudem per Spec immer null
+    // zurück, daher opener manuell kappen statt Feature-String.
+    const win = window.open(url, "_blank");
+    if (win) {
+      win.opener = null;
+    }
+    // Sichtbarer Anker als Fallback: ein echter Link-Tap ist eine frische
+    // User-Geste — Popup-Blocker lassen ihn durch, und die Companion-App
+    // reicht externe Links an den System-Browser weiter.
+    setIssueUrl(url);
   }
 
   async function handleClipboard() {
@@ -174,6 +187,21 @@ export function DiagnosticPanel() {
             {t("settings.diagnosticGithubDesc") ||
               "Empfohlen — nachverfolgbar. GitHub-Account nötig (kostenlos)."}
           </p>
+          {issueUrl && (
+            <p class="text-[11px] text-gray-500 dark:text-gray-300 mt-1.5 ml-1">
+              {t("settings.diagnosticGithubOpenFallback") ||
+                "GitHub hat sich nicht geöffnet?"}{" "}
+              <a
+                href={issueUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-[#1F4E79] dark:text-blue-300 underline font-medium"
+              >
+                {t("settings.diagnosticGithubOpenLink") ||
+                  "Issue-Seite manuell öffnen"}
+              </a>
+            </p>
+          )}
         </div>
 
         <div>
