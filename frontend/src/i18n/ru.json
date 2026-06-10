@@ -362,6 +362,8 @@
   "settings.diagnosticGithubHint": "Пожалуйста, опишите проблему выше. Диагностический отчёт ниже помогает при отладке.",
   "settings.diagnosticGithubPasteHint": "Опишите проблему здесь. Диагностический отчёт находится в буфере обмена — вставьте его между ``` ниже (Ctrl+V / Cmd+V).",
   "settings.diagnosticGithubClipboardFailed": "Не удалось автоматически скопировать отчёт. Сначала нажмите \"Копировать в буфер обмена\", затем повторите.",
+  "settings.diagnosticGithubOpenFallback": "GitHub не открылся?",
+  "settings.diagnosticGithubOpenLink": "Открыть страницу issue вручную",
   "settings.diagnosticClipboardButton": "Копировать в буфер обмена",
   "settings.diagnosticClipboardDesc": "Для постов на форуме, e-mail или чата. Аккаунт не требуется.",
   "settings.diagnosticCopied": "Скопировано!",

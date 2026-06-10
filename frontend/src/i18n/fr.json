@@ -362,6 +362,8 @@
   "settings.diagnosticGithubHint": "Veuillez décrire le problème ci-dessus. Le rapport de diagnostic ci-dessous aide au débogage.",
   "settings.diagnosticGithubPasteHint": "Décrivez le problème ici. Le rapport de diagnostic est dans votre presse-papiers — collez-le entre les ``` ci-dessous (Ctrl+V / Cmd+V).",
   "settings.diagnosticGithubClipboardFailed": "Impossible de copier le rapport automatiquement. Cliquez d'abord sur \"Copier dans le presse-papiers\" puis réessayez.",
+  "settings.diagnosticGithubOpenFallback": "GitHub ne s'est pas ouvert ?",
+  "settings.diagnosticGithubOpenLink": "Ouvrir la page de l'issue manuellement",
   "settings.diagnosticClipboardButton": "Copier dans le presse-papiers",
   "settings.diagnosticClipboardDesc": "Pour publications de forum, e-mail ou chat. Aucun compte requis.",
   "settings.diagnosticCopied": "Copié !",
