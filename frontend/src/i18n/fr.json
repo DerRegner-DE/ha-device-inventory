@@ -367,6 +367,7 @@
   "settings.diagnosticClipboardButton": "Copier dans le presse-papiers",
   "settings.diagnosticClipboardDesc": "Pour publications de forum, e-mail ou chat. Aucun compte requis.",
   "settings.diagnosticCopied": "Copié !",
+  "settings.diagnosticCopyManual": "La copie automatique n'est pas possible via une connexion HTTP. Le rapport est affiché ci-dessous — veuillez le sélectionner et le copier avec Ctrl+C / Cmd+C.",
   "settings.diagnosticNote": "Le rapport n'est transmis ou copié qu'après votre clic. Vous pouvez le consulter dans l'aperçu au préalable.",
   "settings.reportProblem": "Signaler le problème →",
   "sync.connected": "Connecté",

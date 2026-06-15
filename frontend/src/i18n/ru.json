@@ -367,6 +367,7 @@
   "settings.diagnosticClipboardButton": "Копировать в буфер обмена",
   "settings.diagnosticClipboardDesc": "Для постов на форуме, e-mail или чата. Аккаунт не требуется.",
   "settings.diagnosticCopied": "Скопировано!",
+  "settings.diagnosticCopyManual": "Автоматическое копирование невозможно при HTTP-подключении. Отчёт показан ниже — выделите его и скопируйте с помощью Ctrl+C / Cmd+C.",
   "settings.diagnosticNote": "Отчёт передаётся или копируется только после вашего клика. Вы можете предварительно просмотреть его полностью.",
   "settings.reportProblem": "Сообщить о проблеме →",
   "sync.connected": "Подключено",

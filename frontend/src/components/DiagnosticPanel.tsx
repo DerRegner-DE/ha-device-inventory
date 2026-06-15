@@ -10,6 +10,7 @@ export function DiagnosticPanel() {
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [issueUrl, setIssueUrl] = useState<string | null>(null);
 
   async function ensureReport(): Promise<string | null> {
@@ -25,6 +26,35 @@ export function DiagnosticPanel() {
       return result.markdown;
     }
     return null;
+  }
+
+  // GH #19: navigator.clipboard gibt es nur im Secure Context (HTTPS oder
+  // localhost). Sehr viele greifen per http://<LAN-IP>:8123 auf HA zu — dort
+  // ist navigator.clipboard undefined und writeText wirft. Daher zusätzlich
+  // das Legacy-execCommand-Verfahren, das auch über HTTP funktioniert.
+  async function copyText(text: string): Promise<boolean> {
+    try {
+      if (window.isSecureContext && navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {
+      // unten auf Legacy-Verfahren zurückfallen
+    }
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.top = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return ok;
+    } catch {
+      return false;
+    }
   }
 
   async function handleToggleAnonymize() {
@@ -50,53 +80,50 @@ export function DiagnosticPanel() {
   }
 
   async function handleGithub() {
-    const md = await ensureReport();
-    if (!md) return;
-
-    // GH #19: GitHub lehnt URLs > ~8 KB mit HTTP 414 "URL too long" ab.
-    // Daher: Bericht in die Zwischenablage kopieren, leere Issue-Vorlage
-    // öffnen, User fügt selbst ein.
-    try {
-      await navigator.clipboard.writeText(md);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      // Clipboard API blockiert (HTTP context, alte Browser). Hinweis geben,
-      // damit der User den Copy-Button darunter benutzt.
-      alert(
-        t("settings.diagnosticGithubClipboardFailed") ||
-          "Konnte den Bericht nicht automatisch kopieren. Bitte zuerst auf 'In Zwischenablage kopieren' klicken und dann erneut versuchen.",
-      );
-      return;
-    }
-
+    // GH #19: Die Issue-Seite öffnen, BEVOR irgendein await läuft — so ist die
+    // transiente User-Aktivierung des Klicks noch frisch und der Popup-Blocker
+    // lässt das Fenster eher durch. Die URL braucht den Bericht nicht (leere
+    // Vorlage, GitHub lehnt lange URLs mit HTTP 414 ab). "noopener" im
+    // Feature-String liefert per Spec immer null, daher opener manuell kappen.
     const url = buildIssueUrl();
-    // GH #19 (Nachgang): window.open steht hier NACH zwei awaits — die
-    // transiente User-Aktivierung des Klicks ist da in manchen Browsern
-    // schon verbraucht, Popup-Blocker schlucken das Fenster kommentarlos.
-    // In der HA-Companion-WebView ist window.open generell wirkungslos.
-    // "noopener" im Feature-String liefert zudem per Spec immer null
-    // zurück, daher opener manuell kappen statt Feature-String.
     const win = window.open(url, "_blank");
     if (win) {
       win.opener = null;
     }
-    // Sichtbarer Anker als Fallback: ein echter Link-Tap ist eine frische
-    // User-Geste — Popup-Blocker lassen ihn durch, und die Companion-App
-    // reicht externe Links an den System-Browser weiter.
+    // Sichtbarer Anker als Fallback — immer einblenden, unabhängig davon, ob
+    // window.open oder das Kopieren geklappt hat. Ein echter Link-Tap ist eine
+    // frische User-Geste, die Popup-Blocker durchlassen und die Companion-App
+    // an den System-Browser weiterreicht.
     setIssueUrl(url);
+
+    // Bericht best-effort in die Zwischenablage. Das Kopieren ist NICHT
+    // Voraussetzung fürs Öffnen (GH #19: auf http://<LAN-IP>:8123 ist die
+    // Clipboard-API nicht verfügbar). Scheitert es, Bericht zum manuellen
+    // Markieren einblenden statt in einer Alert-Sackgasse zu enden.
+    const md = await ensureReport();
+    if (!md) return;
+    const ok = await copyText(md);
+    setCopied(ok);
+    setCopyFailed(!ok);
+    if (ok) {
+      setTimeout(() => setCopied(false), 2500);
+    } else {
+      setShowPreview(true);
+    }
   }
 
   async function handleClipboard() {
     const md = await ensureReport();
     if (!md) return;
-    try {
-      await navigator.clipboard.writeText(md);
-      setCopied(true);
+    const ok = await copyText(md);
+    setCopied(ok);
+    setCopyFailed(!ok);
+    if (ok) {
       setTimeout(() => setCopied(false), 2500);
-    } catch {
-      // Fallback: open a textarea-based copy? Just alert.
-      setCopied(false);
+    } else {
+      // Kein stiller Fehlschlag: Bericht einblenden, damit der User ihn
+      // manuell markieren und mit Strg+C / Cmd+C kopieren kann.
+      setShowPreview(true);
     }
   }
 
@@ -167,6 +194,13 @@ export function DiagnosticPanel() {
           ? (t("settings.diagnosticHidePreview") || "▼ Vorschau ausblenden")
           : (t("settings.diagnosticShowPreview") || "▶ Vorschau des Berichts anzeigen")}
       </button>
+
+      {copyFailed && (
+        <p class="mt-2 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-[11px] text-amber-800 dark:text-amber-200">
+          {t("settings.diagnosticCopyManual") ||
+            "Automatisches Kopieren ist über eine HTTP-Verbindung nicht möglich. Der Bericht ist unten eingeblendet — bitte markieren und mit Strg+C / Cmd+C kopieren."}
+        </p>
+      )}
 
       {showPreview && (
         <pre class="mt-2 p-3 bg-gray-900 text-gray-200 text-[11px] rounded-lg overflow-auto max-h-56 whitespace-pre-wrap">

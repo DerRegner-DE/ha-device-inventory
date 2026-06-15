@@ -367,6 +367,7 @@
   "settings.diagnosticClipboardButton": "Copy to clipboard",
   "settings.diagnosticClipboardDesc": "For forum posts, email or chat. No account needed.",
   "settings.diagnosticCopied": "Copied!",
+  "settings.diagnosticCopyManual": "Automatic copying isn't possible over an HTTP connection. The report is shown below — please select it and copy with Ctrl+C / Cmd+C.",
   "settings.diagnosticNote": "The report is only transmitted or copied after you click. You can review it in the preview beforehand.",
   "settings.reportProblem": "Report issue →",
   "sync.connected": "Connected",
