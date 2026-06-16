@@ -367,6 +367,7 @@
   "settings.diagnosticClipboardButton": "Copiar al portapapeles",
   "settings.diagnosticClipboardDesc": "Para publicaciones en foros, correo electrónico o chat. No se necesita cuenta.",
   "settings.diagnosticCopied": "¡Copiado!",
+  "settings.diagnosticCopyManual": "La copia automática no es posible a través de una conexión HTTP. El informe se muestra abajo — selecciónalo y cópialo con Ctrl+C / Cmd+C.",
   "settings.diagnosticNote": "El informe solo se transmite o copia después de hacer clic. Puede revisarlo completo en la vista previa.",
   "settings.reportProblem": "Reportar problema →",
   "sync.connected": "Conectado",

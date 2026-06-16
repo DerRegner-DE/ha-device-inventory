@@ -367,6 +367,7 @@
   "settings.diagnosticClipboardButton": "In Zwischenablage kopieren",
   "settings.diagnosticClipboardDesc": "Für Forum-Posts, E-Mail oder Chat. Kein Account nötig.",
   "settings.diagnosticCopied": "Kopiert!",
+  "settings.diagnosticCopyManual": "Automatisches Kopieren ist über eine HTTP-Verbindung nicht möglich. Der Bericht ist unten eingeblendet — bitte markieren und mit Strg+C / Cmd+C kopieren.",
   "settings.diagnosticNote": "Der Bericht wird erst nach deinem Klick übertragen oder kopiert. Du kannst ihn vorher in der Vorschau vollständig einsehen.",
   "settings.reportProblem": "Problem melden →",
   "sync.connected": "Verbunden",

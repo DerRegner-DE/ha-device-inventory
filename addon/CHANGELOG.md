@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.6.7
+
+Bugfix-Release.
+
+### Bugfix: „Problem auf GitHub melden" scheiterte bei Zugriff über HTTP
+
+Der mit v2.6.6 ergänzte Fallback-Anker behob das Problem für einen Teil der Nutzer nicht: Wer Home Assistant über eine unverschlüsselte Verbindung aufruft (z. B. `http://<LAN-IP>:8123`), bekam beim Klick auf „Problem auf GitHub melden" nur die Meldung „Konnte den Bericht nicht automatisch kopieren" — die GitHub-Seite öffnete sich nicht, und auch der Fallback-Link erschien nicht.
+
+Ursache: `handleGithub` kopierte den Bericht zuerst per `navigator.clipboard.writeText` in die Zwischenablage und brach bei einem Fehler mit `return` ab — *bevor* `window.open` und der Fallback-Anker erreicht wurden. Die Clipboard-API steht aber nur in einem *Secure Context* zur Verfügung (HTTPS oder localhost); auf `http://<LAN-IP>:8123` ist `navigator.clipboard` schlicht nicht vorhanden und der Aufruf wirft. Damit war der gesamte Workflow für HTTP-Zugriffe blockiert — der Hinweis verwies zudem auf den Button „In Zwischenablage kopieren", der über dieselbe API ebenfalls fehlschlägt.
+
+Fix (`frontend/src/components/DiagnosticPanel.tsx`):
+- Die Issue-Seite wird jetzt **synchron zu Beginn** des Klicks geöffnet (`window.open`), noch vor jedem `await` — so ist die transiente User-Aktivierung frisch und der Popup-Blocker greift seltener. Der Fallback-Anker „Issue-Seite manuell öffnen" wird **immer** eingeblendet, unabhängig vom Ergebnis.
+- Das Kopieren ist vom Öffnen **entkoppelt** und nur noch best-effort. Neue Helfer-Funktion `copyText` versucht `navigator.clipboard` nur im Secure Context und fällt sonst auf das Legacy-Verfahren (`document.execCommand("copy")` über ein temporäres Textfeld) zurück, das auch über HTTP funktioniert.
+- Schlägt das Kopieren ganz fehl, wird statt einer Alert-Sackgasse der Diagnose-Bericht in der Vorschau eingeblendet, damit der Nutzer ihn manuell markieren und kopieren kann. Neuer i18n-Key `settings.diagnosticCopyManual` in allen fünf Sprachen.
+
 ## 2.6.6
 
 Bugfix-Release.
