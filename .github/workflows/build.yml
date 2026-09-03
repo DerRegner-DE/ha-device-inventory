@@ -166,3 +166,37 @@ jobs:
             ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:latest
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
+
+  # Veroeffentlicht den GitHub-Release zum Tag, damit die Release-Seite nicht
+  # hinter den ausgelieferten Add-on-Versionen zurueckbleibt. Notes kommen aus
+  # dem passenden Abschnitt von addon/CHANGELOG.md.
+  github-release:
+    needs: [release]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Extract changelog section
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v v="$VERSION" '
+            $0 == "## " v {f=1; next}
+            f && /^## [0-9]/ {exit}
+            f {print}
+          ' addon/CHANGELOG.md | sed 's/^### /## /' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Siehe addon/CHANGELOG.md — fuer $VERSION wurde kein Abschnitt gefunden." > release-notes.md
+          fi
+
+      - name: Create or update GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md --latest
+          fi

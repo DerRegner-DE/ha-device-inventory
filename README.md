@@ -7,7 +7,7 @@
 <h3 align="center">Smart Home Device Inventory for Home Assistant</h3>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.6.7-blue.svg" />
+  <img alt="Version" src="https://img.shields.io/github/v/release/DerRegner-DE/ha-device-inventory?label=version&amp;color=blue" />
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.1%2B-41BDF5?logo=homeassistant&logoColor=white" />
   <img alt="License" src="https://img.shields.io/badge/license-Source%20Available-orange.svg" />
   <img alt="GitHub Stars" src="https://img.shields.io/github/stars/DerRegner-DE/ha-device-inventory?style=social" />
