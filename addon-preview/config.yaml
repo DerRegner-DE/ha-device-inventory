@@ -1,0 +1,56 @@
+# Preview-Add-on: gleicher Code, eigener Slug.
+#
+# Warum eine zweite Add-on-Definition statt eines Branch-Schalters: Der HA
+# Add-on-Store liest immer den Default-Branch des Repos. Ein Preview laesst sich
+# also nur als eigenes Add-on ausliefern — mit eigenem Slug, damit Supervisor es
+# getrennt installiert.
+#
+# Der eigene Slug bedeutet auch einen eigenen /data-Ordner: Die Preview hat ihre
+# eigene Datenbank und kann die Produktiv-Installation nicht anfassen. Zum Testen
+# also einmal "Aus Home Assistant importieren" laufen lassen.
+#
+# Version und Image-Tag muessen uebereinstimmen — Supervisor zieht
+# <image>:<version>. Der Workflow liest die Version aus dieser Datei und taggt
+# das Image genauso. Fuer eine neue Testrunde: Version hier hochzaehlen
+# (3.0.0-preview.2 usw.), pushen, in HA "Update" klicken.
+name: "Geräteverwaltung (Preview)"
+description: "Vorabversion zum Testen — parallel zur stabilen Geräteverwaltung installierbar, mit eigener Datenbank."
+version: "3.0.0-preview.1"
+slug: "geraeteverwaltung-preview"
+url: "https://github.com/DerRegner-DE/ha-device-inventory"
+arch:
+  - amd64
+  - aarch64
+  - armv7
+image: "ghcr.io/derregner-de/{arch}-ha-device-inventory"
+homeassistant_api: true
+ingress: true
+ingress_port: 3001
+ingress_stream: true
+panel_icon: "mdi:devices"
+panel_title: "Geräteverwaltung (Preview)"
+map:
+  - addon_config:rw
+  - media:rw
+options:
+  language: "de"
+  license_key: ""
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_user: ""
+  mqtt_password: ""
+  mqtt_client_id: ""
+  # Eigener Node-Name: die Preview darf der stabilen Installation nicht in
+  # die retained Discovery-Topics schreiben.
+  mqtt_node_id: "geraeteverwaltung-preview"
+schema:
+  language: "str"
+  license_key: "str?"
+  mqtt_host: "str?"
+  mqtt_port: "int?"
+  mqtt_user: "str?"
+  mqtt_password: "str?"
+  mqtt_client_id: "str?"
+  mqtt_node_id: "str?"
+startup: "application"
+init: false

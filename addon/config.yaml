@@ -25,6 +25,7 @@ options:
   mqtt_user: ""
   mqtt_password: ""
   mqtt_client_id: ""
+  mqtt_node_id: "geraeteverwaltung"
 schema:
   language: "str"
   license_key: "str?"
@@ -33,5 +34,6 @@ schema:
   mqtt_user: "str?"
   mqtt_password: "str?"
   mqtt_client_id: "str?"
+  mqtt_node_id: "str?"
 startup: "application"
 init: false

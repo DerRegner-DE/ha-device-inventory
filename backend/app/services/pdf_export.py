@@ -44,7 +44,14 @@ FIELD_LABELS_EN: dict[str, str] = {
     "ha_entity_id": "HA Entity ID",
     "funktion": "Function",
     "anmerkungen": "Notes",
+    # v3.0.0: handover documentation
+    "external_url": "External Link",
+    "ohne_ha": "Works without HA",
+    "ohne_ha_hinweis": "Without-HA Note",
 }
+
+# v3.0.0: stored language-neutrally as yes/no; the PDF is English-labelled.
+OHNE_HA_LABELS: dict[str, str] = {"yes": "Yes", "no": "No"}
 
 # Column weight for the summary table (relative, normalised to usable width).
 FIELD_WEIGHTS: dict[str, float] = {
@@ -70,6 +77,9 @@ FIELD_WEIGHTS: dict[str, float] = {
     "ha_entity_id": 2.8,
     "funktion": 3.5,
     "anmerkungen": 3.5,
+    "external_url": 3.5,
+    "ohne_ha": 1.4,
+    "ohne_ha_hinweis": 3.0,
 }
 
 DEFAULT_FIELDS: list[str] = [
@@ -188,6 +198,8 @@ def export_devices_to_pdf(
         for i, f in enumerate(selected):
             if f == "nr":
                 val = str(idx)
+            elif f == "ohne_ha":
+                val = OHNE_HA_LABELS.get(str(device.get(f) or ""), "")
             else:
                 val = str(device.get(f, "") or "")
             align = "C" if f == "nr" else "L"
@@ -223,6 +235,8 @@ def export_devices_to_pdf(
 
             for f in detail_fields:
                 value = device.get(f, "")
+                if f == "ohne_ha":
+                    value = OHNE_HA_LABELS.get(str(value or ""), "")
                 if not value:
                     continue
                 pdf.set_font("Helvetica", "B", 8)

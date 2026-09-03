@@ -1,5 +1,5 @@
-import { useState } from "preact/hooks";
-import { apiPost } from "../api/client";
+import { useState, useEffect } from "preact/hooks";
+import { apiGet, apiPost } from "../api/client";
 import { t } from "../i18n";
 
 const GITHUB_REPO = "DerRegner-DE/ha-device-inventory";
@@ -12,6 +12,16 @@ export function DiagnosticPanel() {
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [issueUrl, setIssueUrl] = useState<string | null>(null);
+  // v3.0.0: Die Add-on-Version im Issue-Template war ein Freitextfeld, das
+  // Melder raten mussten — in der Praxis stand dort oft die HA-Version oder
+  // gar nichts. Das Backend kennt seine Version, also fuellen wir sie vor.
+  const [appVersion, setAppVersion] = useState<string>("");
+
+  useEffect(() => {
+    apiGet<{ version?: string }>("/health")
+      .then((r) => setAppVersion(r?.version || ""))
+      .catch(() => {});
+  }, []);
 
   async function ensureReport(): Promise<string | null> {
     if (report) return report;
@@ -70,13 +80,15 @@ export function DiagnosticPanel() {
   }
 
   function buildIssueUrl(): string {
-    const title = encodeURIComponent("[Bug] ");
-    const bodyHint =
-      t("settings.diagnosticGithubPasteHint") ||
-      "Beschreibe das Problem hier. Der Diagnose-Bericht liegt in deiner Zwischenablage — bitte zwischen die ``` unten einfügen (Strg+V / Cmd+V).";
-    const bodyTemplate = `${bodyHint}\n\n---\n\n<details><summary>Diagnose-Bericht (hier einfügen)</summary>\n\n\`\`\`\n\n\`\`\`\n\n</details>\n`;
-    const body = encodeURIComponent(bodyTemplate);
-    return `https://github.com/${GITHUB_REPO}/issues/new?title=${title}&body=${body}`;
+    // v3.0.0: Das Bug-Formular (bug.yml) statt eines freien Bodys. Damit
+    // greifen die Pflichtfelder des Templates, und die Add-on-Version laesst
+    // sich ueber den Feld-Namen vorbelegen — vorher musste der Melder sie aus
+    // dem Add-on-Store abtippen, entsprechend oft stand dort die falsche.
+    // Der Diagnose-Bericht bleibt bewusst aus der URL: dort hat er HTTP 414
+    // ausgeloest (GH #19), er kommt weiter ueber die Zwischenablage.
+    const params = new URLSearchParams({ template: "bug.yml", title: "[Bug] " });
+    if (appVersion) params.set("addon-version", appVersion);
+    return `https://github.com/${GITHUB_REPO}/issues/new?${params.toString()}`;
   }
 
   async function handleGithub() {
@@ -221,6 +233,14 @@ export function DiagnosticPanel() {
             {t("settings.diagnosticGithubDesc") ||
               "Empfohlen — nachverfolgbar. GitHub-Account nötig (kostenlos)."}
           </p>
+          {/* v3.0.0: Der Hinweis, wohin der Bericht gehoert, stand frueher im
+              vorbefuellten Issue-Body. Mit dem Formular-Template gibt es den
+              nicht mehr — also zeigen wir ihn hier an. */}
+          {issueUrl && (
+            <p class="text-[11px] text-gray-500 dark:text-gray-300 mt-1.5 ml-1">
+              {t("settings.diagnosticGithubPasteHint")}
+            </p>
+          )}
           {issueUrl && (
             <p class="text-[11px] text-gray-500 dark:text-gray-300 mt-1.5 ml-1">
               {t("settings.diagnosticGithubOpenFallback") ||

@@ -63,13 +63,18 @@ function Section({ title, open, onToggle, children }: SectionProps) {
 function Field({
   label,
   children,
+  hint,
 }: {
   label: string;
   children: preact.ComponentChildren;
+  /** v3.0.0: optionaler Erklaertext unter dem Label — fuer Felder, deren
+   *  Zweck sich nicht aus der Beschriftung allein erschliesst. */
+  hint?: string;
 }) {
   return (
     <div>
       <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</label>
+      {hint && <p class="text-[11px] text-gray-400 dark:text-gray-500 mb-1.5">{hint}</p>}
       {children}
     </div>
   );
@@ -160,6 +165,9 @@ export function DeviceForm({ device }: DeviceFormProps) {
     ha_device_id: device?.ha_device_id ?? "",
     ain_artikelnr: device?.ain_artikelnr ?? "",
     standort_floor_id: device?.standort_floor_id ?? "",
+    external_url: device?.external_url ?? "",
+    ohne_ha: device?.ohne_ha ?? "",
+    ohne_ha_hinweis: device?.ohne_ha_hinweis ?? "",
   });
 
   const [sections, setSections] = useState({
@@ -316,6 +324,9 @@ export function DeviceForm({ device }: DeviceFormProps) {
       ha_device_id: form.ha_device_id || undefined,
       ain_artikelnr: form.ain_artikelnr || undefined,
       standort_floor_id: form.standort_floor_id || undefined,
+      external_url: form.external_url || undefined,
+      ohne_ha: (form.ohne_ha as "yes" | "no" | "") || undefined,
+      ohne_ha_hinweis: form.ohne_ha_hinweis || undefined,
       created_at: device?.created_at ?? now,
       updated_at: now,
       sync_version: (device?.sync_version ?? 0) + 1,
@@ -705,6 +716,41 @@ export function DeviceForm({ device }: DeviceFormProps) {
               class={inputClass + " resize-y"}
               rows={5}
               placeholder={t("form.notesPlaceholderV250")}
+            />
+          </Field>
+
+          {/* v3.0.0: Uebergabe-Doku. Beide Felder zielen auf den Fall, den das
+              Forum immer wieder beschreibt: Jemand anderes steht spaeter vor
+              der Anlage — Angehoerige, Elektriker, Kaeufer. */}
+          <Field label={t("form.withoutHa")} hint={t("form.withoutHaHint")}>
+            <select
+              value={form.ohne_ha}
+              onChange={(e) => updateField("ohne_ha", (e.target as HTMLSelectElement).value)}
+              class={inputClass}
+            >
+              <option value="">{t("form.withoutHaUnknown")}</option>
+              <option value="yes">{t("form.withoutHaYes")}</option>
+              <option value="no">{t("form.withoutHaNo")}</option>
+            </select>
+          </Field>
+          {form.ohne_ha && (
+            <Field label={t("form.withoutHaNote")}>
+              <textarea
+                value={form.ohne_ha_hinweis}
+                onInput={(e) => updateField("ohne_ha_hinweis", (e.target as HTMLTextAreaElement).value)}
+                class={inputClass + " resize-none"}
+                rows={2}
+                placeholder={t("form.withoutHaNotePlaceholder")}
+              />
+            </Field>
+          )}
+          <Field label={t("form.externalUrl")} hint={t("form.externalUrlHint")}>
+            <input
+              type="url"
+              value={form.external_url}
+              onInput={(e) => updateField("external_url", (e.target as HTMLInputElement).value)}
+              class={inputClass}
+              placeholder={t("form.externalUrlPlaceholder")}
             />
           </Field>
         </Section>

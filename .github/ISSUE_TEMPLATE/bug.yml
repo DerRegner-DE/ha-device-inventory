@@ -49,7 +49,7 @@ body:
       id: addon-version
       attributes:
           label: "Add-on-Version"
-          description: "Welche Version der Geräteverwaltung ist installiert? Findest du im Add-on-Store oder unten links im UI."
+          description: "Wird automatisch ausgefüllt, wenn du das Issue über Einstellungen → Diagnose → \"Problem auf GitHub melden\" öffnest. Sonst: Add-on-Store oder unten links im UI."
           placeholder: "z. B. 2.6.7"
       validations:
           required: true

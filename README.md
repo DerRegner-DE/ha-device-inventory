@@ -68,6 +68,7 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 - **Warranty tracking** -- Record purchase dates and warranty expiration for every device. Never miss a warranty claim again.
 - **Maintenance overview** -- Firmware versions, IP addresses, MAC addresses, network types, and integrations at a glance. No more hunting through router admin pages.
 - **Rental property management** -- Document equipment in rental units separately from your own home. Know exactly what belongs where when tenants move in or out.
+- **Handover and estate planning** -- Print the inventory with your own notes and leave it for whoever takes the system over: family, an electrician, a buyer. Each device records whether its basic function survives without Home Assistant, and the "Removal/electrician" export preset produces exactly that sheet -- location, network, power, and what stops working when the box comes off the wall.
 - **Tax documentation** -- Track business equipment with purchase dates and costs for tax reporting.
 - **Quick setup with HA import** -- Instead of manually entering 200+ devices, import your entire Home Assistant device registry with one click. Device types, manufacturers, and models are detected automatically.
 - **Multi-device access** -- View and edit your inventory from your phone, tablet, or desktop. Changes sync automatically within 30 seconds.
@@ -209,6 +210,7 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 - **Garantieverfolgung** -- Kaufdaten und Garantieablauf für jedes Gerät erfassen. Nie wieder eine Garantie verpassen.
 - **Wartungsübersicht** -- Firmware-Versionen, IP-Adressen, MAC-Adressen, Netzwerktypen und Integrationen auf einen Blick. Kein Suchen mehr in Router-Administrationsseiten.
 - **Mietobjektverwaltung** -- Geräte in Mietwohnungen getrennt vom eigenen Zuhause dokumentieren. Immer wissen, was wo gehört.
+- **Übergabe und Nachlass** -- Die Geräteliste mit eigenen Notizen ausdrucken und dem hinterlassen, der die Anlage später übernimmt: Angehörige, Elektriker, Käufer. Pro Gerät lässt sich festhalten, ob die Grundfunktion auch ohne Home Assistant erhalten bleibt; das Export-Preset „Rückbau/Elektriker" erzeugt genau dieses Blatt -- Standort, Netzwerk, Stromversorgung und was ausfällt, wenn das Gerät von der Wand kommt.
 - **Steuerliche Erfassung** -- Betriebliche Geräte mit Kaufdatum und Kosten für die Steuererklärung erfassen.
 - **Schnell-Setup per HA-Import** -- Statt 200+ Geräte manuell einzutragen, das gesamte Home-Assistant-Geräteregister per Klick importieren. Typen, Hersteller und Modelle werden automatisch erkannt.
 - **Mehrgerätezugriff** -- Inventar vom Handy, Tablet oder Desktop abrufen und bearbeiten. Änderungen werden innerhalb von 30 Sekunden synchronisiert.

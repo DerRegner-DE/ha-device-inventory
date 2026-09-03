@@ -3,7 +3,10 @@ name: Build and Release
 on:
   push:
     tags: ['v*']
-    branches: [develop]
+    # preview/**: Vorabversionen, die als eigenes Add-on
+    # ("Geraeteverwaltung (Preview)") parallel zur stabilen Installation
+    # getestet werden. Siehe addon-preview/config.yaml.
+    branches: [develop, 'preview/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -55,7 +58,7 @@ jobs:
 
   dev-release:
     needs: [frontend, build]
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/preview/')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -91,6 +94,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # develop -> :dev (wie bisher).
+      # preview/** -> Tag = version aus addon-preview/config.yaml. Supervisor
+      # zieht <image>:<version>, beides muss also uebereinstimmen; fuer eine
+      # neue Testrunde die Version dort hochzaehlen.
+      - name: Determine dev image tag
+        id: devmeta
+        run: |
+          if [ "$GITHUB_REF_NAME" = "develop" ]; then
+            echo "tag=dev" >> "$GITHUB_OUTPUT"
+          else
+            VERSION=$(grep -E '^version:' addon-preview/config.yaml | head -1 | sed -E 's/^version:[[:space:]]*"?([^"]*)"?[[:space:]]*$/\1/')
+            if [ -z "$VERSION" ]; then
+              echo "addon-preview/config.yaml enthaelt keine version" >&2
+              exit 1
+            fi
+            echo "tag=${VERSION}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push dev image (${{ matrix.arch }})
         uses: docker/build-push-action@v5
         with:
@@ -99,9 +120,9 @@ jobs:
           platforms: ${{ matrix.platform }}
           push: true
           build-args: |
-            ADDON_VERSION=dev
+            ADDON_VERSION=${{ steps.devmeta.outputs.tag }}
           tags: |
-            ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:dev
+            ghcr.io/derregner-de/${{ matrix.arch }}-ha-device-inventory:${{ steps.devmeta.outputs.tag }}
           cache-from: type=gha,scope=${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=${{ matrix.arch }}
 

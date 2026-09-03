@@ -65,7 +65,15 @@ FIELD_LABELS: dict[str, str] = {
     "ha_entity_id": "HA Entity ID",
     "funktion": "Funktion",
     "anmerkungen": "Anmerkungen",
+    # v3.0.0: Uebergabe-Doku
+    "external_url": "Externer Link",
+    "ohne_ha": "Ohne HA nutzbar",
+    "ohne_ha_hinweis": "Hinweis ohne HA",
 }
+
+# v3.0.0: ``ohne_ha`` wird sprachneutral als yes/no gespeichert. Im Export
+# steht die deutsche Beschriftung, leer bleibt leer (= unbekannt).
+OHNE_HA_LABELS: dict[str, str] = {"yes": "Ja", "no": "Nein"}
 
 # Column widths in Excel units, keyed by DB field name.
 FIELD_WIDTHS: dict[str, int] = {
@@ -91,6 +99,9 @@ FIELD_WIDTHS: dict[str, int] = {
     "ha_entity_id": 28,
     "funktion": 38,
     "anmerkungen": 36,
+    "external_url": 34,
+    "ohne_ha": 16,
+    "ohne_ha_hinweis": 34,
 }
 
 DEFAULT_FIELDS: list[str] = [
@@ -127,6 +138,8 @@ def _device_to_row(
     for f in fields:
         if f == "nr":
             out.append(nr)
+        elif f == "ohne_ha":
+            out.append(OHNE_HA_LABELS.get(str(device.get(f) or ""), ""))
         else:
             out.append(device.get(f, ""))
     return out

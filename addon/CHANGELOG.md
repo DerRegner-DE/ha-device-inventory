@@ -1,5 +1,39 @@
 # Changelog
 
+## 3.0.0
+
+Feature-Release rund um ein Thema: Was passiert mit der Anlage, wenn jemand anderes davorsteht? Ausgeloest von simon42-Thread 92060 („Updates einstellen? Ich mag nicht mehr!"), in dem gleich mehrere Nutzer denselben Rat gaben — jede Grundfunktion muss auch ohne Home Assistant laufen, und die Nachkommen brauchen eine Liste, die ein Elektriker lesen kann.
+
+Diese Version wird zuerst als **Preview-Add-on** ausgeliefert (`addon-preview/`, Slug `geraeteverwaltung-preview`). Es laesst sich parallel zur stabilen Installation betreiben und hat eine eigene Datenbank.
+
+### Neu: „Funktioniert ohne Home Assistant?" pro Geraet
+
+Zwei Felder im Bearbeiten-Formular unter *Anmerkungen*: ein Dreizustand (*Unbekannt* / *Ja, laeuft auch ohne HA* / *Nein, braucht HA*) und ein Freitext-Hinweis dazu („Schalter direkt an der Wand", „nur ueber App bedienbar"). Beide erscheinen auf der Detailseite als eigene Karte oberhalb der Notizen und sind im Export waehlbar.
+
+Der Zustand wird sprachneutral als `yes`/`no` gespeichert und erst beim Anzeigen uebersetzt — ein leeres Feld bleibt „unbekannt" und wird im Export nicht ausgegeben. Aenderungen landen wie jedes andere Feld in der Geraete-Historie.
+
+DB: `devices.ohne_ha`, `devices.ohne_ha_hinweis` (beide TEXT, idempotente Migration, kein Re-Import noetig).
+
+### Neu: Externer Link pro Geraet
+
+Optionales Feld `external_url` — ein Deep-Link in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Wiki-Eintrag. Auf der Detailseite als Link mit Hinweis „Oeffnet in einem neuen Fenster". Die Eingabe wird serverseitig auf ein absolutes Schema normalisiert (dieselbe Regel wie bei Dokument-Links seit v2.6.5) — ohne `https://` loest der Browser die Adresse relativ zum Ingress-Pfad auf und landet bei 401. Erledigt den Wunsch aus Forum #69/#74 (Bacardi).
+
+### Neu: Export-Preset „Rueckbau/Elektriker"
+
+Neben *Versicherung* und *Nachlass* ein drittes Preset: Standort, Stockwerk, Netzwerk, Stromversorgung, Integration, „Ohne HA nutzbar" samt Hinweis, Funktion und Anmerkungen. Bewusst **ohne** Seriennummern, Kaufdaten und Garantie — das ist die Liste, die offen im Hausanschlussraum liegen darf. Handbuch und README beschreiben den Workflow.
+
+### Verbesserung: Add-on-Version im Bug-Report vorbefuellt
+
+„Problem auf GitHub melden" oeffnet jetzt das Formular-Template (`bug.yml`) statt eines freien Issue-Bodys und traegt die Add-on-Version aus `/api/health` ein. Vorher war das ein Freitextfeld, das der Melder aus dem Add-on-Store abtippen musste — entsprechend oft stand dort die HA-Version oder gar nichts. Der Diagnose-Bericht bleibt bewusst aus der URL (dort hatte er HTTP 414 ausgeloest, GH #19) und kommt weiter ueber die Zwischenablage; der Hinweis, in welches Feld er gehoert, steht jetzt unter dem Button.
+
+### Intern: MQTT-Node-Name konfigurierbar
+
+Die Discovery-Topics benutzten fest den Knoten `geraeteverwaltung`. Sobald Preview und stabile Installation auf derselben HA-Instanz laufen, schreiben beide in dieselben retained Topics — „Discovery aufraeumen" in der Preview haette die Geraete der Produktivinstallation mitgeloescht. Neue Add-on-Option `mqtt_node_id` (Default `geraeteverwaltung`, Preview `geraeteverwaltung-preview`), durchgereicht als `GV_MQTT_NODE_ID`. Bestandsinstallationen aendern sich nicht; der Self-Import-Filter aus v2.5.2 greift weiterhin, weil beide Namen mit `geraeteverwaltung` beginnen.
+
+### Migration
+
+Keine Handarbeit. Die drei neuen Spalten werden beim Start ergaenzt, bestehende Zeilen bleiben unveraendert, kein Re-Import noetig. 15 neue Regressionstests (`backend/tests/test_v3_handover_fields.py`) decken Migration, Normalisierung, Historie und die Preset-Zusammensetzung ab.
+
 ## 2.6.7
 
 Bugfix-Release.

@@ -27,6 +27,8 @@ TRACKED_FIELDS = {
     "ip_adresse", "firmware", "integration", "stromversorgung", "netzwerk",
     "anschaffungsdatum", "garantie_bis", "funktion", "anmerkungen",
     "ha_entity_id", "ha_device_id", "ain_artikelnr", "parent_uuid",
+    # v3.0.0: Uebergabe-Doku
+    "external_url", "ohne_ha", "ohne_ha_hinweis",
 }
 
 

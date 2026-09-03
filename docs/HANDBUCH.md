@@ -134,6 +134,28 @@ Idee dahinter: Erben können das Gerät anhand von Bezeichnung + Seriennummer im
 
 ---
 
+### Übergabe an jemand anderen (Rückbau/Elektriker)
+
+*Neu in 3.0.0.* Der Fall dahinter: Irgendwann steht jemand anderes vor der Anlage — Angehörige, ein Elektriker, ein Käufer. Diese Person kennt weder Home Assistant noch die Historie des Hauses.
+
+Dafür gibt es zwei Felder pro Gerät, ganz unten im Bearbeiten-Formular unter *Anmerkungen*:
+
+**„Funktioniert ohne Home Assistant?"** — drei Möglichkeiten: *Unbekannt* (Voreinstellung, nichts wird ausgegeben), *Ja, läuft auch ohne HA*, *Nein, braucht HA*. Bei *Ja* oder *Nein* erscheint darunter ein Hinweisfeld für den Klartext: „Schalter direkt an der Wand", „Thermostat lässt sich am Gerät stellen", „ohne HA gar nicht bedienbar".
+
+**„Externer Link"** — ein Verweis in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Eintrag im eigenen Wiki. Der Link steht auf der Detailseite und öffnet sich in einem neuen Fenster. Ein bloßer Name wie `paperless.local/x` reicht, `https://` wird automatisch ergänzt.
+
+Das Export-Preset **„Rückbau/Elektriker"** (Export → Preset auswählen) macht daraus das Blatt, das man in den Hausanschlussraum legt:
+
+- Nr, Typ, Bezeichnung, Hersteller, Modell
+- Standort, Stockwerk
+- Netzwerk, Stromversorgung, Integration
+- Ohne HA nutzbar + Hinweis
+- Funktion, Anmerkungen
+
+Bewusst **ohne** Seriennummern, Kaufdaten und Garantie: Das ist die Liste, die offen im Flur liegen kann, während die Versicherungs- und Nachlass-Presets die vollständigen Daten enthalten.
+
+---
+
 ## Filter, Suche und Sortierung
 
 - **Suche** oben durchsucht Bezeichnung, Modell, Hersteller, Standort, MAC, IP, Seriennummer, Integration, Funktion und Typ.

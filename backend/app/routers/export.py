@@ -25,6 +25,17 @@ EXPORT_FIELD_PRESETS: dict[str, list[str]] = {
         "anschaffungsdatum", "garantie_bis",
         "standort_name", "anmerkungen",
     ],
+    # v3.0.0: "Rueckbau" — die Liste, die man einem Elektriker in die Hand
+    # drueckt. Aus dem Forum-Thread 92060: Was steckt wo, wie haengt es am
+    # Netz, und laeuft die Grundfunktion auch ohne Home Assistant? Bewusst
+    # ohne Seriennummern/Kaufdaten — die interessieren beim Rueckbau nicht.
+    "rueckbau": [
+        "nr", "typ", "bezeichnung", "hersteller", "modell",
+        "standort_name", "standort_floor_id",
+        "netzwerk", "stromversorgung", "integration",
+        "ohne_ha", "ohne_ha_hinweis",
+        "funktion", "anmerkungen",
+    ],
     "nachlass": [
         "nr", "typ", "bezeichnung", "modell", "hersteller",
         "seriennummer", "ain_artikelnr",

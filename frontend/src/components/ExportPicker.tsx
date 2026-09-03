@@ -14,6 +14,8 @@ const ALL_FIELDS: string[] = [
   "anschaffungsdatum", "garantie_bis",
   "ha_device_id", "ha_entity_id",
   "funktion", "anmerkungen",
+  // v3.0.0: Uebergabe-Doku
+  "ohne_ha", "ohne_ha_hinweis", "external_url",
 ];
 
 const STORAGE_KEY = "gv_export_fields_v1";
