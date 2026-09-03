@@ -40,6 +40,6 @@ body:
       attributes:
           label: "Add-on-Version"
           description: "Optional — nur relevant, wenn deine Frage versionsspezifisch ist."
-          placeholder: "z. B. 2.6.2"
+          placeholder: "z. B. 2.6.7"
       validations:
           required: false

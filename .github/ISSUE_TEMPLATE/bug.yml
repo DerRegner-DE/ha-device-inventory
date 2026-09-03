@@ -50,7 +50,7 @@ body:
       attributes:
           label: "Add-on-Version"
           description: "Welche Version der Geräteverwaltung ist installiert? Findest du im Add-on-Store oder unten links im UI."
-          placeholder: "z. B. 2.6.2"
+          placeholder: "z. B. 2.6.7"
       validations:
           required: true
 
