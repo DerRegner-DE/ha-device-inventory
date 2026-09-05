@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "preact/hooks";
 import { apiGet } from "../api/client";
 import { t } from "../i18n";
 import { getApiBase } from "../utils/navigate";
+import { downloadFile } from "../utils/download";
 
 /** Canonical list of exportable fields, same names as DB columns.
  *  Order here determines check-list order in the UI. */
@@ -60,7 +61,8 @@ export function ExportPicker({ onClose }: Props) {
       else localStorage.removeItem(PRESET_STORAGE_KEY);
     } catch {}
   }, [activePreset]);
-  const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
+  const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     apiGet<{ presets: Record<string, string[]> }>("/export/presets")
@@ -89,14 +91,22 @@ export function ExportPicker({ onClose }: Props) {
     setActivePreset(name);
   };
 
-  const download = (format: Format) => {
-    if (selected.size === 0) return;
+  const download = async (format: Format) => {
+    if (selected.size === 0 || busy) return;
     const fields = [...selected].join(",");
     let url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}`;
     // Die Rueckbau-Liste geht an einen Handwerker und soll auf ein paar
     // Blatt passen. Detailseiten je Geraet blaehen sie auf 60+ Seiten auf.
     if (format === "pdf" && activePreset === "rueckbau") url += "&details=false";
-    window.open(url, "_blank");
+
+    setBusy(true);
+    setBlocked(false);
+    try {
+      const ok = await downloadFile(url, `Device_Inventory.${format}`);
+      setBlocked(!ok);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const presetNames = useMemo(() => Object.keys(presets), [presets]);
@@ -176,23 +186,23 @@ export function ExportPicker({ onClose }: Props) {
           <div class="flex-1" />
           <button
             onClick={() => download("xlsx")}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || busy}
             class="px-4 py-2 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] disabled:opacity-40"
           >
             {t("exportPicker.downloadXlsx")}
           </button>
           <button
             onClick={() => download("pdf")}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || busy}
             class="px-4 py-2 rounded-xl bg-[#e74c3c] text-white text-sm font-medium hover:bg-[#c0392b] disabled:opacity-40"
           >
             {t("exportPicker.downloadPdf")}
           </button>
         </div>
-        {/* Testrunde 05.09.2026: Ueber http:// blockt Chrome den Download
-            stillschweigend ("Unsicherer Download blockiert"). Wer HA per
-            http://<LAN-IP>:8123 bedient, sieht sonst einfach nichts. */}
-        {!isSecure && (
+        {/* Nur noch als Rueckfallebene: Der Download laeuft ueber einen Blob
+            und wird deshalb normalerweise nicht mehr blockiert. Klappt das
+            nicht, greift window.open -- dann kann Chrome wieder sperren. */}
+        {blocked && (
           <p class="px-4 pb-3 text-[11px] text-amber-600 dark:text-amber-400">
             {t("exportPicker.insecureHint")}
           </p>

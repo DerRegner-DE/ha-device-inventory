@@ -14,6 +14,7 @@ import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
 import { getApiBase } from "../utils/navigate";
+import { downloadFile } from "../utils/download";
 
 export function Settings() {
   useLanguage();
@@ -377,7 +378,7 @@ export function Settings() {
   };
 
   const handlePdfExport = () => {
-    window.open(`${getApiBase()}/export/pdf`, "_blank");
+    void downloadFile(`${getApiBase()}/export/pdf`, "Device_Inventory.pdf");
   };
 
   // Free tier: only English.  Pro: all languages.
