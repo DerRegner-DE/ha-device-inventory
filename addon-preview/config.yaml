@@ -15,7 +15,7 @@
 # (3.0.0-preview.2 usw.), pushen, in HA "Update" klicken.
 name: "Geräteverwaltung (Preview)"
 description: "Vorabversion zum Testen — parallel zur stabilen Geräteverwaltung installierbar, mit eigener Datenbank."
-version: "3.0.0-preview.2"
+version: "3.0.0-preview.3"
 slug: "geraeteverwaltung-preview"
 url: "https://github.com/DerRegner-DE/ha-device-inventory"
 arch:

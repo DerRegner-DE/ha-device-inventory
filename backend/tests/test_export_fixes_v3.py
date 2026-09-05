@@ -85,3 +85,32 @@ def test_bosch_and_tuya_land_in_their_own_category():
     assert [d["id"] for d in grouped["Bosch Smart Home (SHC)"]] == [1]
     assert sorted(d["id"] for d in grouped["Tuya (LocalTuya)"]) == [2, 3]
     assert "Sonstige Geraete" not in grouped
+
+
+def test_ha_version_uses_a_leading_slash_and_does_not_cache_failures(monkeypatch):
+    """Zwei Fehler aus dem ersten Anlauf am 05.09.2026: der Pfad wurde ohne
+    fuehrenden Schraegstrich an eine auf ``/api`` endende Basis gehaengt
+    (``/apiconfig`` statt ``/api/config``), und ein Fehlversuch wurde als ""
+    gecacht -- danach blieb das Feld dauerhaft leer."""
+    import asyncio
+    from app.services import ha_client
+
+    ha_client._ha_version_cache = None
+    calls: list[str] = []
+
+    async def failing_get(path):
+        calls.append(path)
+        raise RuntimeError("HA nicht erreichbar")
+
+    monkeypatch.setattr(ha_client, "_get", failing_get)
+    assert asyncio.run(ha_client.get_ha_version()) == ""
+    assert calls == ["/config"], "Pfad muss mit / beginnen"
+
+    async def working_get(path):
+        calls.append(path)
+        return {"version": "2026.8.3"}
+
+    monkeypatch.setattr(ha_client, "_get", working_get)
+    # Der Fehlversuch darf nicht gecacht worden sein.
+    assert asyncio.run(ha_client.get_ha_version()) == "2026.8.3"
+    ha_client._ha_version_cache = None

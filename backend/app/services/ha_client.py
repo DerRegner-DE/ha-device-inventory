@@ -182,14 +182,22 @@ _ha_version_cache: str | None = None
 
 
 async def get_ha_version() -> str:
-    """HA core version, or "" when it cannot be determined."""
+    """HA core version, or "" when it cannot be determined.
+
+    Nur Treffer werden gemerkt. Ein Fehlversuch -- HA startet noch, Token
+    fehlt, Timeout -- darf sich nicht einbrennen, sonst bleibt das Feld bis
+    zum naechsten Add-on-Neustart leer.
+    """
     global _ha_version_cache
-    if _ha_version_cache is not None:
+    if _ha_version_cache:
         return _ha_version_cache
     try:
-        data = await _get("config")
+        # _BASE endet bereits auf /api, der fuehrende Schraegstrich gehoert dazu.
+        data = await _get("/config")
         version = str((data or {}).get("version") or "")
-    except Exception:  # HA nicht erreichbar, Token fehlt, Timeout
-        version = ""
-    _ha_version_cache = version
+    except Exception:
+        logger.warning("HA-Version nicht ermittelbar", exc_info=True)
+        return ""
+    if version:
+        _ha_version_cache = version
     return version
