@@ -63,6 +63,20 @@ def test_nachlass_preset_carries_handover_fields():
     assert "external_url" in fields
     assert "ohne_ha" in fields and "ohne_ha_hinweis" in fields
     assert "seriennummer" in fields
+    # Netzwerkdetails interessieren einen Erben nicht.
+    for noise in ("mac_adresse", "ip_adresse", "firmware", "integration", "netzwerk"):
+        assert noise not in fields
+
+
+def test_rueckbau_preset_has_no_ha_internals():
+    assert "integration" not in EXPORT_FIELD_PRESETS["rueckbau"]
+
+
+def test_versicherung_preset_links_to_the_invoice():
+    fields = EXPORT_FIELD_PRESETS["versicherung"]
+    assert "external_url" in fields
+    assert "seriennummer" in fields and "anschaffungsdatum" in fields
+    assert "netzwerk" not in fields
 
 
 def test_pdf_without_detail_pages_is_smaller():
@@ -139,6 +153,10 @@ def test_rueckbau_field_set_skips_detail_pages_without_an_explicit_flag(monkeypa
 
     nachlass = ",".join(EXPORT_FIELD_PRESETS["nachlass"])
     assert client.get(f"/api/export/pdf?fields={nachlass}").status_code == 200
+    assert seen["detail_pages"] is False
+
+    # Freie Auswahl: Detailseiten bleiben.
+    assert client.get("/api/export/pdf?fields=nr,bezeichnung").status_code == 200
     assert seen["detail_pages"] is True
 
     # Ein explizites Flag schlaegt die Automatik.

@@ -19,33 +19,40 @@ router = APIRouter(prefix="/export", tags=["export"])
 # estate-planning-oriented subsets. The frontend shows them as radio-buttons
 # that seed the checkbox list; individual tweaks are free-form.
 EXPORT_FIELD_PRESETS: dict[str, list[str]] = {
+    # Testrunde 05.09.2026: Jede Vorlage enthaelt nur noch, was die Person
+    # braucht, die das Blatt in der Hand haelt. Alles andere ist Ballast und
+    # kostet Spaltenbreite.
+    #
+    # Versicherung -- Leser ist ein Sachbearbeiter im Schadensfall: Was ist es,
+    # was hat es gekostet, wo stand es, wo liegt der Beleg.
     "versicherung": [
-        "nr", "typ", "bezeichnung", "modell", "hersteller",
+        "nr", "typ", "bezeichnung", "hersteller", "modell",
         "seriennummer", "ain_artikelnr",
         "anschaffungsdatum", "garantie_bis",
-        "standort_name", "anmerkungen",
+        "standort_name",
+        "external_url",
+        "anmerkungen",
     ],
-    # v3.0.0: "Rueckbau" — die Liste, die man einem Elektriker in die Hand
-    # drueckt. Aus dem Forum-Thread 92060: Was steckt wo, wie haengt es am
-    # Netz, und laeuft die Grundfunktion auch ohne Home Assistant? Bewusst
-    # ohne Seriennummern/Kaufdaten — die interessieren beim Rueckbau nicht.
+    # Rueckbau -- Leser ist der Handwerker vor Ort: Wo haengt es, woran haengt
+    # es, laeuft es ohne Home Assistant weiter. Bewusst ohne Seriennummern und
+    # Kaufdaten, und ohne "Integration": das ist ein HA-Interna und sagt einem
+    # Elektriker nichts.
     "rueckbau": [
         "nr", "typ", "bezeichnung", "hersteller", "modell",
         "standort_name", "standort_floor_id",
-        "netzwerk", "stromversorgung", "integration",
+        "netzwerk", "stromversorgung",
         "ohne_ha", "ohne_ha_hinweis",
         "external_url",
         "funktion", "anmerkungen",
     ],
-    # v3.0.0: Ein Nachlass ist ebenfalls eine Uebergabe. Wer erbt, will wissen,
-    # was ohne Home Assistant weiterlaeuft, und wo Rechnung/Handbuch liegen.
+    # Nachlass -- Leser sind Angehoerige: Was ist es wert, wo steht es, gibt es
+    # noch Garantie, wo liegen die Unterlagen, laeuft es ohne HA weiter.
+    # Netzwerkdetails (MAC, IP, Firmware, Integration) interessieren dort nicht.
     "nachlass": [
-        "nr", "typ", "bezeichnung", "modell", "hersteller",
+        "nr", "typ", "bezeichnung", "hersteller", "modell",
         "seriennummer", "ain_artikelnr",
         "anschaffungsdatum", "garantie_bis",
         "standort_name", "standort_floor_id",
-        "mac_adresse", "ip_adresse",
-        "integration", "netzwerk", "firmware",
         "ohne_ha", "ohne_ha_hinweis",
         "external_url",
         "funktion", "anmerkungen",
@@ -123,9 +130,12 @@ def export_pdf(
         # Zweiter Riegel: Auch wenn die Oberflaeche die Vorlage nicht
         # mitschickt, soll die Rueckbau-Liste kompakt bleiben. Sie geht an
         # einen Handwerker -- 61 Seiten liest niemand.
+        # Alle drei Vorlagen sind Listen zum Mitnehmen und sollen auf ein paar
+        # Blatt passen. Detailseiten je Geraet gibt es nur bei einer freien
+        # Feldauswahl -- oder wenn sie ausdruecklich angefordert werden.
         details = not (
             selected is not None
-            and set(selected) == set(EXPORT_FIELD_PRESETS["rueckbau"])
+            and any(set(selected) == set(p) for p in EXPORT_FIELD_PRESETS.values())
         )
 
     pdf_bytes = export_devices_to_pdf(rows, fields=selected, detail_pages=details)

@@ -63,8 +63,8 @@ FIELD_LABELS_DE: dict[str, str] = {
     "standort_name": "Standort",
     "standort_floor_id": "Etage",
     "standort_area_id": "Bereich-ID",
-    "seriennummer": "Seriennr.",
-    "ain_artikelnr": "AIN/Art.-Nr.",
+    "seriennummer": "Seriennummer",
+    "ain_artikelnr": "AIN/Artikelnr.",
     "firmware": "Firmware",
     "integration": "Integration",
     "netzwerk": "Netzwerk",
@@ -90,16 +90,16 @@ OHNE_HA_LABELS_DE: dict[str, str] = {"yes": "Ja", "no": "Nein"}
 def _labels_for(language: str) -> tuple[dict[str, str], dict[str, str], str]:
     """(Feldbeschriftung, Ohne-HA-Werte, Dokumenttitel) fuer eine Sprache."""
     if (language or "").lower().startswith("de"):
-        return FIELD_LABELS_DE, OHNE_HA_LABELS_DE, "Geraeteuebersicht"
+        return FIELD_LABELS_DE, OHNE_HA_LABELS_DE, "Geräteübersicht"
     return FIELD_LABELS_EN, OHNE_HA_LABELS_EN, "Device Inventory"
 
 # Column weight for the summary table (relative, normalised to usable width).
 FIELD_WEIGHTS: dict[str, float] = {
     "nr": 0.6,
-    "typ": 2.0,
-    "bezeichnung": 3.5,
+    "typ": 1.8,
+    "bezeichnung": 5.0,
     "modell": 2.5,
-    "hersteller": 2.0,
+    "hersteller": 1.8,
     "standort_name": 2.2,
     "standort_floor_id": 1.4,
     "standort_area_id": 2.0,
@@ -118,7 +118,7 @@ FIELD_WEIGHTS: dict[str, float] = {
     "funktion": 3.5,
     "anmerkungen": 3.5,
     "external_url": 3.5,
-    "ohne_ha": 1.4,
+    "ohne_ha": 1.2,
     "ohne_ha_hinweis": 3.0,
 }
 
@@ -225,12 +225,13 @@ def export_devices_to_pdf(
     col_widths = _compute_col_widths(selected, usable)
     headers = [field_labels[f] for f in selected]
     # Per-column truncation proportional to column width (~2mm per char).
-    max_chars = [max(4, int(w / 2.0)) for w in col_widths]
-    # Auch die Kopfzeile kuerzen, sonst laeuft sie in die Nachbarspalte.
-    headers = [_truncate(h, max(4, int(w / 1.7))) for h, w in zip(headers, col_widths)]
+    # Kopfzeile kleiner setzen als die Daten, damit lange Beschriftungen
+    # ("Hinweis ohne HA") ohne Kuerzung in die Spalte passen.
+    pdf.set_font("Helvetica", "B", 6)
+    headers = [_fit(pdf, h, w) for h, w in zip(headers, col_widths)]
 
     def _draw_header() -> None:
-        pdf.set_font("Helvetica", "B", 7)
+        pdf.set_font("Helvetica", "B", 6)
         pdf.set_fill_color(31, 78, 121)
         pdf.set_text_color(255)
         for i, h in enumerate(headers):
@@ -261,7 +262,7 @@ def export_devices_to_pdf(
             else:
                 val = str(device.get(f, "") or "")
             align = "C" if f == "nr" else "L"
-            pdf.cell(col_widths[i], 5, _truncate(val, max_chars[i]), border=1, fill=True, align=align)
+            pdf.cell(col_widths[i], 5, _fit(pdf, val, col_widths[i]), border=1, fill=True, align=align)
         pdf.ln()
         fill = not fill
 
@@ -354,6 +355,24 @@ def export_devices_to_pdf(
 def _safe_text(text: str) -> str:
     """Remove characters not supported by Latin-1 (e.g. emojis)."""
     return "".join(c for c in text if ord(c) < 256)
+
+
+def _fit(pdf: FPDF, text: str, width_mm: float) -> str:
+    """Text auf die Spaltenbreite kuerzen -- gemessen, nicht geschaetzt.
+
+    Vorher wurde mit rund 2 mm je Zeichen gerechnet. Bei 7 pt Helvetica ist
+    ein Zeichen im Schnitt aber nur etwa 1,4 mm breit, deshalb wurden Namen
+    abgeschnitten, obwohl die Spalte noch Platz hatte (Testrunde 05.09.2026).
+    """
+    text = _safe_text(text or "")
+    if not text:
+        return ""
+    usable = width_mm - 1.6  # Zellenrand
+    if pdf.get_string_width(text) <= usable:
+        return text
+    while text and pdf.get_string_width(text + ".") > usable:
+        text = text[:-1]
+    return (text + ".") if text else ""
 
 
 def _truncate(text: str, max_len: int) -> str:
