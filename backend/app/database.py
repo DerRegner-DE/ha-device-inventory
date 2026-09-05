@@ -256,11 +256,11 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
     # v3.0.0: Uebergabe-Doku. Drei Felder, die aus dem Inventar eine
     # Uebergabe-Unterlage machen:
     #   external_url    - Deep-Link auf ein externes System (Paperless-ngx,
-    #                     Hersteller-Handbuch, Wiki). Forum #69/#74, Bacardi.
+    #                     Hersteller-Handbuch, Wiki).
     #   ohne_ha         - 'yes' | 'no' | NULL: Funktioniert die Grundfunktion
     #                     des Geraets auch ohne laufendes Home Assistant?
-    #                     Forum-Thread 92060 (Bacardi/Osorkon): jede
-    #                     Grundfunktion muss ohne Zentrale weiterlaufen.
+    #                     Wer die Anlage uebernimmt, muss wissen, was beim
+    #                     Abschalten der Zentrale stehen bleibt.
     #   ohne_ha_hinweis - Freitext dazu ("Schalter direkt an der Wand",
     #                     "nur ueber App bedienbar").
     cols = {row[1] for row in conn.execute("PRAGMA table_info(devices)").fetchall()}

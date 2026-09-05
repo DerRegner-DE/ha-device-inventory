@@ -16,7 +16,7 @@ DB: `devices.ohne_ha`, `devices.ohne_ha_hinweis` (beide TEXT, idempotente Migrat
 
 ### Neu: Externer Link pro Geraet
 
-Optionales Feld `external_url` — ein Deep-Link in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Wiki-Eintrag. Auf der Detailseite als Link mit Hinweis „Oeffnet in einem neuen Fenster". Die Eingabe wird serverseitig auf ein absolutes Schema normalisiert (dieselbe Regel wie bei Dokument-Links seit v2.6.5) — ohne `https://` loest der Browser die Adresse relativ zum Ingress-Pfad auf und landet bei 401. Erledigt den Wunsch aus Forum #69/#74 (Bacardi).
+Optionales Feld `external_url` — ein Deep-Link in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Wiki-Eintrag. Auf der Detailseite als Link mit Hinweis „Oeffnet in einem neuen Fenster". Die Eingabe wird serverseitig auf ein absolutes Schema normalisiert (dieselbe Regel wie bei Dokument-Links seit v2.6.5) — ohne `https://` loest der Browser die Adresse relativ zum Ingress-Pfad auf und landet bei 401.
 
 ### Neu: Export-Preset „Rueckbau/Elektriker"
 
