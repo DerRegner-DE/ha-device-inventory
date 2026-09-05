@@ -114,3 +114,33 @@ def test_ha_version_uses_a_leading_slash_and_does_not_cache_failures(monkeypatch
     # Der Fehlversuch darf nicht gecacht worden sein.
     assert asyncio.run(ha_client.get_ha_version()) == "2026.8.3"
     ha_client._ha_version_cache = None
+
+
+def test_rueckbau_field_set_skips_detail_pages_without_an_explicit_flag(monkeypatch):
+    """Die Oberflaeche vergass die aktive Vorlage beim Neuoeffnen des Dialogs,
+    das PDF hatte deshalb wieder 61 Seiten. Der Server entscheidet jetzt auch
+    ohne Flag anhand der Feldliste (Testrunde 05.09.2026)."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    import app.routers.export as export_module
+
+    seen: dict = {}
+
+    def fake_pdf(rows, fields=None, detail_pages=True):
+        seen["detail_pages"] = detail_pages
+        return b"%PDF-1.4 fake"
+
+    monkeypatch.setattr(export_module, "export_devices_to_pdf", fake_pdf)
+    client = TestClient(app)
+
+    rueckbau = ",".join(EXPORT_FIELD_PRESETS["rueckbau"])
+    assert client.get(f"/api/export/pdf?fields={rueckbau}").status_code == 200
+    assert seen["detail_pages"] is False
+
+    nachlass = ",".join(EXPORT_FIELD_PRESETS["nachlass"])
+    assert client.get(f"/api/export/pdf?fields={nachlass}").status_code == 200
+    assert seen["detail_pages"] is True
+
+    # Ein explizites Flag schlaegt die Automatik.
+    assert client.get(f"/api/export/pdf?fields={rueckbau}&details=true").status_code == 200
+    assert seen["detail_pages"] is True

@@ -23,6 +23,10 @@ class Settings(BaseSettings):
         os.environ.get("GV_PHOTOS_DIR", str(BASE_DIR / "photos"))
     )
 
+    # Vom run.sh aus den Add-on-Optionen gesetzt (GV_LANGUAGE). Steuert die
+    # Beschriftung der Export-Dateien.
+    LANGUAGE: str = os.environ.get("GV_LANGUAGE", "de")
+
     BACKEND_PORT: int = 3002
     BACKEND_HOST: str = "0.0.0.0"
 

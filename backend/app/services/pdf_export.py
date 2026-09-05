@@ -19,8 +19,12 @@ from io import BytesIO
 
 from fpdf import FPDF
 
-# English field labels (PDF keeps its existing English UI — the doc is an
-# insurance/estate artefact and the team reading it might not be German).
+from app.config import settings
+
+# Testrunde 05.09.2026: Das PDF war durchgaengig englisch beschriftet, waehrend
+# die Excel-Datei deutsch ist. Beide Dateien entstehen im selben Dialog aus
+# denselben Daten -- das muss zusammenpassen. Die Beschriftung folgt jetzt der
+# eingestellten Add-on-Sprache, Deutsch fuer "de", sonst Englisch.
 FIELD_LABELS_EN: dict[str, str] = {
     "nr": "#",
     "typ": "Type",
@@ -50,8 +54,44 @@ FIELD_LABELS_EN: dict[str, str] = {
     "ohne_ha_hinweis": "Without-HA Note",
 }
 
-# v3.0.0: stored language-neutrally as yes/no; the PDF is English-labelled.
-OHNE_HA_LABELS: dict[str, str] = {"yes": "Yes", "no": "No"}
+FIELD_LABELS_DE: dict[str, str] = {
+    "nr": "Nr",
+    "typ": "Typ",
+    "bezeichnung": "Bezeichnung",
+    "modell": "Modell",
+    "hersteller": "Hersteller",
+    "standort_name": "Standort",
+    "standort_floor_id": "Etage",
+    "standort_area_id": "Bereich-ID",
+    "seriennummer": "Seriennr.",
+    "ain_artikelnr": "AIN/Art.-Nr.",
+    "firmware": "Firmware",
+    "integration": "Integration",
+    "netzwerk": "Netzwerk",
+    "stromversorgung": "Strom",
+    "ip_adresse": "IP-Adresse",
+    "mac_adresse": "MAC-Adresse",
+    "anschaffungsdatum": "Gekauft am",
+    "garantie_bis": "Garantie bis",
+    "ha_device_id": "HA Device ID",
+    "ha_entity_id": "HA Entity ID",
+    "funktion": "Funktion",
+    "anmerkungen": "Anmerkungen",
+    "external_url": "Externer Link",
+    "ohne_ha": "Ohne HA nutzbar",
+    "ohne_ha_hinweis": "Hinweis ohne HA",
+}
+
+# v3.0.0: stored language-neutrally as yes/no.
+OHNE_HA_LABELS_EN: dict[str, str] = {"yes": "Yes", "no": "No"}
+OHNE_HA_LABELS_DE: dict[str, str] = {"yes": "Ja", "no": "Nein"}
+
+
+def _labels_for(language: str) -> tuple[dict[str, str], dict[str, str], str]:
+    """(Feldbeschriftung, Ohne-HA-Werte, Dokumenttitel) fuer eine Sprache."""
+    if (language or "").lower().startswith("de"):
+        return FIELD_LABELS_DE, OHNE_HA_LABELS_DE, "Geraeteuebersicht"
+    return FIELD_LABELS_EN, OHNE_HA_LABELS_EN, "Device Inventory"
 
 # Column weight for the summary table (relative, normalised to usable width).
 FIELD_WEIGHTS: dict[str, float] = {
@@ -94,8 +134,8 @@ USABLE_WIDTH_MM = 190.0
 class DevicePDF(FPDF):
     """Custom PDF with header/footer for device inventory."""
 
-    def __init__(self, title: str = "Device Inventory"):
-        super().__init__()
+    def __init__(self, title: str = "Device Inventory", orientation: str = "P"):
+        super().__init__(orientation=orientation)
         self._doc_title = title
         self._timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -106,7 +146,7 @@ class DevicePDF(FPDF):
         self.cell(0, 8, self._timestamp, align="R", new_x="LMARGIN", new_y="NEXT")
         self.set_draw_color(31, 78, 121)  # #1F4E79
         self.set_line_width(0.5)
-        self.line(10, self.get_y(), 200, self.get_y())
+        self.line(self.l_margin, self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(4)
 
     def footer(self):
@@ -116,16 +156,17 @@ class DevicePDF(FPDF):
         self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
 
 
-def _compute_col_widths(fields: list[str]) -> list[float]:
+def _compute_col_widths(fields: list[str], usable_width_mm: float = USABLE_WIDTH_MM) -> list[float]:
     weights = [FIELD_WEIGHTS.get(f, 2.0) for f in fields]
     total = sum(weights) or 1.0
-    return [USABLE_WIDTH_MM * w / total for w in weights]
+    return [usable_width_mm * w / total for w in weights]
 
 
 def export_devices_to_pdf(
     devices: list[dict],
     fields: list[str] | None = None,
     detail_pages: bool = True,
+    language: str | None = None,
 ) -> bytes:
     """Generate a PDF document from device list.
 
@@ -138,11 +179,20 @@ def export_devices_to_pdf(
     "Rueckbau/Elektriker" nutzt das: Eine Liste fuer den Handwerker soll auf
     ein paar Blatt passen, nicht auf 61 Seiten (Testrunde 05.09.2026).
     """
-    selected = [f for f in (fields or DEFAULT_FIELDS) if f in FIELD_LABELS_EN]
+    field_labels, ohne_ha_labels, doc_title = _labels_for(
+        language if language is not None else settings.LANGUAGE
+    )
+
+    selected = [f for f in (fields or DEFAULT_FIELDS) if f in field_labels]
     if not selected:
         selected = DEFAULT_FIELDS
 
-    pdf = DevicePDF(title="Device Inventory - Insurance Documentation")
+    # Testrunde 05.09.2026: Mit 15 Spalten blieben auf A4 hochkant rund 12 mm
+    # je Spalte -- Koepfe ueberlappten, Werte waren auf sechs Zeichen gekuerzt
+    # ("PC-10-F6.", "FRITZ."). Ab neun Spalten deshalb Querformat.
+    landscape = len(selected) > 8
+
+    pdf = DevicePDF(title=doc_title, orientation="L" if landscape else "P")
     pdf.alias_nb_pages()
     pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
@@ -171,10 +221,13 @@ def export_devices_to_pdf(
     pdf.cell(0, 8, "Device List", new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0)
 
-    col_widths = _compute_col_widths(selected)
-    headers = [FIELD_LABELS_EN[f] for f in selected]
+    usable = pdf.w - pdf.l_margin - pdf.r_margin
+    col_widths = _compute_col_widths(selected, usable)
+    headers = [field_labels[f] for f in selected]
     # Per-column truncation proportional to column width (~2mm per char).
     max_chars = [max(4, int(w / 2.0)) for w in col_widths]
+    # Auch die Kopfzeile kuerzen, sonst laeuft sie in die Nachbarspalte.
+    headers = [_truncate(h, max(4, int(w / 1.7))) for h, w in zip(headers, col_widths)]
 
     def _draw_header() -> None:
         pdf.set_font("Helvetica", "B", 7)
@@ -204,7 +257,7 @@ def export_devices_to_pdf(
             if f == "nr":
                 val = str(idx)
             elif f == "ohne_ha":
-                val = OHNE_HA_LABELS.get(str(device.get(f) or ""), "")
+                val = ohne_ha_labels.get(str(device.get(f) or ""), "")
             else:
                 val = str(device.get(f, "") or "")
             align = "C" if f == "nr" else "L"
@@ -241,11 +294,11 @@ def export_devices_to_pdf(
             for f in detail_fields:
                 value = device.get(f, "")
                 if f == "ohne_ha":
-                    value = OHNE_HA_LABELS.get(str(value or ""), "")
+                    value = ohne_ha_labels.get(str(value or ""), "")
                 if not value:
                     continue
                 pdf.set_font("Helvetica", "B", 8)
-                pdf.cell(30, 5, f"{FIELD_LABELS_EN.get(f, f)}:")
+                pdf.cell(30, 5, f"{field_labels.get(f, f)}:")
                 pdf.set_font("Helvetica", "", 8)
                 pdf.cell(0, 5, _safe_text(str(value)), new_x="LMARGIN", new_y="NEXT")
 

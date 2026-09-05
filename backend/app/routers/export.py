@@ -101,7 +101,13 @@ def export_xlsx(fields: str | None = Query(None, description="Comma-separated fi
 @router.get("/pdf")
 def export_pdf(
     fields: str | None = Query(None, description="Comma-separated field allowlist"),
-    details: bool = Query(True, description="Render per-device detail pages after the summary table"),
+    details: bool | None = Query(
+        None,
+        description=(
+            "Render per-device detail pages. Default: yes, except when the "
+            "requested fields are exactly the 'rueckbau' preset."
+        ),
+    ),
 ):
     """Export all devices as PDF. ``fields`` shapes both the summary table
     and the per-device detail pages. Same v2.5.3 fix as ``/xlsx``."""
@@ -112,7 +118,17 @@ def export_pdf(
             ).fetchall()
         )
 
-    pdf_bytes = export_devices_to_pdf(rows, fields=_parse_fields(fields), detail_pages=details)
+    selected = _parse_fields(fields)
+    if details is None:
+        # Zweiter Riegel: Auch wenn die Oberflaeche die Vorlage nicht
+        # mitschickt, soll die Rueckbau-Liste kompakt bleiben. Sie geht an
+        # einen Handwerker -- 61 Seiten liest niemand.
+        details = not (
+            selected is not None
+            and set(selected) == set(EXPORT_FIELD_PRESETS["rueckbau"])
+        )
+
+    pdf_bytes = export_devices_to_pdf(rows, fields=selected, detail_pages=details)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"Device_Inventory_{timestamp}.pdf"

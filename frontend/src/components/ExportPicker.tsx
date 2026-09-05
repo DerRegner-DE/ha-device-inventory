@@ -19,6 +19,10 @@ const ALL_FIELDS: string[] = [
 ];
 
 const STORAGE_KEY = "gv_export_fields_v1";
+// Die aktive Vorlage muss genauso ueberdauern wie die Feldauswahl. Sonst steht
+// sie beim naechsten Oeffnen wieder auf "keine", waehrend die Haken noch da
+// sind -- und der PDF-Export baut wieder Detailseiten (Testrunde 05.09.2026).
+const PRESET_STORAGE_KEY = "gv_export_preset_v1";
 
 type Format = "pdf" | "xlsx";
 
@@ -42,7 +46,20 @@ export function ExportPicker({ onClose }: Props) {
     }
   });
 
-  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [activePreset, setActivePreset] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(PRESET_STORAGE_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (activePreset) localStorage.setItem(PRESET_STORAGE_KEY, activePreset);
+      else localStorage.removeItem(PRESET_STORAGE_KEY);
+    } catch {}
+  }, [activePreset]);
   const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
 
   useEffect(() => {
