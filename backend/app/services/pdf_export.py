@@ -95,7 +95,7 @@ def _labels_for(language: str) -> tuple[dict[str, str], dict[str, str], str]:
 
 # Column weight for the summary table (relative, normalised to usable width).
 FIELD_WEIGHTS: dict[str, float] = {
-    "nr": 0.6,
+    "nr": 1.0,
     "typ": 1.8,
     "bezeichnung": 5.0,
     "modell": 2.5,
@@ -162,6 +162,35 @@ def _compute_col_widths(fields: list[str], usable_width_mm: float = USABLE_WIDTH
     return [usable_width_mm * w / total for w in weights]
 
 
+
+def _widen_number_column(
+    pdf: FPDF, fields: list[str], col_widths: list[float], device_count: int
+) -> list[float]:
+    """Der Nr-Spalte so viel Platz geben, wie die groesste Nummer braucht.
+
+    Die laufende Nummer wird bewusst nie gekuerzt -- aus "100" wurde sonst
+    "10." und die Liste war als Referenz wertlos (Testrunde 05.09.2026). Ohne
+    diese Anpassung wuerde sie ab einer bestimmten Geraetezahl stattdessen in
+    die Nachbarspalte laufen. Der Mehrbedarf wird den uebrigen Spalten
+    anteilig abgezogen.
+    """
+    if "nr" not in fields or device_count <= 0:
+        return col_widths
+
+    i_nr = fields.index("nr")
+    pdf.set_font("Helvetica", "", 7)
+    needed = pdf.get_string_width(str(device_count)) + 2.0
+    missing = needed - col_widths[i_nr]
+    if missing <= 0:
+        return col_widths
+
+    rest = sum(w for i, w in enumerate(col_widths) if i != i_nr) or 1.0
+    return [
+        needed if i == i_nr else w - missing * (w / rest)
+        for i, w in enumerate(col_widths)
+    ]
+
+
 def export_devices_to_pdf(
     devices: list[dict],
     fields: list[str] | None = None,
@@ -223,6 +252,8 @@ def export_devices_to_pdf(
 
     usable = pdf.w - pdf.l_margin - pdf.r_margin
     col_widths = _compute_col_widths(selected, usable)
+
+    col_widths = _widen_number_column(pdf, selected, col_widths, len(devices))
     headers = [field_labels[f] for f in selected]
     # Per-column truncation proportional to column width (~2mm per char).
     # Kopfzeile kleiner setzen als die Daten, damit lange Beschriftungen
@@ -262,7 +293,11 @@ def export_devices_to_pdf(
             else:
                 val = str(device.get(f, "") or "")
             align = "C" if f == "nr" else "L"
-            pdf.cell(col_widths[i], 5, _fit(pdf, val, col_widths[i]), border=1, fill=True, align=align)
+            # Die laufende Nummer wird nie gekuerzt -- aus "100" wurde sonst
+            # "10." und die Liste war nicht mehr referenzierbar
+            # (Testrunde 05.09.2026).
+            text = val if f == "nr" else _fit(pdf, val, col_widths[i])
+            pdf.cell(col_widths[i], 5, text, border=1, fill=True, align=align)
         pdf.ln()
         fill = not fill
 
