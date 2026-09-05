@@ -527,5 +527,5 @@
   "history.field.ohne_ha": "Works without HA",
   "history.field.ohne_ha_hinweis": "Without-HA note",
   "settings.reportNoGithub": "No GitHub account? Write to support@derregner.info instead.",
-  "exportPicker.insecureHint": "Note: over an http connection the browser blocks the download. If nothing happens, click “Keep” in the browser's download area."
+  "exportPicker.insecureHint": "Over a local http:// connection the browser blocks the download — click “Keep” in the browser's download area. It does not happen over an encrypted connection such as Home Assistant Cloud."
 }

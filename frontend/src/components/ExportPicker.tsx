@@ -61,6 +61,7 @@ export function ExportPicker({ onClose }: Props) {
       else localStorage.removeItem(PRESET_STORAGE_KEY);
     } catch {}
   }, [activePreset]);
+  const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
 
@@ -199,10 +200,12 @@ export function ExportPicker({ onClose }: Props) {
             {t("exportPicker.downloadPdf")}
           </button>
         </div>
-        {/* Nur noch als Rueckfallebene: Der Download laeuft ueber einen Blob
-            und wird deshalb normalerweise nicht mehr blockiert. Klappt das
-            nicht, greift window.open -- dann kann Chrome wieder sperren. */}
-        {blocked && (
+        {/* Testrunde 05.09.2026, zweiter Anlauf: Chrome blockiert Downloads
+            aus einer http-Seite unabhaengig davon, wie die Datei erzeugt wird
+            -- auch ueber fetch + Blob. Nachgemessen: die Datei landet als
+            "Nicht bestaetigt ....crdownload". Dagegen hilft nur HTTPS, also
+            nichts, was das Add-on regeln koennte. Der Hinweis bleibt. */}
+        {(!isSecure || blocked) && (
           <p class="px-4 pb-3 text-[11px] text-amber-600 dark:text-amber-400">
             {t("exportPicker.insecureHint")}
           </p>
