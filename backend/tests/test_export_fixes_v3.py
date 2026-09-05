@@ -75,3 +75,13 @@ def test_pdf_without_detail_pages_is_smaller():
     with_details = export_devices_to_pdf(devices, fields=fields, detail_pages=True)
     without_details = export_devices_to_pdf(devices, fields=fields, detail_pages=False)
     assert len(without_details) < len(with_details)
+
+
+def test_bosch_and_tuya_land_in_their_own_category():
+    """Die DB schreibt "bosch_shc" und "tuya"; gesucht wurde nach "boschshc"
+    bzw. nur "localtuya" — beides traf nie, die Geraete fielen unter
+    "Sonstige Geraete" (Testrunde 05.09.2026: 22 Bosch-Geraete)."""
+    grouped = dict(_categorize_devices([_dev(1, "bosch_shc"), _dev(2, "tuya"), _dev(3, "localtuya")]))
+    assert [d["id"] for d in grouped["Bosch Smart Home (SHC)"]] == [1]
+    assert sorted(d["id"] for d in grouped["Tuya (LocalTuya)"]) == [2, 3]
+    assert "Sonstige Geraete" not in grouped

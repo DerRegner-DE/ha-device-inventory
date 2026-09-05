@@ -115,8 +115,11 @@ DEFAULT_FIELDS: list[str] = [
 INTEGRATION_CATEGORIES: list[tuple[str, list[str]]] = [
     ("FRITZ!Box Netzwerk", ["fritz", "fritzbox", "fritz, fritzbox"]),
     ("Zigbee (Zigbee2MQTT)", ["zigbee2mqtt", "zigbee2mqtt (MQTT)", "zha"]),
-    ("Tuya (LocalTuya)", ["localtuya"]),
-    ("Bosch Smart Home (SHC)", ["boschshc"]),
+    # 05.09.2026: Die DB-Werte heissen "localtuya"/"tuya" bzw. "bosch_shc" mit
+    # Unterstrich. Nach "boschshc" zu suchen hat nie getroffen — 22 Bosch-Geraete
+    # landeten still unter "Sonstige Geraete".
+    ("Tuya (LocalTuya)", ["localtuya", "tuya"]),
+    ("Bosch Smart Home (SHC)", ["bosch_shc", "boschshc"]),
     ("HomeMatic IP", ["homematicip_cloud"]),
     ("Ring", ["ring"]),
     ("Blink", ["blink"]),
