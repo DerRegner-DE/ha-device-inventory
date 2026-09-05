@@ -125,6 +125,7 @@ def _compute_col_widths(fields: list[str]) -> list[float]:
 def export_devices_to_pdf(
     devices: list[dict],
     fields: list[str] | None = None,
+    detail_pages: bool = True,
 ) -> bytes:
     """Generate a PDF document from device list.
 
@@ -132,6 +133,10 @@ def export_devices_to_pdf(
     columns (auto-widthed) and the detail pages show the same fields as
     label/value pairs. When None, the classic 8-column summary + 14-field
     detail layout is preserved.
+
+    ``detail_pages=False`` gives the summary table only. Die Vorlage
+    "Rueckbau/Elektriker" nutzt das: Eine Liste fuer den Handwerker soll auf
+    ein paar Blatt passen, nicht auf 61 Seiten (Testrunde 05.09.2026).
     """
     selected = [f for f in (fields or DEFAULT_FIELDS) if f in FIELD_LABELS_EN]
     if not selected:
@@ -208,7 +213,7 @@ def export_devices_to_pdf(
         fill = not fill
 
     # --- Detail pages ---
-    if devices:
+    if devices and detail_pages:
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 11)
         pdf.set_text_color(31, 78, 121)

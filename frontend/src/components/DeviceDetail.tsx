@@ -552,7 +552,8 @@ export function DocumentsSection({
       {showLink && (
         <div class="mb-3 space-y-2">
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             value={linkUrl}
             onInput={(e) => setLinkUrl((e.target as HTMLInputElement).value)}
             placeholder={t("form.linkPlaceholder")}

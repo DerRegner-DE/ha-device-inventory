@@ -145,16 +145,46 @@ def _device_to_row(
     return out
 
 
+def _integration_matches(integration: str, patterns: list[str]) -> bool:
+    """Does a device's ``integration`` value belong to this category?
+
+    v3.0.0 fix: the old test was a two-way substring comparison
+    (``pattern in integration or integration in pattern``). The second half
+    made every short value match a longer pattern of a *different* category --
+    ``"fritz"`` is a substring of ``"fritz (device_tracker)"``, so every
+    FRITZ!Box device was filed under both "FRITZ!Box Netzwerk" and
+    "AVM Powerline" and appeared twice in the export (478 rows for 314
+    devices in the 05.09.2026 test).
+
+    The column may hold a comma-separated list ("fritz, fritzbox"), so a
+    pattern counts as matched when it equals the whole value or one of its
+    comma-separated tokens. No substring matching any more.
+    """
+    tokens = {t.strip() for t in integration.split(",") if t.strip()}
+    for pattern in patterns:
+        pattern = pattern.strip().lower()
+        if not pattern:
+            continue
+        if integration == pattern or pattern in tokens:
+            return True
+    return False
+
+
 def _categorize_devices(devices: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
-    """Group devices by integration category. Unmatched go to 'Sonstige Geraete'."""
+    """Group devices by integration category. Unmatched go to 'Sonstige Geraete'.
+
+    Each device lands in exactly one category -- the first one it matches.
+    """
     categorized: dict[str, list[dict[str, Any]]] = {}
     used_ids: set[int] = set()
 
     for cat_name, integrations in INTEGRATION_CATEGORIES:
         cat_devices = []
         for d in devices:
+            if d["id"] in used_ids:
+                continue
             integration = (d.get("integration") or "").strip().lower()
-            if any(intg.lower() in integration or integration in intg.lower() for intg in integrations):
+            if _integration_matches(integration, integrations):
                 cat_devices.append(d)
                 used_ids.add(d["id"])
         if cat_devices:

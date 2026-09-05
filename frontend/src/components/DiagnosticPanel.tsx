@@ -16,10 +16,14 @@ export function DiagnosticPanel() {
   // Melder raten mussten — in der Praxis stand dort oft die HA-Version oder
   // gar nichts. Das Backend kennt seine Version, also fuellen wir sie vor.
   const [appVersion, setAppVersion] = useState<string>("");
+  const [haVersion, setHaVersion] = useState<string>("");
 
   useEffect(() => {
-    apiGet<{ version?: string }>("/health")
-      .then((r) => setAppVersion(r?.version || ""))
+    apiGet<{ version?: string; ha_version?: string }>("/health")
+      .then((r) => {
+        setAppVersion(r?.version || "");
+        setHaVersion(r?.ha_version || "");
+      })
       .catch(() => {});
   }, []);
 
@@ -88,6 +92,7 @@ export function DiagnosticPanel() {
     // ausgeloest (GH #19), er kommt weiter ueber die Zwischenablage.
     const params = new URLSearchParams({ template: "bug.yml", title: "[Bug] " });
     if (appVersion) params.set("addon-version", appVersion);
+    if (haVersion) params.set("ha-version", haVersion);
     return `https://github.com/${GITHUB_REPO}/issues/new?${params.toString()}`;
   }
 
@@ -232,6 +237,12 @@ export function DiagnosticPanel() {
           <p class="text-[11px] text-gray-400 mt-1 ml-1">
             {t("settings.diagnosticGithubDesc") ||
               "Empfohlen — nachverfolgbar. GitHub-Account nötig (kostenlos)."}
+          </p>
+          {/* Testrunde 05.09.2026: Der Melden-Knopf setzt ein GitHub-Konto
+              voraus, das die wenigsten HA-Nutzer haben. Ohne sichtbare
+              Alternative landen sie im Forum — oder gar nicht. */}
+          <p class="text-[11px] text-gray-400 mt-1 ml-1">
+            {t("settings.reportNoGithub")}
           </p>
           {/* v3.0.0: Der Hinweis, wohin der Bericht gehoert, stand frueher im
               vorbefuellten Issue-Body. Mit dem Formular-Template gibt es den

@@ -26,6 +26,20 @@ export function registerTranslations(lang: string, t: Translations) {
   translations[lang] = { ...translations[lang], ...t };
 }
 
+/** Is there a real translation for this key in any loaded language?
+ *
+ * ``t()`` falls back to returning the key itself, which is truthy — so
+ * ``t(key) || fallback`` never reaches the fallback. Callers that build keys
+ * dynamically (change history field names, for example) need this check.
+ */
+export function hasTranslation(key: string): boolean {
+  return Boolean(
+    translations[currentLang]?.[key] ||
+    translations['en']?.[key] ||
+    translations['de']?.[key]
+  );
+}
+
 export function t(key: string, params?: Record<string, string | number>): string {
   const value = translations[currentLang]?.[key] || translations['en']?.[key] || translations['de']?.[key] || key;
   if (!params) return value;

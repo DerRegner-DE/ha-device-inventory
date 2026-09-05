@@ -34,8 +34,11 @@ EXPORT_FIELD_PRESETS: dict[str, list[str]] = {
         "standort_name", "standort_floor_id",
         "netzwerk", "stromversorgung", "integration",
         "ohne_ha", "ohne_ha_hinweis",
+        "external_url",
         "funktion", "anmerkungen",
     ],
+    # v3.0.0: Ein Nachlass ist ebenfalls eine Uebergabe. Wer erbt, will wissen,
+    # was ohne Home Assistant weiterlaeuft, und wo Rechnung/Handbuch liegen.
     "nachlass": [
         "nr", "typ", "bezeichnung", "modell", "hersteller",
         "seriennummer", "ain_artikelnr",
@@ -43,6 +46,8 @@ EXPORT_FIELD_PRESETS: dict[str, list[str]] = {
         "standort_name", "standort_floor_id",
         "mac_adresse", "ip_adresse",
         "integration", "netzwerk", "firmware",
+        "ohne_ha", "ohne_ha_hinweis",
+        "external_url",
         "funktion", "anmerkungen",
     ],
 }
@@ -84,7 +89,7 @@ def export_xlsx(fields: str | None = Query(None, description="Comma-separated fi
     xlsx_bytes = export_devices_to_xlsx(rows, fields=_parse_fields(fields))
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"Geraeteuebersicht_{timestamp}.xlsx"
+    filename = f"Device_Inventory_{timestamp}.xlsx"
 
     return Response(
         content=xlsx_bytes,
@@ -94,7 +99,10 @@ def export_xlsx(fields: str | None = Query(None, description="Comma-separated fi
 
 
 @router.get("/pdf")
-def export_pdf(fields: str | None = Query(None, description="Comma-separated field allowlist")):
+def export_pdf(
+    fields: str | None = Query(None, description="Comma-separated field allowlist"),
+    details: bool = Query(True, description="Render per-device detail pages after the summary table"),
+):
     """Export all devices as PDF. ``fields`` shapes both the summary table
     and the per-device detail pages. Same v2.5.3 fix as ``/xlsx``."""
     with get_db() as conn:
@@ -104,7 +112,7 @@ def export_pdf(fields: str | None = Query(None, description="Comma-separated fie
             ).fetchall()
         )
 
-    pdf_bytes = export_devices_to_pdf(rows, fields=_parse_fields(fields))
+    pdf_bytes = export_devices_to_pdf(rows, fields=_parse_fields(fields), detail_pages=details)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"Device_Inventory_{timestamp}.pdf"

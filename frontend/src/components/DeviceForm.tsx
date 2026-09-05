@@ -746,7 +746,8 @@ export function DeviceForm({ device }: DeviceFormProps) {
           )}
           <Field label={t("form.externalUrl")} hint={t("form.externalUrlHint")}>
             <input
-              type="url"
+              type="text"
+              inputMode="url"
               value={form.external_url}
               onInput={(e) => updateField("external_url", (e.target as HTMLInputElement).value)}
               class={inputClass}

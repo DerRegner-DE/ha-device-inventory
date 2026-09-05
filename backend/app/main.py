@@ -162,12 +162,16 @@ app.include_router(settings_router.router, prefix="/api")
 
 
 @app.get("/api/health")
-def health_check():
+async def health_check():
+    from app.services.ha_client import get_ha_version
+
     return {
         "status": "ok",
         "version": APP_VERSION,
         "ha_url": settings.HA_URL,
         "ha_token_configured": bool(settings.HA_TOKEN),
+        # v3.0.0: fuellt das zweite Pflichtfeld des GitHub-Bug-Formulars vor.
+        "ha_version": await get_ha_version(),
     }
 
 

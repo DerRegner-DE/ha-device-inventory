@@ -42,6 +42,9 @@ export function ExportPicker({ onClose }: Props) {
     }
   });
 
+  const [activePreset, setActivePreset] = useState<string | null>(null);
+  const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
+
   useEffect(() => {
     apiGet<{ presets: Record<string, string[]> }>("/export/presets")
       .then((r) => setPresets(r?.presets || {}))
@@ -59,17 +62,23 @@ export function ExportPicker({ onClose }: Props) {
     if (next.has(f)) next.delete(f);
     else next.add(f);
     setSelected(next);
+    // Von Hand geaendert: es ist nicht mehr die Vorlage.
+    setActivePreset(null);
   };
 
   const applyPreset = (name: "all" | string) => {
     if (name === "all") setSelected(new Set(ALL_FIELDS));
     else if (presets[name]) setSelected(new Set(presets[name]));
+    setActivePreset(name);
   };
 
   const download = (format: Format) => {
     if (selected.size === 0) return;
     const fields = [...selected].join(",");
-    const url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}`;
+    let url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}`;
+    // Die Rueckbau-Liste geht an einen Handwerker und soll auf ein paar
+    // Blatt passen. Detailseiten je Geraet blaehen sie auf 60+ Seiten auf.
+    if (format === "pdf" && activePreset === "rueckbau") url += "&details=false";
     window.open(url, "_blank");
   };
 
@@ -163,6 +172,14 @@ export function ExportPicker({ onClose }: Props) {
             {t("exportPicker.downloadPdf")}
           </button>
         </div>
+        {/* Testrunde 05.09.2026: Ueber http:// blockt Chrome den Download
+            stillschweigend ("Unsicherer Download blockiert"). Wer HA per
+            http://<LAN-IP>:8123 bedient, sieht sonst einfach nichts. */}
+        {!isSecure && (
+          <p class="px-4 pb-3 text-[11px] text-amber-600 dark:text-amber-400">
+            {t("exportPicker.insecureHint")}
+          </p>
+        )}
       </div>
     </div>
   );
