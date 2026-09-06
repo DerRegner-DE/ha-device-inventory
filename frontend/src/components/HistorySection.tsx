@@ -1,6 +1,6 @@
 import { useState, useEffect } from "preact/hooks";
 import { apiGet, apiPost } from "../api/client";
-import { t } from "../i18n";
+import { t, hasTranslation } from '../i18n';
 
 interface HistoryEntry {
   id: number;
@@ -52,8 +52,22 @@ export function HistorySection({ deviceUuid, onChanged }: {
     setBusy(false);
   };
 
-  const formatValue = (v: string | null) =>
-    v === null ? <em class="text-gray-400">–</em> : <span class="font-mono text-[11px]">{v}</span>;
+  // Sprachneutral gespeicherte Werte lesbar machen. ohne_ha steht als
+  // "yes"/"no" in der DB — roh angezeigt sagt das dem Nutzer nichts.
+  const displayValue = (field: string, v: string) => {
+    if (field === "ohne_ha") {
+      if (v === "yes") return t("detail.withoutHaYes");
+      if (v === "no") return t("detail.withoutHaNo");
+    }
+    return v;
+  };
+
+  const formatValue = (field: string, v: string | null) =>
+    v === null || v === "" ? (
+      <em class="text-gray-400">–</em>
+    ) : (
+      <span class="font-mono text-[11px]">{displayValue(field, v)}</span>
+    );
 
   return (
     <details
@@ -85,16 +99,16 @@ export function HistorySection({ deviceUuid, onChanged }: {
                   <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-0.5">
                       <span class="font-medium text-gray-700 dark:text-gray-300">
-                        {t(`history.field.${h.field}`) || h.field}
+                        {hasTranslation(`history.field.${h.field}`) ? t(`history.field.${h.field}`) : h.field}
                       </span>
                       <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                        {t(`history.source.${h.source}`) || h.source}
+                        {hasTranslation(`history.source.${h.source}`) ? t(`history.source.${h.source}`) : h.source}
                       </span>
                     </div>
                     <div class="text-gray-600 dark:text-gray-400">
-                      {formatValue(h.old_value)}
+                      {formatValue(h.field, h.old_value)}
                       <span class="mx-1 text-gray-400">→</span>
-                      {formatValue(h.new_value)}
+                      {formatValue(h.field, h.new_value)}
                     </div>
                     <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                       {date.toLocaleString()}

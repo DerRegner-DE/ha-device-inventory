@@ -15,6 +15,7 @@ if [ -f "$OPTIONS_FILE" ]; then
     MQTT_USER_OPT=$(jq -r '.mqtt_user // ""' "$OPTIONS_FILE")
     MQTT_PASS_OPT=$(jq -r '.mqtt_password // ""' "$OPTIONS_FILE")
     MQTT_CID_OPT=$(jq -r '.mqtt_client_id // ""' "$OPTIONS_FILE")
+    MQTT_NODE_OPT=$(jq -r '.mqtt_node_id // "geraeteverwaltung"' "$OPTIONS_FILE")
     echo "Language from options: $LANGUAGE"
 else
     LANGUAGE="de"
@@ -24,6 +25,7 @@ else
     MQTT_USER_OPT=""
     MQTT_PASS_OPT=""
     MQTT_CID_OPT=""
+    MQTT_NODE_OPT="geraeteverwaltung"
     echo "No options.json found, using defaults"
 fi
 
@@ -73,6 +75,10 @@ fi
 # Optional explicit client id. Empty => paho picks a random one per connect.
 # Brokers with per-client-id ACLs need this set.
 export GV_MQTT_CLIENT_ID="$MQTT_CID_OPT"
+# v3.0.0: Node-Name in den Discovery-Topics. Nur das Preview-Add-on setzt hier
+# einen anderen Wert, damit es der stabilen Installation nicht in die retained
+# Topics schreibt.
+export GV_MQTT_NODE_ID="$MQTT_NODE_OPT"
 echo "MQTT Host: $GV_MQTT_HOST:$GV_MQTT_PORT (user: ${GV_MQTT_USER:-anonymous}, client_id: ${GV_MQTT_CLIENT_ID:-auto})"
 
 # v2.6.2: Loud warning when no MQTT credentials are loaded. Mosquitto with the

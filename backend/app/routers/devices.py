@@ -13,6 +13,7 @@ from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, P
 from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
 from app.services.snapshots import create_snapshot
 from app.services.history import log_changes
+from app.routers.documents import normalize_link_url
 
 router = APIRouter(prefix="/devices", tags=["devices"])
 
@@ -123,6 +124,17 @@ def get_device(uuid: str):
         return _build_device_response(row, conn)
 
 
+def _clean_ohne_ha(value: Any) -> str | None:
+    """v3.0.0: ``ohne_ha`` is a tri-state stored language-neutrally.
+
+    Only ``yes``/``no`` are persisted; anything else (empty string from a
+    cleared select, a stray label) becomes NULL = "unbekannt", so the export
+    never prints a value the user did not choose.
+    """
+    v = str(value or "").strip().lower()
+    return v if v in ("yes", "no") else None
+
+
 @router.post("", response_model=Device, status_code=201)
 def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
     device_uuid = body.uuid or uuid4().hex
@@ -141,11 +153,21 @@ def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
         "anschaffungsdatum", "garantie_bis", "funktion", "anmerkungen",
         "ha_entity_id", "ha_device_id", "ain_artikelnr",
         "parent_uuid",  # v2.5.0: parent-child grouping
+        # v3.0.0: Uebergabe-Doku
+        "external_url", "ohne_ha", "ohne_ha_hinweis",
     ]
     for f in optional:
         val = getattr(body, f, None)
         if val is not None:
             fields[f] = val
+
+    # v3.0.0: Gleiche Normalisierung wie bei Dokument-Links (v2.6.5). Ein
+    # bloßer Host wie "paperless.local" wird im Ingress-iframe sonst relativ
+    # aufgeloest und laeuft auf 401.
+    if fields.get("external_url"):
+        fields["external_url"] = normalize_link_url(str(fields["external_url"]))
+    if fields.get("ohne_ha") is not None:
+        fields["ohne_ha"] = _clean_ohne_ha(fields["ohne_ha"])
 
     columns = ", ".join(fields.keys())
     placeholders = ", ".join(["?"] * len(fields))
@@ -185,6 +207,12 @@ def update_device(uuid: str, body: DeviceUpdate, background_tasks: BackgroundTas
             if not row:
                 raise HTTPException(status_code=404, detail="Device not found")
             return _build_device_response(row, conn)
+
+    # v3.0.0: siehe create_device — Link absolut machen, Tri-State saeubern.
+    if update_data.get("external_url"):
+        update_data["external_url"] = normalize_link_url(str(update_data["external_url"]))
+    if "ohne_ha" in update_data:
+        update_data["ohne_ha"] = _clean_ohne_ha(update_data["ohne_ha"])
 
     sets = []
     params: list[Any] = []

@@ -30,6 +30,8 @@
 
 ## What's new
 
+**v3.0** (September 2026) — Handover documentation. Three new per-device fields answer the question "what happens to this house when someone else takes over": *Does it work without Home Assistant?* (yes / no / unknown), a free-text note on how to operate it without HA, and an external link into another system — the invoice in Paperless-ngx, the manufacturer's manual page. A new export template **Decommissioning / Electrician** produces the list you hand to a tradesperson: location, wiring, power source, works-without-HA — deliberately without serial numbers or purchase data. All three export templates were re-cut to carry only what their reader actually needs.
+
 **v2.6** (May 2026) — Built-in user manual, MQTT-Discovery cleanup buttons (orphan + full purge), smarter Companion-app deep-link, "Parents only" filter to collapse multi-channel device families, dynamic category chips, consistent bulk-action bar, and an "Apply to children" toggle that propagates manufacturer/warranty/power-source from a parent device to its sub-channels.
 
 **v2.5** (April 2026) — Multi-channel device grouping via HA's `via_device_id` (Shelly 2PM and similar appear as one logical device with sub-channel children). Up to 20 attachment images per device for installation-location documentation. Per-device change history with field-level revert. Custom Excel/PDF export with built-in Insurance and Estate-planning presets, plus seven sort orders.
@@ -68,6 +70,7 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 - **Warranty tracking** -- Record purchase dates and warranty expiration for every device. Never miss a warranty claim again.
 - **Maintenance overview** -- Firmware versions, IP addresses, MAC addresses, network types, and integrations at a glance. No more hunting through router admin pages.
 - **Rental property management** -- Document equipment in rental units separately from your own home. Know exactly what belongs where when tenants move in or out.
+- **Handover and estate planning** -- Print the inventory with your own notes and leave it for whoever takes the system over: family, an electrician, a buyer. Each device records whether its basic function survives without Home Assistant, and the "Removal/electrician" export preset produces exactly that sheet -- location, network, power, and what stops working when the box comes off the wall.
 - **Tax documentation** -- Track business equipment with purchase dates and costs for tax reporting.
 - **Quick setup with HA import** -- Instead of manually entering 200+ devices, import your entire Home Assistant device registry with one click. Device types, manufacturers, and models are detected automatically.
 - **Multi-device access** -- View and edit your inventory from your phone, tablet, or desktop. Changes sync automatically within 30 seconds.
@@ -97,6 +100,9 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 | Photo gallery per device | -- | **Yes** |
 | Bulk edit (type, integration, delete) | -- | **Yes** |
 | MQTT Discovery (publish as HA entities) | -- | **Yes** |
+| "Works without Home Assistant?" per device | -- | **Yes** |
+| External link per device (invoice, manual) | -- | **Yes** |
+| Export template Decommissioning / Electrician | -- | **Yes** |
 
 ### Installation
 
@@ -209,6 +215,7 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 - **Garantieverfolgung** -- Kaufdaten und Garantieablauf für jedes Gerät erfassen. Nie wieder eine Garantie verpassen.
 - **Wartungsübersicht** -- Firmware-Versionen, IP-Adressen, MAC-Adressen, Netzwerktypen und Integrationen auf einen Blick. Kein Suchen mehr in Router-Administrationsseiten.
 - **Mietobjektverwaltung** -- Geräte in Mietwohnungen getrennt vom eigenen Zuhause dokumentieren. Immer wissen, was wo gehört.
+- **Übergabe und Nachlass** -- Die Geräteliste mit eigenen Notizen ausdrucken und dem hinterlassen, der die Anlage später übernimmt: Angehörige, Elektriker, Käufer. Pro Gerät lässt sich festhalten, ob die Grundfunktion auch ohne Home Assistant erhalten bleibt; das Export-Preset „Rückbau/Elektriker" erzeugt genau dieses Blatt -- Standort, Netzwerk, Stromversorgung und was ausfällt, wenn das Gerät von der Wand kommt.
 - **Steuerliche Erfassung** -- Betriebliche Geräte mit Kaufdatum und Kosten für die Steuererklärung erfassen.
 - **Schnell-Setup per HA-Import** -- Statt 200+ Geräte manuell einzutragen, das gesamte Home-Assistant-Geräteregister per Klick importieren. Typen, Hersteller und Modelle werden automatisch erkannt.
 - **Mehrgerätezugriff** -- Inventar vom Handy, Tablet oder Desktop abrufen und bearbeiten. Änderungen werden innerhalb von 30 Sekunden synchronisiert.
@@ -238,6 +245,9 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 | Fotogalerie pro Gerät | -- | **Ja** |
 | Massenbearbeitung (Typ, Integration, Löschen) | -- | **Ja** |
 | MQTT Discovery (als HA-Entities publizieren) | -- | **Ja** |
+| „Funktioniert ohne Home Assistant?" pro Gerät | -- | **Ja** |
+| Externer Link pro Gerät (Rechnung, Handbuch) | -- | **Ja** |
+| Export-Vorlage Rückbau/Elektriker | -- | **Ja** |
 
 ### Installation
 
@@ -379,6 +389,9 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 | Galerie photo par appareil | -- | **Oui** |
 | Édition en masse (type, intégration, suppression) | -- | **Oui** |
 | MQTT Discovery (publier comme entités HA) | -- | **Oui** |
+| « Fonctionne sans Home Assistant ? » par appareil | -- | **Oui** |
+| Lien externe par appareil (facture, manuel) | -- | **Oui** |
+| Modèle d'export Démontage / Électricien | -- | **Oui** |
 
 ### Installation
 
@@ -520,6 +533,9 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 | Galería de fotos por dispositivo | -- | **Sí** |
 | Edición masiva (tipo, integración, eliminar) | -- | **Sí** |
 | MQTT Discovery (publicar como entidades HA) | -- | **Sí** |
+| «¿Funciona sin Home Assistant?» por dispositivo | -- | **Sí** |
+| Enlace externo por dispositivo (factura, manual) | -- | **Sí** |
+| Plantilla de exportación Desmontaje / Electricista | -- | **Sí** |
 
 ### Instalación
 
@@ -661,6 +677,9 @@ Cada dispositivo también puede registrar:
 | Фотогалерея на устройство | -- | **Да** |
 | Массовое редактирование (тип, интеграция, удаление) | -- | **Да** |
 | MQTT Discovery (публикация как сущности HA) | -- | **Да** |
+| «Работает ли без Home Assistant?» для каждого устройства | -- | **Да** |
+| Внешняя ссылка для устройства (счёт, руководство) | -- | **Да** |
+| Шаблон экспорта Демонтаж / Электрик | -- | **Да** |
 
 ### Установка
 

@@ -319,32 +319,49 @@ export async function syncFromServer(): Promise<number> {
     const pendingItems = await db.syncQueue.toArray();
     const pendingUuids = new Set(pendingItems.map(i => i.entity_uuid));
 
-    let changes = 0;
+    // v3.0.0: Erst sammeln, dann in EINER Transaktion schreiben.
+    //
+    // Vorher lief jedes Geraet als eigener Schreibvorgang durch. Die
+    // Oberflaeche haengt an einer Live-Abfrage und hat deshalb jeden einzelnen
+    // davon nachgezeichnet: Die Geraetezahl auf dem Dashboard zaehlte erst
+    // hoch, waehrend eingefuegt wurde, und danach wieder runter, waehrend die
+    // verschwundenen Eintraege entfernt wurden. Bei ueber 500 Geraeten waren
+    // das ueber 500 Transaktionen und ebenso viele Neuberechnungen der
+    // Ansicht -- sichtbar als Zahlensalat und als traeges Dashboard.
+    const zuSchreiben: any[] = [];
+    const zuLoeschen: string[] = [];
 
     // Merge server → local
     for (const serverDev of serverDevices) {
       const local = localMap.get(serverDev.uuid);
       if (!local) {
         // New device from server - add locally
-        await db.devices.put(serverDev);
-        changes++;
+        zuSchreiben.push(serverDev);
       } else if (
         (serverDev.sync_version ?? 0) > (local.sync_version ?? 0) &&
         !pendingUuids.has(serverDev.uuid)
       ) {
         // Server has newer version and no pending local changes
-        await db.devices.put(serverDev);
-        changes++;
+        zuSchreiben.push(serverDev);
       }
     }
 
     // Remove locally deleted devices (on server but not pending delete)
     for (const local of localDevices) {
       if (!serverUuids.has(local.uuid) && !pendingUuids.has(local.uuid)) {
-        await db.devices.delete(local.uuid);
-        await db.photos.where("device_uuid").equals(local.uuid).delete();
-        changes++;
+        zuLoeschen.push(local.uuid);
       }
+    }
+
+    const changes = zuSchreiben.length + zuLoeschen.length;
+    if (changes > 0) {
+      await db.transaction("rw", db.devices, db.photos, async () => {
+        if (zuSchreiben.length) await db.devices.bulkPut(zuSchreiben);
+        if (zuLoeschen.length) {
+          await db.devices.bulkDelete(zuLoeschen);
+          await db.photos.where("device_uuid").anyOf(zuLoeschen).delete();
+        }
+      });
     }
 
     return changes;

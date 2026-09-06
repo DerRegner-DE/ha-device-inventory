@@ -134,6 +134,41 @@ Idee dahinter: Erben können das Gerät anhand von Bezeichnung + Seriennummer im
 
 ---
 
+### Übergabe an jemand anderen (Rückbau/Elektriker)
+
+*Neu in 3.0.0.* Der Fall dahinter: Irgendwann steht jemand anderes vor der Anlage — Angehörige, ein Elektriker, ein Käufer. Diese Person kennt weder Home Assistant noch die Historie des Hauses.
+
+Dafür gibt es zwei Felder pro Gerät, ganz unten im Bearbeiten-Formular unter *Anmerkungen*:
+
+**„Funktioniert ohne Home Assistant?"** — drei Möglichkeiten: *Unbekannt* (Voreinstellung, nichts wird ausgegeben), *Ja, läuft auch ohne HA*, *Nein, braucht HA*. Bei *Ja* oder *Nein* erscheint darunter ein Hinweisfeld für den Klartext: „Schalter direkt an der Wand", „Thermostat lässt sich am Gerät stellen", „ohne HA gar nicht bedienbar".
+
+**„Externer Link"** — ein Verweis in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Eintrag im eigenen Wiki. Der Link steht auf der Detailseite und öffnet sich in einem neuen Fenster. Ein bloßer Name wie `paperless.local/x` reicht, `https://` wird automatisch ergänzt.
+
+Das Export-Preset **„Rückbau/Elektriker"** (Export → Preset auswählen) macht daraus das Blatt, das man in den Hausanschlussraum legt:
+
+- Nr, Typ, Bezeichnung, Hersteller, Modell
+- Standort, Stockwerk
+- Netzwerk, Stromversorgung
+- Ohne HA nutzbar + Hinweis
+- Externer Link
+- Funktion, Anmerkungen
+
+Bewusst **ohne** Seriennummern, Kaufdaten und Garantie: Das ist die Liste, die offen im Flur liegen kann, während die Versicherungs- und Nachlass-Vorlagen die vollständigen Daten enthalten.
+
+Die Spalte *Integration* ist seit 3.0.0 nicht mehr dabei — `fritz` oder `bosch_shc` sind Home-Assistant-Interna und sagen einem Handwerker nichts.
+
+**Alle drei Vorlagen im Vergleich:**
+
+| Vorlage | Für wen | Enthält |
+|---|---|---|
+| Versicherung | Sachbearbeiter im Schadensfall | Gerät, Seriennummer, Kaufdatum, Garantie, Standort, Link zur Rechnung |
+| Rückbau/Elektriker | Handwerker vor Ort | Gerät, Standort, Netz, Strom, läuft-ohne-HA, Link — keine Kaufdaten |
+| Nachlass | Angehörige | Gerät, Seriennummer, Kaufdatum, Garantie, Standort, läuft-ohne-HA, Link |
+
+Als PDF kommt bei allen dreien eine kompakte Tabelle im Querformat heraus, rund zehn Seiten bei 300 Geräten. Detailseiten je Gerät gibt es nur, wenn Sie die Felder von Hand zusammenstellen statt eine Vorlage zu wählen.
+
+---
+
 ## Filter, Suche und Sortierung
 
 - **Suche** oben durchsucht Bezeichnung, Modell, Hersteller, Standort, MAC, IP, Seriennummer, Integration, Funktion und Typ.
@@ -195,6 +230,28 @@ DE, EN, ES, FR, RU. Umstellung im Settings-View. Free-Tier ist auf EN beschränk
 ---
 
 ## Probleme beheben
+
+### Der Browser blockiert den Export („Unsicherer Download blockiert")
+
+Das passiert, wenn Sie Home Assistant über eine unverschlüsselte Adresse aufrufen, also `http://<IP>:8123`. Browser lassen aus solchen Seiten keine Dateien mehr herunterladen, ohne nachzufragen. Mit der App hat das nichts zu tun — der Export wird erzeugt und korrekt ausgeliefert.
+
+**So kommen Sie an die Datei:** Im Download-Bereich des Browsers auf **Behalten** klicken. Die Datei ist vollständig und unverändert.
+
+**So verschwindet die Nachfrage dauerhaft:** Rufen Sie Home Assistant über eine verschlüsselte Verbindung auf — über Home Assistant Cloud (Nabu Casa), über ein eigenes Zertifikat per Duck DNS und Let's Encrypt, oder über einen vorgeschalteten Reverse Proxy. Danach tritt das Problem nicht mehr auf.
+
+### Wo liegen meine Daten, und wie sichere ich sie?
+
+Alles, was die App speichert, liegt im Datenverzeichnis des Add-ons:
+
+| Was | Wo |
+|---|---|
+| Datenbank mit allen Geräten | `/data/db/geraeteverwaltung.db` |
+| Fotos und Einbauort-Bilder | `/data/photos/` |
+| Lizenzschlüssel | `/data/db/license.json` |
+
+**Sichern** brauchen Sie nichts von Hand: Ein Home-Assistant-Backup nimmt das Add-on-Datenverzeichnis vollständig mit. Wer die Geräteliste zusätzlich außerhalb von HA halten will, nutzt *Einstellungen → Daten exportieren → JSON Export* oder legt einen Schnappschuss an.
+
+**Nicht** in die Datenbank hineinschreiben, während das Add-on läuft. Wer sie über Samba oder SSH öffnet und bearbeitet, riskiert eine beschädigte Datei — die App hält sie geöffnet. Zum Ansehen erst das Add-on stoppen.
 
 ### MQTT-Verbindung schlägt fehl
 

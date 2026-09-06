@@ -23,6 +23,10 @@ class Settings(BaseSettings):
         os.environ.get("GV_PHOTOS_DIR", str(BASE_DIR / "photos"))
     )
 
+    # Vom run.sh aus den Add-on-Optionen gesetzt (GV_LANGUAGE). Steuert die
+    # Beschriftung der Export-Dateien.
+    LANGUAGE: str = os.environ.get("GV_LANGUAGE", "de")
+
     BACKEND_PORT: int = 3002
     BACKEND_HOST: str = "0.0.0.0"
 
@@ -41,6 +45,10 @@ class Settings(BaseSettings):
     # Brokers with per-client-id ACLs need this set to a known value.
     MQTT_CLIENT_ID: str = os.environ.get("GV_MQTT_CLIENT_ID", "")
     MQTT_DISCOVERY_ENABLED: bool = os.environ.get("GV_MQTT_DISCOVERY", "false").lower() == "true"
+    # v3.0.0: Node-Name in den MQTT-Discovery-Topics. Trennt die Preview-
+    # Installation von der stabilen, wenn beide auf derselben HA-Instanz
+    # laufen. Default = bisheriges Verhalten.
+    MQTT_NODE_ID: str = os.environ.get("GV_MQTT_NODE_ID", "").strip() or "geraeteverwaltung"
 
     class Config:
         env_prefix = "GV_"

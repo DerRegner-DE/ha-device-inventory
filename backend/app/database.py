@@ -30,6 +30,9 @@ CREATE TABLE IF NOT EXISTS devices (
     ha_entity_id TEXT,
     ha_device_id TEXT,
     ain_artikelnr TEXT,
+    external_url TEXT,
+    ohne_ha TEXT,
+    ohne_ha_hinweis TEXT,
     reviewed INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -248,6 +251,22 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_attachments_device ON attachments(device_id)")
+
+
+    # v3.0.0: Uebergabe-Doku. Drei Felder, die aus dem Inventar eine
+    # Uebergabe-Unterlage machen:
+    #   external_url    - Deep-Link auf ein externes System (Paperless-ngx,
+    #                     Hersteller-Handbuch, Wiki).
+    #   ohne_ha         - 'yes' | 'no' | NULL: Funktioniert die Grundfunktion
+    #                     des Geraets auch ohne laufendes Home Assistant?
+    #                     Wer die Anlage uebernimmt, muss wissen, was beim
+    #                     Abschalten der Zentrale stehen bleibt.
+    #   ohne_ha_hinweis - Freitext dazu ("Schalter direkt an der Wand",
+    #                     "nur ueber App bedienbar").
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(devices)").fetchall()}
+    for col in ("external_url", "ohne_ha", "ohne_ha_hinweis"):
+        if col not in cols:
+            conn.execute(f"ALTER TABLE devices ADD COLUMN {col} TEXT")
 
 
 def init_db() -> None:

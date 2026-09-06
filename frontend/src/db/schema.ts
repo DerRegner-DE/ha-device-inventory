@@ -27,6 +27,11 @@ export interface Device {
   // v2.5.0: link to parent device (Shelly 2PM channels, Tuya hubs etc.)
   // populated from HA's via_device_id during import.
   parent_uuid?: string;
+  // v3.0.0: Uebergabe-Doku — Deep-Link in ein externes System und die Frage,
+  // ob die Grundfunktion des Geraets ohne laufendes HA erhalten bleibt.
+  external_url?: string;
+  ohne_ha?: "yes" | "no" | "";
+  ohne_ha_hinweis?: string;
   reviewed?: number;
   created_at: string;
   updated_at: string;

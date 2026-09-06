@@ -19,7 +19,15 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 DISCOVERY_PREFIX = "homeassistant"
-STATE_PREFIX = "geraeteverwaltung"
+# v3.0.0: Der Node-Name in den Discovery-Topics ist konfigurierbar geworden.
+# Grund: Das Preview-Add-on laeuft parallel zur stabilen Installation auf
+# derselben HA-Instanz. Mit festem Namen wuerden beide dieselben retained
+# Topics beschreiben — und "Discovery aufraeumen" in der Preview haette die
+# Geraete der Produktivinstallation mitgeloescht.
+# Der Default bleibt "geraeteverwaltung", Bestandsinstallationen aendern sich
+# also nicht. Der Self-Import-Filter (v2.5.2) prueft weiter auf das Praefix
+# "geraeteverwaltung", das beide Varianten abdeckt.
+STATE_PREFIX = settings.MQTT_NODE_ID
 
 
 def _connect_kwargs() -> dict:
@@ -59,7 +67,7 @@ async def test_connection(timeout: float = 5.0) -> dict:
     """
     descr = _broker_descr()
     cid = settings.MQTT_CLIENT_ID or "auto"
-    probe_topic = f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/_probe/config"
+    probe_topic = f"{DISCOVERY_PREFIX}/sensor/{STATE_PREFIX}/_probe/config"
 
     try:
         async def _connect_and_publish():
@@ -159,9 +167,9 @@ def _warranty_days(garantie_bis: str | None) -> int | None:
 def _device_info(device: dict) -> dict:
     """Build HA device info block from inventory device."""
     info: dict = {
-        "identifiers": [f"geraeteverwaltung_{device['uuid']}"],
+        "identifiers": [f"{STATE_PREFIX}_{device['uuid']}"],
         "name": device.get("bezeichnung") or "Unknown Device",
-        "via_device": "geraeteverwaltung_hub",
+        "via_device": f"{STATE_PREFIX}_hub",
     }
     if device.get("hersteller"):
         info["manufacturer"] = device["hersteller"]
@@ -185,7 +193,7 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
     # --- Sensor: Warranty expiry date ---
     if device.get("garantie_bis"):
         messages.append((
-            f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/{uuid}_warranty/config",
+            f"{DISCOVERY_PREFIX}/sensor/{STATE_PREFIX}/{uuid}_warranty/config",
             {
                 "name": "Warranty expires",
                 "unique_id": f"gv_{uuid}_warranty",
@@ -199,7 +207,7 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
     # --- Sensor: Days until warranty expires ---
     if device.get("garantie_bis"):
         messages.append((
-            f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/{uuid}_warranty_days/config",
+            f"{DISCOVERY_PREFIX}/sensor/{STATE_PREFIX}/{uuid}_warranty_days/config",
             {
                 "name": "Warranty days remaining",
                 "unique_id": f"gv_{uuid}_warranty_days",
@@ -214,7 +222,7 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
     # --- Binary Sensor: Warranty active ---
     if device.get("garantie_bis"):
         messages.append((
-            f"{DISCOVERY_PREFIX}/binary_sensor/geraeteverwaltung/{uuid}_warranty_active/config",
+            f"{DISCOVERY_PREFIX}/binary_sensor/{STATE_PREFIX}/{uuid}_warranty_active/config",
             {
                 "name": "Warranty active",
                 "unique_id": f"gv_{uuid}_warranty_active",
@@ -229,7 +237,7 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
     # --- Sensor: Purchase date ---
     if device.get("anschaffungsdatum"):
         messages.append((
-            f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/{uuid}_purchase/config",
+            f"{DISCOVERY_PREFIX}/sensor/{STATE_PREFIX}/{uuid}_purchase/config",
             {
                 "name": "Purchase date",
                 "unique_id": f"gv_{uuid}_purchase",
@@ -242,7 +250,7 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
 
     # --- Sensor: Device type ---
     messages.append((
-        f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/{uuid}_type/config",
+        f"{DISCOVERY_PREFIX}/sensor/{STATE_PREFIX}/{uuid}_type/config",
         {
             "name": "Device type",
             "unique_id": f"gv_{uuid}_type",
@@ -256,7 +264,7 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
     # --- Sensor: Location ---
     if device.get("standort_name"):
         messages.append((
-            f"{DISCOVERY_PREFIX}/sensor/geraeteverwaltung/{uuid}_location/config",
+            f"{DISCOVERY_PREFIX}/sensor/{STATE_PREFIX}/{uuid}_location/config",
             {
                 "name": "Location",
                 "unique_id": f"gv_{uuid}_location",
@@ -343,7 +351,7 @@ async def remove_device(device_uuid: str) -> bool:
 
         async with aiomqtt.Client(**_connect_kwargs()) as client:
             for component, suffix in suffixes:
-                topic = f"{DISCOVERY_PREFIX}/{component}/geraeteverwaltung/{device_uuid}_{suffix}/config"
+                topic = f"{DISCOVERY_PREFIX}/{component}/{STATE_PREFIX}/{device_uuid}_{suffix}/config"
                 await client.publish(topic, b"", retain=True)
 
             # Clear state
@@ -383,7 +391,7 @@ async def _publish_remove(client: aiomqtt.Client, device_uuid: str) -> None:
     """Empty retained payload on every entity-config + state topic."""
     for component, suffix in _ENTITY_SUFFIXES:
         topic = (
-            f"{DISCOVERY_PREFIX}/{component}/geraeteverwaltung/"
+            f"{DISCOVERY_PREFIX}/{component}/{STATE_PREFIX}/"
             f"{device_uuid}_{suffix}/config"
         )
         await client.publish(topic, b"", retain=True)
@@ -423,7 +431,7 @@ async def purge_discovery(
         async with aiomqtt.Client(**_connect_kwargs()) as client:
             # Subscribe to every config topic under our namespace. Retained
             # messages get delivered immediately on subscribe.
-            sub_topic = f"{DISCOVERY_PREFIX}/+/geraeteverwaltung/+/config"
+            sub_topic = f"{DISCOVERY_PREFIX}/+/{STATE_PREFIX}/+/config"
             await client.subscribe(sub_topic)
 
             # Collect for a short window — retained messages arrive in a
@@ -436,7 +444,7 @@ async def purge_discovery(
                             continue
                         # Topic: homeassistant/<comp>/geraeteverwaltung/<entity_id>/config
                         parts = msg.topic.value.split("/")
-                        if len(parts) < 5 or parts[2] != "geraeteverwaltung":
+                        if len(parts) < 5 or parts[2] != STATE_PREFIX:
                             continue
                         entity_id = parts[3]
                         if len(entity_id) < _UUID_LEN + 1:

@@ -251,6 +251,152 @@ async def cleanup_self_imports():
     }
 
 
+# Felder, die niemand automatisch fuellt -- sie stehen nur da, wenn jemand sie
+# eingetragen hat. Netzwerk, IP und MAC gehoeren bewusst nicht dazu: die leitet
+# der HA-Import selbst ab.
+HANDGEPFLEGTE_FELDER = (
+    "anmerkungen", "funktion", "seriennummer", "ain_artikelnr",
+    "anschaffungsdatum", "garantie_bis", "external_url",
+    "ohne_ha", "ohne_ha_hinweis", "stromversorgung",
+)
+
+
+class CleanupOrphansBody(BaseModel):
+    apply: bool = False
+    uuids: Optional[list[str]] = None
+
+
+@router.post("/cleanup-orphans")
+async def cleanup_orphans(body: CleanupOrphansBody | None = None):
+    """Verwaiste Spiegel-Eintraege finden und auf Wunsch entfernen.
+
+    Der aeltere ``/cleanup-self-imports`` erkennt Self-Imports daran, dass das
+    zugehoerige HA-Geraet *heute noch* die Kennung ``geraeteverwaltung_`` traegt.
+    Sobald jemand das Veroeffentlichen abschaltet oder die Discovery-Topics
+    aufraeumt, verschwinden diese Geraete aus der HA-Registry -- und der alte
+    Aufraeumer meldet "nichts gefunden", obwohl die Karteileichen im Inventar
+    stehen bleiben. Genau dieser Fall trat am 05.09.2026 auf: 530 Eintraege im
+    Inventar, 314 echte Geraete, und ``purged: 0``.
+
+    Erkennungsmuster hier:
+
+    * Der Eintrag zeigt auf ein HA-Geraet, das es in HA nicht mehr gibt.
+    * Es gibt einen zweiten Eintrag gleichen Namens, dessen HA-Geraet noch
+      existiert -- der Eintrag ist also ein Spiegelbild, kein Einzelstueck.
+    * Niemand hat den Eintrag von Hand angefasst: keine Historie mit Quelle
+      ``user``/``bulk``, keine handgepflegten Felder, keine Fotos.
+
+    Nur wenn alle drei zutreffen, gilt der Eintrag als gefahrlos entfernbar.
+    Trifft das dritte nicht zu, landet er unter ``nachfrage`` und wird
+    ausschliesslich geloescht, wenn seine UUID ausdruecklich mitgegeben wird.
+    Verwaiste Eintraege ohne Zwilling bleiben unangetastet -- ein
+    ausgestecktes Geraet ist immer noch ein Geraet.
+
+    Geloescht wird weich: Papierkorb, wiederherstellbar.
+    """
+    from app.database import get_db, dicts_from_rows
+    from app.services.ha_client import get_ha_device_registry
+
+    body = body or CleanupOrphansBody()
+
+    try:
+        ha_devices = await get_ha_device_registry()
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Could not fetch HA registry: {e}")
+
+    lebende_ha_ids = set()
+    for dev in ha_devices or []:
+        if dev.get("id"):
+            lebende_ha_ids.add(dev["id"])
+
+    with get_db() as conn:
+        rows = dicts_from_rows(
+            conn.execute(
+                "SELECT id, uuid, bezeichnung, ha_device_id, integration, "
+                + ", ".join(HANDGEPFLEGTE_FELDER)
+                + " FROM devices WHERE deleted_at IS NULL"
+            ).fetchall()
+        )
+
+        # Namen, die durch ein noch existierendes HA-Geraet gedeckt sind.
+        lebende_namen = set()
+        for r in rows:
+            if r.get("ha_device_id") in lebende_ha_ids:
+                lebende_namen.add((r.get("bezeichnung") or "").strip())
+
+        bearbeitete = set()
+        for r in conn.execute(
+            "SELECT DISTINCT device_uuid FROM device_history "
+            "WHERE source IN ('user', 'bulk')"
+        ).fetchall():
+            bearbeitete.add(r[0])
+
+        mit_fotos = set()
+        for r in conn.execute(
+            "SELECT DISTINCT d.uuid FROM devices d JOIN photos p ON p.device_id = d.id"
+        ).fetchall():
+            mit_fotos.add(r[0])
+
+        sicher, nachfrage, behalten = [], [], []
+        for r in rows:
+            ha_id = r.get("ha_device_id")
+            if not ha_id or ha_id in lebende_ha_ids:
+                continue  # kein Waise
+            name = (r.get("bezeichnung") or "").strip()
+            eintrag = {"uuid": r["uuid"], "bezeichnung": name,
+                       "integration": r.get("integration")}
+            if name not in lebende_namen:
+                behalten.append(eintrag)
+                continue
+
+            gruende = []
+            if r["uuid"] in bearbeitete:
+                gruende.append("von dir bearbeitet")
+            if r["uuid"] in mit_fotos:
+                gruende.append("hat Fotos")
+            gefuellt = []
+            for f in HANDGEPFLEGTE_FELDER:
+                if r.get(f) not in (None, ""):
+                    gefuellt.append(f)
+            if gefuellt:
+                gruende.append("gefuellt: " + ", ".join(gefuellt))
+
+            if gruende:
+                eintrag["gruende"] = gruende
+                nachfrage.append(eintrag)
+            else:
+                sicher.append(eintrag)
+
+        entfernt = 0
+        if body.apply:
+            zu_loeschen = [e["uuid"] for e in sicher]
+            if body.uuids:
+                erlaubt = set(body.uuids)
+                for e in nachfrage:
+                    if e["uuid"] in erlaubt:
+                        zu_loeschen.append(e["uuid"])
+            if zu_loeschen:
+                ph = ", ".join(["?"] * len(zu_loeschen))
+                conn.execute(
+                    f"UPDATE devices SET deleted_at = datetime('now'), "
+                    f"sync_version = sync_version + 1 "
+                    f"WHERE uuid IN ({ph}) AND deleted_at IS NULL",
+                    tuple(zu_loeschen),
+                )
+                entfernt = len(zu_loeschen)
+
+    return {
+        "status": "ok",
+        "angewendet": body.apply,
+        "entfernt": entfernt,
+        "sicher_entfernbar": len(sicher),
+        "braucht_bestaetigung": len(nachfrage),
+        "bleibt_erhalten": len(behalten),
+        "nachfrage": nachfrage[:50],
+        "beispiele_sicher": sicher[:10],
+    }
+
+
 async def _load_recategorize_context(uuids: Optional[list[str]]):
     """Shared plumbing for recategorize preview + apply.
 

@@ -1,5 +1,101 @@
 # Changelog
 
+## 3.0.0
+
+Feature-Release rund um ein Thema: Was passiert mit der Anlage, wenn jemand anderes davorsteht? Ausgeloest von simon42-Thread 92060 („Updates einstellen? Ich mag nicht mehr!"), in dem gleich mehrere Nutzer denselben Rat gaben — jede Grundfunktion muss auch ohne Home Assistant laufen, und die Nachkommen brauchen eine Liste, die ein Elektriker lesen kann.
+
+Diese Version wird zuerst als **Preview-Add-on** ausgeliefert (`addon-preview/`, Slug `geraeteverwaltung-preview`). Es laesst sich parallel zur stabilen Installation betreiben und hat eine eigene Datenbank.
+
+### Neu: „Funktioniert ohne Home Assistant?" pro Geraet
+
+Zwei Felder im Bearbeiten-Formular unter *Anmerkungen*: ein Dreizustand (*Unbekannt* / *Ja, laeuft auch ohne HA* / *Nein, braucht HA*) und ein Freitext-Hinweis dazu („Schalter direkt an der Wand", „nur ueber App bedienbar"). Beide erscheinen auf der Detailseite als eigene Karte oberhalb der Notizen und sind im Export waehlbar.
+
+Der Zustand wird sprachneutral als `yes`/`no` gespeichert und erst beim Anzeigen uebersetzt — ein leeres Feld bleibt „unbekannt" und wird im Export nicht ausgegeben. Aenderungen landen wie jedes andere Feld in der Geraete-Historie.
+
+DB: `devices.ohne_ha`, `devices.ohne_ha_hinweis` (beide TEXT, idempotente Migration, kein Re-Import noetig).
+
+### Neu: Externer Link pro Geraet
+
+Optionales Feld `external_url` — ein Deep-Link in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Wiki-Eintrag. Auf der Detailseite als Link mit Hinweis „Oeffnet in einem neuen Fenster". Die Eingabe wird serverseitig auf ein absolutes Schema normalisiert (dieselbe Regel wie bei Dokument-Links seit v2.6.5) — ohne `https://` loest der Browser die Adresse relativ zum Ingress-Pfad auf und landet bei 401.
+
+### Neu: Export-Preset „Rueckbau/Elektriker"
+
+Neben *Versicherung* und *Nachlass* ein drittes Preset: Standort, Stockwerk, Netzwerk, Stromversorgung, „Ohne HA nutzbar" samt Hinweis, externer Link, Funktion und Anmerkungen. Bewusst **ohne** Seriennummern, Kaufdaten und Garantie — das ist die Liste, die offen im Hausanschlussraum liegen darf. Handbuch und README beschreiben den Workflow.
+
+### Verbesserung: Add-on-Version im Bug-Report vorbefuellt
+
+„Problem auf GitHub melden" oeffnet jetzt das Formular-Template (`bug.yml`) statt eines freien Issue-Bodys und traegt die Add-on-Version aus `/api/health` ein. Vorher war das ein Freitextfeld, das der Melder aus dem Add-on-Store abtippen musste — entsprechend oft stand dort die HA-Version oder gar nichts. Der Diagnose-Bericht bleibt bewusst aus der URL (dort hatte er HTTP 414 ausgeloest, GH #19) und kommt weiter ueber die Zwischenablage; der Hinweis, in welches Feld er gehoert, steht jetzt unter dem Button.
+
+### Intern: MQTT-Node-Name konfigurierbar
+
+Die Discovery-Topics benutzten fest den Knoten `geraeteverwaltung`. Sobald Preview und stabile Installation auf derselben HA-Instanz laufen, schreiben beide in dieselben retained Topics — „Discovery aufraeumen" in der Preview haette die Geraete der Produktivinstallation mitgeloescht. Neue Add-on-Option `mqtt_node_id` (Default `geraeteverwaltung`, Preview `geraeteverwaltung-preview`), durchgereicht als `GV_MQTT_NODE_ID`. Bestandsinstallationen aendern sich nicht; der Self-Import-Filter aus v2.5.2 greift weiterhin, weil beide Namen mit `geraeteverwaltung` beginnen.
+
+### Alle drei Export-Vorlagen nach Zweck geschnitten
+
+Eine Vorlage soll nur enthalten, was die Person braucht, die das Blatt in der Hand haelt. Danach sind alle drei ueberarbeitet:
+
+| Vorlage | Leser | Spalten | Neu dabei | Entfernt |
+|---|---|---|---|---|
+| Versicherung | Sachbearbeiter im Schadensfall | 12 | Externer Link (zeigt auf die Rechnung) | — |
+| Rueckbau/Elektriker | Handwerker vor Ort | 14 | Externer Link | Integration |
+| Nachlass | Angehoerige | 16 | Ohne HA nutzbar, Hinweis ohne HA, Externer Link | MAC-Adresse, IP-Adresse, Firmware, Integration, Netzwerk |
+
+`Integration` ist ein Home-Assistant-Interna (`fritz`, `bosch_shc`) und sagt weder einem Elektriker noch einem Erben etwas. Netzwerkdetails gehoeren in eine Bestandsaufnahme, nicht in eine Nachlassunterlage.
+
+### PDF-Export ueberarbeitet
+
+Bei mehr als acht Spalten wird jetzt quer gesetzt. Vorher blieben auf A4 hochkant bei 15 Spalten rund 12 mm je Spalte: Kopfzeilen ueberlappten, Werte waren auf sechs Zeichen gekuerzt. Dazu:
+
+- Die Kuerzung wird **gemessen** statt geschaetzt. Vorher war fest mit 2 mm je Zeichen gerechnet, bei 7 pt Helvetica sind es rund 1,4 mm — es wurde also abgeschnitten, obwohl die Spalte noch Platz hatte. In einem Bestand mit 314 Geraeten sinkt der Anteil gekuerzter Bezeichnungen dadurch von rund einem Drittel auf 3 %.
+- Die **laufende Nummer wird nie gekuerzt**. Ab 100 stand dort vorher „10." — eine Liste, deren Nummern nicht stimmen, ist als Referenz wertlos. Die Spalte waechst stattdessen mit der Geraetezahl mit.
+- Die **Beschriftung folgt der eingestellten Add-on-Sprache**. Das PDF war durchgehend englisch, waehrend die Excel-Datei deutsch ist — beide entstehen im selben Dialog aus denselben Daten. Der Titel lautet nicht mehr „Insurance Documentation", unabhaengig von der gewaehlten Vorlage.
+- **Detailseiten je Geraet** gibt es nur noch bei freier Feldauswahl. Die Rueckbau-Liste hatte damit 61 Seiten; jetzt sind es 10. Wer sie ausdruecklich will, haengt `details=true` an.
+
+### Behoben: Excel-Export hat Geraete doppelt ausgegeben
+
+Die Gruppierung nach Integration verglich Kategorie und Geraet als Teilzeichenkette in beide Richtungen. Dadurch passte `fritz` auch auf die Kategorie `fritz (device_tracker)`, und jedes FRITZ!Box-Geraet landete in zwei Kategorien. Eine Installation mit 314 Geraeten exportierte 478 Zeilen. Jetzt wird exakt auf den Wert oder ein Komma-Token verglichen, und jedes Geraet landet in genau einer Kategorie.
+
+Im selben Zug zwei Kategorien repariert, die **nie** getroffen haben: gesucht wurde nach `boschshc`, die Datenbank schreibt aber `bosch_shc` mit Unterstrich; bei Tuya wurde nur `localtuya` erkannt. Betroffene Geraete lagen still unter „Sonstige Geraete".
+
+**Betrifft auch 2.6.7.**
+
+### Behoben: Aenderungshistorie zeigte rohe Schluessel
+
+Statt „Bezeichnung" stand dort `history.field.bezeichnung`. In keiner Sprachdatei existierte auch nur ein `history.field.*`-Eintrag, und der vorgesehene Rueckfall griff nie, weil die Uebersetzungsfunktion bei fehlendem Schluessel den Schluessel selbst zurueckgibt — also einen wahren Wert. Neu: eine echte Existenzpruefung, 25 Feldnamen je Sprache, und der Wert von „Ohne HA nutzbar" erscheint als Text statt als `yes`.
+
+**Betrifft auch 2.6.7.**
+
+### Behoben: Geraetezahl zaehlte beim Oeffnen hoch und wieder runter
+
+Die Synchronisation schrieb jedes Geraet einzeln in die lokale Datenbank und loeschte die verschwundenen danach ebenfalls einzeln. Die Oberflaeche haengt an einer Live-Abfrage und hat jeden Schreibvorgang nachgezeichnet — fuer den Anwender sah es aus, als wuerde die App seinen Bestand erst vervielfachen und dann loeschen. Bei 530 Geraeten waren das ueber 500 Transaktionen. Jetzt wird gesammelt und in einer Transaktion geschrieben; die Zahl springt in einem Schritt auf den Endwert, und das Dashboard oeffnet spuerbar schneller.
+
+**Betrifft auch 2.6.7.**
+
+### Neu: Aufraeumer fuer verwaiste Spiegel-Eintraege
+
+`POST /api/ha/cleanup-orphans`. Der bisherige `cleanup-self-imports` erkennt selbst veroeffentlichte Geraete daran, dass ihr HA-Geraet *heute noch* die Kennung `geraeteverwaltung_` traegt. Wer das Veroeffentlichen abschaltet oder die Discovery-Topics aufraeumt, verliert dieses Merkmal — der Aufraeumer meldet dann „nichts gefunden", waehrend die Karteileichen im Inventar stehen bleiben.
+
+Der neue Aufraeumer erkennt sie an drei Bedingungen: Der Eintrag zeigt auf ein HA-Geraet, das es nicht mehr gibt; es existiert ein zweiter Eintrag gleichen Namens, dessen HA-Geraet noch lebt; und niemand hat den Eintrag angefasst — keine Historie mit Quelle `user`/`bulk`, keine handgepflegten Felder, keine Fotos.
+
+Nur dann gilt er als gefahrlos entfernbar. Andernfalls wird er zur Bestaetigung ausgewiesen und ausschliesslich geloescht, wenn seine UUID ausdruecklich mitgegeben wird. Verwaiste Eintraege **ohne** Zwilling bleiben unangetastet: Ein ausgestecktes Geraet ist immer noch ein Geraet. Geloescht wird weich.
+
+Netzwerk, IP-Adresse und MAC-Adresse zaehlen dabei nicht als Handarbeit — die leitet der HA-Import selbst ab. Ohne diese Unterscheidung waeren in einer Beispielinstallation 138 von 271 Eintraegen faelschlich als „bearbeitet" eingestuft worden.
+
+### Kleinigkeiten
+
+- Der Knopf im Bearbeiten-Formular heisst in allen Sprachen „Speichern/Aktualisieren". Vorher stand beim Neuanlegen „Speichern" und beim Bearbeiten „Aktualisieren" — die Unterscheidung bringt dem Nutzer nichts.
+- Die Karte auf der Detailseite heisst „Abhaengigkeit von Home Assistant" statt „Ohne Home Assistant", die Werte kurz „Laeuft auch ohne HA" und „Braucht HA". Vorher sagten Titel und Wert zweimal dasselbe.
+- Das Feld „Externer Link" nimmt wieder Eingaben ohne Schema an. Es war als `type="url"` ausgezeichnet, wodurch der Browser `heise.de` abwies, bevor die serverseitige Normalisierung ueberhaupt zum Zug kam. Betraf auch das Dokument-Link-Feld.
+- Beide Exporte heissen einheitlich `Device_Inventory_<Zeitstempel>`. Vorher hiess die PDF-Datei englisch und die Excel-Datei deutsch.
+- Das Bug-Formular fuellt zusaetzlich die **Home-Assistant-Version** vor; `/api/health` liefert sie dafuer mit.
+- Neben „Problem auf GitHub melden" steht jetzt eine Support-Adresse. Ein GitHub-Konto haben die wenigsten Home-Assistant-Nutzer; ohne sichtbare Alternative landen Rueckfragen im Forum oder nirgends.
+- Im Export-Dialog erscheint bei unverschluesselter Verbindung ein Hinweis, dass der Browser den Download blockiert und man einmal auf „Behalten" klicken muss. Das ist eine Browser-Regel fuer `http://`-Seiten und laesst sich in der App nicht abstellen — auch nicht ueber einen Blob-Download, was geprueft wurde.
+- Der Download laeuft trotzdem ueber `fetch` statt ueber einen Seitenwechsel: Dadurch stimmt der Dateiname aus dem `Content-Disposition`-Header, die Knoepfe sperren waehrend des Exports, und ein echter Fehlschlag wird sichtbar statt still.
+
+### Migration
+
+Keine Handarbeit. Die drei neuen Spalten werden beim Start ergaenzt, bestehende Zeilen bleiben unveraendert, kein Re-Import noetig. 15 neue Regressionstests (`backend/tests/test_v3_handover_fields.py`) decken Migration, Normalisierung, Historie und die Preset-Zusammensetzung ab.
+
 ## 2.6.7
 
 Bugfix-Release.

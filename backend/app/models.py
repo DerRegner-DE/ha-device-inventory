@@ -33,6 +33,10 @@ class DeviceBase(BaseModel):
     ha_device_id: str | None = None
     ain_artikelnr: str | None = None
     parent_uuid: str | None = None  # v2.5.0: parent device for grouped sub-devices
+    # v3.0.0: Uebergabe-Doku — externer Deep-Link und "laeuft auch ohne HA?"
+    external_url: str | None = None
+    ohne_ha: str | None = None  # 'yes' | 'no' | None (unbekannt)
+    ohne_ha_hinweis: str | None = None
 
 
 class DeviceCreate(DeviceBase):
@@ -63,6 +67,9 @@ class DeviceUpdate(BaseModel):
     ha_device_id: str | None = None
     ain_artikelnr: str | None = None
     parent_uuid: str | None = None
+    external_url: str | None = None
+    ohne_ha: str | None = None
+    ohne_ha_hinweis: str | None = None
 
 
 class Device(DeviceBase):

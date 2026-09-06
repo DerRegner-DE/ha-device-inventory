@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "preact/hooks";
 import { apiGet } from "../api/client";
 import { t } from "../i18n";
 import { getApiBase } from "../utils/navigate";
+import { downloadFile } from "../utils/download";
 
 /** Canonical list of exportable fields, same names as DB columns.
  *  Order here determines check-list order in the UI. */
@@ -14,9 +15,15 @@ const ALL_FIELDS: string[] = [
   "anschaffungsdatum", "garantie_bis",
   "ha_device_id", "ha_entity_id",
   "funktion", "anmerkungen",
+  // v3.0.0: Uebergabe-Doku
+  "ohne_ha", "ohne_ha_hinweis", "external_url",
 ];
 
 const STORAGE_KEY = "gv_export_fields_v1";
+// Die aktive Vorlage muss genauso ueberdauern wie die Feldauswahl. Sonst steht
+// sie beim naechsten Oeffnen wieder auf "keine", waehrend die Haken noch da
+// sind -- und der PDF-Export baut wieder Detailseiten (Testrunde 05.09.2026).
+const PRESET_STORAGE_KEY = "gv_export_preset_v1";
 
 type Format = "pdf" | "xlsx";
 
@@ -40,6 +47,24 @@ export function ExportPicker({ onClose }: Props) {
     }
   });
 
+  const [activePreset, setActivePreset] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(PRESET_STORAGE_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (activePreset) localStorage.setItem(PRESET_STORAGE_KEY, activePreset);
+      else localStorage.removeItem(PRESET_STORAGE_KEY);
+    } catch {}
+  }, [activePreset]);
+  const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
+  const [busy, setBusy] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+
   useEffect(() => {
     apiGet<{ presets: Record<string, string[]> }>("/export/presets")
       .then((r) => setPresets(r?.presets || {}))
@@ -57,18 +82,32 @@ export function ExportPicker({ onClose }: Props) {
     if (next.has(f)) next.delete(f);
     else next.add(f);
     setSelected(next);
+    // Von Hand geaendert: es ist nicht mehr die Vorlage.
+    setActivePreset(null);
   };
 
   const applyPreset = (name: "all" | string) => {
     if (name === "all") setSelected(new Set(ALL_FIELDS));
     else if (presets[name]) setSelected(new Set(presets[name]));
+    setActivePreset(name);
   };
 
-  const download = (format: Format) => {
-    if (selected.size === 0) return;
+  const download = async (format: Format) => {
+    if (selected.size === 0 || busy) return;
     const fields = [...selected].join(",");
-    const url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}`;
-    window.open(url, "_blank");
+    let url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}`;
+    // Die Rueckbau-Liste geht an einen Handwerker und soll auf ein paar
+    // Blatt passen. Detailseiten je Geraet blaehen sie auf 60+ Seiten auf.
+    if (format === "pdf" && activePreset === "rueckbau") url += "&details=false";
+
+    setBusy(true);
+    setBlocked(false);
+    try {
+      const ok = await downloadFile(url, `Device_Inventory.${format}`);
+      setBlocked(!ok);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const presetNames = useMemo(() => Object.keys(presets), [presets]);
@@ -148,19 +187,29 @@ export function ExportPicker({ onClose }: Props) {
           <div class="flex-1" />
           <button
             onClick={() => download("xlsx")}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || busy}
             class="px-4 py-2 rounded-xl bg-[#4CAF50] text-white text-sm font-medium hover:bg-[#43A047] disabled:opacity-40"
           >
             {t("exportPicker.downloadXlsx")}
           </button>
           <button
             onClick={() => download("pdf")}
-            disabled={selected.size === 0}
+            disabled={selected.size === 0 || busy}
             class="px-4 py-2 rounded-xl bg-[#e74c3c] text-white text-sm font-medium hover:bg-[#c0392b] disabled:opacity-40"
           >
             {t("exportPicker.downloadPdf")}
           </button>
         </div>
+        {/* Testrunde 05.09.2026, zweiter Anlauf: Chrome blockiert Downloads
+            aus einer http-Seite unabhaengig davon, wie die Datei erzeugt wird
+            -- auch ueber fetch + Blob. Nachgemessen: die Datei landet als
+            "Nicht bestaetigt ....crdownload". Dagegen hilft nur HTTPS, also
+            nichts, was das Add-on regeln koennte. Der Hinweis bleibt. */}
+        {(!isSecure || blocked) && (
+          <p class="px-4 pb-3 text-[11px] text-amber-600 dark:text-amber-400">
+            {t("exportPicker.insecureHint")}
+          </p>
+        )}
       </div>
     </div>
   );

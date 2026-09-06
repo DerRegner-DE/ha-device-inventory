@@ -310,6 +310,42 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
       {/* v2.5.0: parent/children grouping (Shelly-style sub-devices) */}
       {uuid && <RelatedDevicesSection uuid={uuid} parentUuid={(device as any).parent_uuid} />}
 
+      {/* v3.0.0: Uebergabe-Doku — bewusst als eigene Karte ueber den
+          Notizen, damit sie beim Durchblaettern nicht untergeht. */}
+      {(device.ohne_ha || device.external_url) && (
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+          {device.ohne_ha && (
+            <div>
+              <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1">{t("detail.withoutHa")}</h3>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                {device.ohne_ha === "yes" ? t("detail.withoutHaYes") : t("detail.withoutHaNo")}
+              </p>
+              {device.ohne_ha_hinweis && (
+                <p class="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap mt-1">
+                  {device.ohne_ha_hinweis}
+                </p>
+              )}
+            </div>
+          )}
+          {device.external_url && (
+            <div>
+              <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1">{t("detail.externalUrl")}</h3>
+              {/* Gleiche Absicherung wie bei Dokument-Links: ohne Schema
+                  loest der Browser relativ zum Ingress-Pfad auf (401). */}
+              <a
+                href={absoluteLinkUrl(device.external_url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-sm text-blue-600 dark:text-blue-400 underline break-all"
+              >
+                {device.external_url}
+              </a>
+              <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">{t("detail.externalUrlHint")}</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {(device.funktion || device.anmerkungen) && (
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
           {device.funktion && (
@@ -516,7 +552,8 @@ export function DocumentsSection({
       {showLink && (
         <div class="mb-3 space-y-2">
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             value={linkUrl}
             onInput={(e) => setLinkUrl((e.target as HTMLInputElement).value)}
             placeholder={t("form.linkPlaceholder")}

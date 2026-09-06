@@ -19,8 +19,12 @@ from io import BytesIO
 
 from fpdf import FPDF
 
-# English field labels (PDF keeps its existing English UI — the doc is an
-# insurance/estate artefact and the team reading it might not be German).
+from app.config import settings
+
+# Testrunde 05.09.2026: Das PDF war durchgaengig englisch beschriftet, waehrend
+# die Excel-Datei deutsch ist. Beide Dateien entstehen im selben Dialog aus
+# denselben Daten -- das muss zusammenpassen. Die Beschriftung folgt jetzt der
+# eingestellten Add-on-Sprache, Deutsch fuer "de", sonst Englisch.
 FIELD_LABELS_EN: dict[str, str] = {
     "nr": "#",
     "typ": "Type",
@@ -44,15 +48,58 @@ FIELD_LABELS_EN: dict[str, str] = {
     "ha_entity_id": "HA Entity ID",
     "funktion": "Function",
     "anmerkungen": "Notes",
+    # v3.0.0: handover documentation
+    "external_url": "External Link",
+    "ohne_ha": "Works without HA",
+    "ohne_ha_hinweis": "Without-HA Note",
 }
+
+FIELD_LABELS_DE: dict[str, str] = {
+    "nr": "Nr",
+    "typ": "Typ",
+    "bezeichnung": "Bezeichnung",
+    "modell": "Modell",
+    "hersteller": "Hersteller",
+    "standort_name": "Standort",
+    "standort_floor_id": "Etage",
+    "standort_area_id": "Bereich-ID",
+    "seriennummer": "Seriennummer",
+    "ain_artikelnr": "AIN/Artikelnr.",
+    "firmware": "Firmware",
+    "integration": "Integration",
+    "netzwerk": "Netzwerk",
+    "stromversorgung": "Strom",
+    "ip_adresse": "IP-Adresse",
+    "mac_adresse": "MAC-Adresse",
+    "anschaffungsdatum": "Gekauft am",
+    "garantie_bis": "Garantie bis",
+    "ha_device_id": "HA Device ID",
+    "ha_entity_id": "HA Entity ID",
+    "funktion": "Funktion",
+    "anmerkungen": "Anmerkungen",
+    "external_url": "Externer Link",
+    "ohne_ha": "Ohne HA nutzbar",
+    "ohne_ha_hinweis": "Hinweis ohne HA",
+}
+
+# v3.0.0: stored language-neutrally as yes/no.
+OHNE_HA_LABELS_EN: dict[str, str] = {"yes": "Yes", "no": "No"}
+OHNE_HA_LABELS_DE: dict[str, str] = {"yes": "Ja", "no": "Nein"}
+
+
+def _labels_for(language: str) -> tuple[dict[str, str], dict[str, str], str]:
+    """(Feldbeschriftung, Ohne-HA-Werte, Dokumenttitel) fuer eine Sprache."""
+    if (language or "").lower().startswith("de"):
+        return FIELD_LABELS_DE, OHNE_HA_LABELS_DE, "Geräteübersicht"
+    return FIELD_LABELS_EN, OHNE_HA_LABELS_EN, "Device Inventory"
 
 # Column weight for the summary table (relative, normalised to usable width).
 FIELD_WEIGHTS: dict[str, float] = {
-    "nr": 0.6,
-    "typ": 2.0,
-    "bezeichnung": 3.5,
+    "nr": 1.0,
+    "typ": 1.8,
+    "bezeichnung": 5.0,
     "modell": 2.5,
-    "hersteller": 2.0,
+    "hersteller": 1.8,
     "standort_name": 2.2,
     "standort_floor_id": 1.4,
     "standort_area_id": 2.0,
@@ -70,6 +117,9 @@ FIELD_WEIGHTS: dict[str, float] = {
     "ha_entity_id": 2.8,
     "funktion": 3.5,
     "anmerkungen": 3.5,
+    "external_url": 3.5,
+    "ohne_ha": 1.2,
+    "ohne_ha_hinweis": 3.0,
 }
 
 DEFAULT_FIELDS: list[str] = [
@@ -84,8 +134,8 @@ USABLE_WIDTH_MM = 190.0
 class DevicePDF(FPDF):
     """Custom PDF with header/footer for device inventory."""
 
-    def __init__(self, title: str = "Device Inventory"):
-        super().__init__()
+    def __init__(self, title: str = "Device Inventory", orientation: str = "P"):
+        super().__init__(orientation=orientation)
         self._doc_title = title
         self._timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
@@ -96,7 +146,7 @@ class DevicePDF(FPDF):
         self.cell(0, 8, self._timestamp, align="R", new_x="LMARGIN", new_y="NEXT")
         self.set_draw_color(31, 78, 121)  # #1F4E79
         self.set_line_width(0.5)
-        self.line(10, self.get_y(), 200, self.get_y())
+        self.line(self.l_margin, self.get_y(), self.w - self.r_margin, self.get_y())
         self.ln(4)
 
     def footer(self):
@@ -106,15 +156,46 @@ class DevicePDF(FPDF):
         self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
 
 
-def _compute_col_widths(fields: list[str]) -> list[float]:
+def _compute_col_widths(fields: list[str], usable_width_mm: float = USABLE_WIDTH_MM) -> list[float]:
     weights = [FIELD_WEIGHTS.get(f, 2.0) for f in fields]
     total = sum(weights) or 1.0
-    return [USABLE_WIDTH_MM * w / total for w in weights]
+    return [usable_width_mm * w / total for w in weights]
+
+
+
+def _widen_number_column(
+    pdf: FPDF, fields: list[str], col_widths: list[float], device_count: int
+) -> list[float]:
+    """Der Nr-Spalte so viel Platz geben, wie die groesste Nummer braucht.
+
+    Die laufende Nummer wird bewusst nie gekuerzt -- aus "100" wurde sonst
+    "10." und die Liste war als Referenz wertlos (Testrunde 05.09.2026). Ohne
+    diese Anpassung wuerde sie ab einer bestimmten Geraetezahl stattdessen in
+    die Nachbarspalte laufen. Der Mehrbedarf wird den uebrigen Spalten
+    anteilig abgezogen.
+    """
+    if "nr" not in fields or device_count <= 0:
+        return col_widths
+
+    i_nr = fields.index("nr")
+    pdf.set_font("Helvetica", "", 7)
+    needed = pdf.get_string_width(str(device_count)) + 2.0
+    missing = needed - col_widths[i_nr]
+    if missing <= 0:
+        return col_widths
+
+    rest = sum(w for i, w in enumerate(col_widths) if i != i_nr) or 1.0
+    return [
+        needed if i == i_nr else w - missing * (w / rest)
+        for i, w in enumerate(col_widths)
+    ]
 
 
 def export_devices_to_pdf(
     devices: list[dict],
     fields: list[str] | None = None,
+    detail_pages: bool = True,
+    language: str | None = None,
 ) -> bytes:
     """Generate a PDF document from device list.
 
@@ -122,12 +203,25 @@ def export_devices_to_pdf(
     columns (auto-widthed) and the detail pages show the same fields as
     label/value pairs. When None, the classic 8-column summary + 14-field
     detail layout is preserved.
+
+    ``detail_pages=False`` gives the summary table only. Die Vorlage
+    "Rueckbau/Elektriker" nutzt das: Eine Liste fuer den Handwerker soll auf
+    ein paar Blatt passen, nicht auf 61 Seiten (Testrunde 05.09.2026).
     """
-    selected = [f for f in (fields or DEFAULT_FIELDS) if f in FIELD_LABELS_EN]
+    field_labels, ohne_ha_labels, doc_title = _labels_for(
+        language if language is not None else settings.LANGUAGE
+    )
+
+    selected = [f for f in (fields or DEFAULT_FIELDS) if f in field_labels]
     if not selected:
         selected = DEFAULT_FIELDS
 
-    pdf = DevicePDF(title="Device Inventory - Insurance Documentation")
+    # Testrunde 05.09.2026: Mit 15 Spalten blieben auf A4 hochkant rund 12 mm
+    # je Spalte -- Koepfe ueberlappten, Werte waren auf sechs Zeichen gekuerzt
+    # ("PC-10-F6.", "FRITZ."). Ab neun Spalten deshalb Querformat.
+    landscape = len(selected) > 8
+
+    pdf = DevicePDF(title=doc_title, orientation="L" if landscape else "P")
     pdf.alias_nb_pages()
     pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
@@ -156,13 +250,19 @@ def export_devices_to_pdf(
     pdf.cell(0, 8, "Device List", new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0)
 
-    col_widths = _compute_col_widths(selected)
-    headers = [FIELD_LABELS_EN[f] for f in selected]
+    usable = pdf.w - pdf.l_margin - pdf.r_margin
+    col_widths = _compute_col_widths(selected, usable)
+
+    col_widths = _widen_number_column(pdf, selected, col_widths, len(devices))
+    headers = [field_labels[f] for f in selected]
     # Per-column truncation proportional to column width (~2mm per char).
-    max_chars = [max(4, int(w / 2.0)) for w in col_widths]
+    # Kopfzeile kleiner setzen als die Daten, damit lange Beschriftungen
+    # ("Hinweis ohne HA") ohne Kuerzung in die Spalte passen.
+    pdf.set_font("Helvetica", "B", 6)
+    headers = [_fit(pdf, h, w) for h, w in zip(headers, col_widths)]
 
     def _draw_header() -> None:
-        pdf.set_font("Helvetica", "B", 7)
+        pdf.set_font("Helvetica", "B", 6)
         pdf.set_fill_color(31, 78, 121)
         pdf.set_text_color(255)
         for i, h in enumerate(headers):
@@ -188,15 +288,21 @@ def export_devices_to_pdf(
         for i, f in enumerate(selected):
             if f == "nr":
                 val = str(idx)
+            elif f == "ohne_ha":
+                val = ohne_ha_labels.get(str(device.get(f) or ""), "")
             else:
                 val = str(device.get(f, "") or "")
             align = "C" if f == "nr" else "L"
-            pdf.cell(col_widths[i], 5, _truncate(val, max_chars[i]), border=1, fill=True, align=align)
+            # Die laufende Nummer wird nie gekuerzt -- aus "100" wurde sonst
+            # "10." und die Liste war nicht mehr referenzierbar
+            # (Testrunde 05.09.2026).
+            text = val if f == "nr" else _fit(pdf, val, col_widths[i])
+            pdf.cell(col_widths[i], 5, text, border=1, fill=True, align=align)
         pdf.ln()
         fill = not fill
 
     # --- Detail pages ---
-    if devices:
+    if devices and detail_pages:
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 11)
         pdf.set_text_color(31, 78, 121)
@@ -223,10 +329,12 @@ def export_devices_to_pdf(
 
             for f in detail_fields:
                 value = device.get(f, "")
+                if f == "ohne_ha":
+                    value = ohne_ha_labels.get(str(value or ""), "")
                 if not value:
                     continue
                 pdf.set_font("Helvetica", "B", 8)
-                pdf.cell(30, 5, f"{FIELD_LABELS_EN.get(f, f)}:")
+                pdf.cell(30, 5, f"{field_labels.get(f, f)}:")
                 pdf.set_font("Helvetica", "", 8)
                 pdf.cell(0, 5, _safe_text(str(value)), new_x="LMARGIN", new_y="NEXT")
 
@@ -282,6 +390,24 @@ def export_devices_to_pdf(
 def _safe_text(text: str) -> str:
     """Remove characters not supported by Latin-1 (e.g. emojis)."""
     return "".join(c for c in text if ord(c) < 256)
+
+
+def _fit(pdf: FPDF, text: str, width_mm: float) -> str:
+    """Text auf die Spaltenbreite kuerzen -- gemessen, nicht geschaetzt.
+
+    Vorher wurde mit rund 2 mm je Zeichen gerechnet. Bei 7 pt Helvetica ist
+    ein Zeichen im Schnitt aber nur etwa 1,4 mm breit, deshalb wurden Namen
+    abgeschnitten, obwohl die Spalte noch Platz hatte (Testrunde 05.09.2026).
+    """
+    text = _safe_text(text or "")
+    if not text:
+        return ""
+    usable = width_mm - 1.6  # Zellenrand
+    if pdf.get_string_width(text) <= usable:
+        return text
+    while text and pdf.get_string_width(text + ".") > usable:
+        text = text[:-1]
+    return (text + ".") if text else ""
 
 
 def _truncate(text: str, max_len: int) -> str:

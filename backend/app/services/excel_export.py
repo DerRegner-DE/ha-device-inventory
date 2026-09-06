@@ -65,7 +65,15 @@ FIELD_LABELS: dict[str, str] = {
     "ha_entity_id": "HA Entity ID",
     "funktion": "Funktion",
     "anmerkungen": "Anmerkungen",
+    # v3.0.0: Uebergabe-Doku
+    "external_url": "Externer Link",
+    "ohne_ha": "Ohne HA nutzbar",
+    "ohne_ha_hinweis": "Hinweis ohne HA",
 }
+
+# v3.0.0: ``ohne_ha`` wird sprachneutral als yes/no gespeichert. Im Export
+# steht die deutsche Beschriftung, leer bleibt leer (= unbekannt).
+OHNE_HA_LABELS: dict[str, str] = {"yes": "Ja", "no": "Nein"}
 
 # Column widths in Excel units, keyed by DB field name.
 FIELD_WIDTHS: dict[str, int] = {
@@ -91,6 +99,9 @@ FIELD_WIDTHS: dict[str, int] = {
     "ha_entity_id": 28,
     "funktion": 38,
     "anmerkungen": 36,
+    "external_url": 34,
+    "ohne_ha": 16,
+    "ohne_ha_hinweis": 34,
 }
 
 DEFAULT_FIELDS: list[str] = [
@@ -104,8 +115,11 @@ DEFAULT_FIELDS: list[str] = [
 INTEGRATION_CATEGORIES: list[tuple[str, list[str]]] = [
     ("FRITZ!Box Netzwerk", ["fritz", "fritzbox", "fritz, fritzbox"]),
     ("Zigbee (Zigbee2MQTT)", ["zigbee2mqtt", "zigbee2mqtt (MQTT)", "zha"]),
-    ("Tuya (LocalTuya)", ["localtuya"]),
-    ("Bosch Smart Home (SHC)", ["boschshc"]),
+    # 05.09.2026: Die DB-Werte heissen "localtuya"/"tuya" bzw. "bosch_shc" mit
+    # Unterstrich. Nach "boschshc" zu suchen hat nie getroffen — 22 Bosch-Geraete
+    # landeten still unter "Sonstige Geraete".
+    ("Tuya (LocalTuya)", ["localtuya", "tuya"]),
+    ("Bosch Smart Home (SHC)", ["bosch_shc", "boschshc"]),
     ("HomeMatic IP", ["homematicip_cloud"]),
     ("Ring", ["ring"]),
     ("Blink", ["blink"]),
@@ -127,21 +141,53 @@ def _device_to_row(
     for f in fields:
         if f == "nr":
             out.append(nr)
+        elif f == "ohne_ha":
+            out.append(OHNE_HA_LABELS.get(str(device.get(f) or ""), ""))
         else:
             out.append(device.get(f, ""))
     return out
 
 
+def _integration_matches(integration: str, patterns: list[str]) -> bool:
+    """Does a device's ``integration`` value belong to this category?
+
+    v3.0.0 fix: the old test was a two-way substring comparison
+    (``pattern in integration or integration in pattern``). The second half
+    made every short value match a longer pattern of a *different* category --
+    ``"fritz"`` is a substring of ``"fritz (device_tracker)"``, so every
+    FRITZ!Box device was filed under both "FRITZ!Box Netzwerk" and
+    "AVM Powerline" and appeared twice in the export (478 rows for 314
+    devices in the 05.09.2026 test).
+
+    The column may hold a comma-separated list ("fritz, fritzbox"), so a
+    pattern counts as matched when it equals the whole value or one of its
+    comma-separated tokens. No substring matching any more.
+    """
+    tokens = {t.strip() for t in integration.split(",") if t.strip()}
+    for pattern in patterns:
+        pattern = pattern.strip().lower()
+        if not pattern:
+            continue
+        if integration == pattern or pattern in tokens:
+            return True
+    return False
+
+
 def _categorize_devices(devices: list[dict[str, Any]]) -> list[tuple[str, list[dict[str, Any]]]]:
-    """Group devices by integration category. Unmatched go to 'Sonstige Geraete'."""
+    """Group devices by integration category. Unmatched go to 'Sonstige Geraete'.
+
+    Each device lands in exactly one category -- the first one it matches.
+    """
     categorized: dict[str, list[dict[str, Any]]] = {}
     used_ids: set[int] = set()
 
     for cat_name, integrations in INTEGRATION_CATEGORIES:
         cat_devices = []
         for d in devices:
+            if d["id"] in used_ids:
+                continue
             integration = (d.get("integration") or "").strip().lower()
-            if any(intg.lower() in integration or integration in intg.lower() for intg in integrations):
+            if _integration_matches(integration, integrations):
                 cat_devices.append(d)
                 used_ids.add(d["id"])
         if cat_devices:

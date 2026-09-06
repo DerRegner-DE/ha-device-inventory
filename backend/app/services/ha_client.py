@@ -173,3 +173,31 @@ async def get_ha_entity_registry() -> list[dict[str, Any]]:
     except Exception as e:
         logger.error("Failed to get entity registry: %s", e)
         return []
+
+# v3.0.0: HA-Kernversion fuer das Bug-Formular. Der Melder musste sie bisher
+# von Hand unter Einstellungen -> Ueber nachschlagen; das Add-on kennt sie
+# ueber den Supervisor ohnehin. Einmal geholt und gemerkt — /api/health wird
+# oft gepollt, und die Version aendert sich nur bei einem HA-Update.
+_ha_version_cache: str | None = None
+
+
+async def get_ha_version() -> str:
+    """HA core version, or "" when it cannot be determined.
+
+    Nur Treffer werden gemerkt. Ein Fehlversuch -- HA startet noch, Token
+    fehlt, Timeout -- darf sich nicht einbrennen, sonst bleibt das Feld bis
+    zum naechsten Add-on-Neustart leer.
+    """
+    global _ha_version_cache
+    if _ha_version_cache:
+        return _ha_version_cache
+    try:
+        # _BASE endet bereits auf /api, der fuehrende Schraegstrich gehoert dazu.
+        data = await _get("/config")
+        version = str((data or {}).get("version") or "")
+    except Exception:
+        logger.warning("HA-Version nicht ermittelbar", exc_info=True)
+        return ""
+    if version:
+        _ha_version_cache = version
+    return version
