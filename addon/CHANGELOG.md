@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.0.1 (in Arbeit, Preview 3.0.0-preview.10)
+
+Drei Fehlerbehebungen aus der Rueckmeldungsrunde vom 08.09.2026.
+
+### Zigbee2MQTT-Geraete wurden als WLAN gefuehrt
+
+Jedes ueber Zigbee2MQTT eingebundene Geraet landete beim Import mit dem Netzwerktyp „WLAN" in der Liste — betroffen war jede Installation mit Z2M. Die Erkennung suchte nur nach dem Wort „Zigbee" in Name, Modell und Hersteller; Z2M benennt seine Geraete aber nach dem Hersteller („BSEED", „Tuya"), sodass allein die Bridge selbst richtig erkannt wurde.
+
+Die Erkennung stuetzt sich jetzt auf zwei strukturelle Merkmale statt auf Namen: den Identifier-Praefix, den Zigbee2MQTT vergibt (`zigbee2mqtt_0xa4c1...`), und das Gateway, an dem das Geraet haengt (`via_device_id`). Z-Wave ueber MQTT (Z-Wave JS UI) wird auf demselben Weg erkannt. Tasmota, ESPHome und andere echte WLAN-Geraete am MQTT-Broker bleiben unveraendert WLAN. Gemeldet als GitHub #24 (Sebastian-Voigt).
+
+### „Kategorien neu zuordnen" korrigiert jetzt auch das Netzwerkfeld
+
+Bisher lief die Netzwerk-Bestimmung ausschliesslich beim Import. Ein Geraet, das einmal falsch eingestuft war, blieb es fuer immer — die Schaltflaeche in den Einstellungen fasste nur den Geraetetyp an. Damit war der Fehler oben auf Bestandsdaten nicht reparierbar.
+
+Vorschau und Anwenden pruefen jetzt beide Felder. In der Vorschau erscheint eine Zeile auch dann, wenn sich nur das Netzwerk aendert, und die Aenderung steht mit „vorher → nachher" daneben. Alles laeuft weiter ueber denselben Schnappschuss und landet in der Geraete-Historie, ist also zuruecknehmbar.
+
+### Bearbeiten verlor lokal Felder
+
+Beim Speichern eines Geraets wurde der lokale Datensatz im Browser vollstaendig ersetzt. Vier Felder waren dabei nicht enthalten und danach weg: die Zuordnung zum Hauptgeraet (`parent_uuid`), das „Fertig"-Haekchen, die laufende Nummer und die Foto-Zuordnung.
+
+Sichtbar wurde das als Untergeraet, das ploetzlich als eigenstaendiges Geraet in der Liste stand, und als „Fertig"-Haekchen, das sich bei jedem Speichern zurueckstellte. Auf dem Server waren die Werte die ganze Zeit korrekt — zurueckgeschrieben wurden sie aber nicht, weil der Abgleich nur bei hoeherer Versionsnummer greift und beide Seiten gleich hoch zaehlten. Ohne „Cache leeren" blieb der Verlust bestehen.
+
+Gefunden bei der Pruefung einer Meldung von der_Micro (Forum #87).
+
 ## 3.0.0
 
 Feature-Release rund um ein Thema: Was passiert mit der Anlage, wenn jemand anderes davorsteht? Ausgeloest von simon42-Thread 92060 („Updates einstellen? Ich mag nicht mehr!"), in dem gleich mehrere Nutzer denselben Rat gaben — jede Grundfunktion muss auch ohne Home Assistant laufen, und die Nachkommen brauchen eine Liste, die ein Elektriker lesen kann.

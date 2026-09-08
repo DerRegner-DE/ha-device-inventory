@@ -576,14 +576,77 @@ def _guess_device_type(device: dict, entities: list[dict],
     return _guess_device_type_with_evidence(device, entities, integration_domain)[0]
 
 
+def _identifier_values(device: dict) -> list[str]:
+    """All second elements of a device's ``identifiers``, lowercased."""
+    out: list[str] = []
+    for ident in device.get("identifiers") or []:
+        if isinstance(ident, (list, tuple)) and len(ident) >= 2:
+            second = ident[1]
+        elif isinstance(ident, str):
+            second = ident
+        else:
+            continue
+        if isinstance(second, str):
+            out.append(second.lower())
+    return out
+
+
+def build_mqtt_bridge_networks(devices: list[dict]) -> dict[str, str]:
+    """Map bridge ``device_id`` → network for MQTT gateways.
+
+    Zigbee2MQTT and the Z-Wave-JS-UI bridge both publish their devices
+    through the ``mqtt`` integration. The child devices point at the bridge
+    via ``via_device_id``, which makes the bridge the most reliable evidence
+    for the real radio — much better than looking for the word "zigbee" in a
+    device name (a Z2M lamp is called after its manufacturer, e.g. "BSEED").
+    """
+    bridges: dict[str, str] = {}
+    for dev in devices:
+        did = dev.get("id")
+        if not did:
+            continue
+        haystack = " ".join(
+            [
+                (dev.get("manufacturer") or ""),
+                (dev.get("name_by_user") or dev.get("name") or ""),
+                (dev.get("model") or ""),
+            ]
+            + _identifier_values(dev)
+        ).lower()
+        if "zigbee2mqtt" in haystack:
+            bridges[did] = "Zigbee"
+        elif "zwavejs2mqtt" in haystack or "zwave_js_ui" in haystack or "zwave-js-ui" in haystack:
+            bridges[did] = "Z-Wave"
+    return bridges
+
+
 def _guess_network(integration_domain: str | None,
-                    device: dict | None = None) -> str | None:
+                    device: dict | None = None,
+                    bridge_networks: dict[str, str] | None = None) -> str | None:
     """Guess network type from integration and device info."""
     if not integration_domain:
         return None
 
-    # MQTT devices might actually be Zigbee (via zigbee2mqtt) or Z-Wave
+    # MQTT devices might actually be Zigbee (via zigbee2mqtt) or Z-Wave.
+    # Order matters: the two structural signals come first, the name-based
+    # guess stays as a last resort. Without them every Z2M device fell through
+    # to ``NETWORK_MAP["mqtt"] == "WLAN"``, because Z2M names its devices after
+    # the manufacturer ("BSEED", "Tuya") — only the bridge itself carries the
+    # word "Zigbee". Reported as GitHub #24.
     if integration_domain == "mqtt" and device:
+        # 1. Identifier prefix — Z2M writes ``zigbee2mqtt_0xa4c138f38e048aa8``.
+        for value in _identifier_values(device):
+            if value.startswith("zigbee2mqtt"):
+                return "Zigbee"
+            if value.startswith(("zwavejs2mqtt", "zwave_js_ui", "zwavejs")):
+                return "Z-Wave"
+
+        # 2. The gateway the device hangs on.
+        via = device.get("via_device_id")
+        if via and bridge_networks and via in bridge_networks:
+            return bridge_networks[via]
+
+        # 3. Last resort: the words in model/name/manufacturer.
         model = (device.get("model") or "").lower()
         name = (device.get("name_by_user") or device.get("name") or "").lower()
         manufacturer = (device.get("manufacturer") or "").lower()
@@ -760,6 +823,9 @@ async def import_ha_devices(
     # Build area name lookup
     area_lookup = {a["area_id"]: a for a in ha_areas}
 
+    # Gateways first — child devices are resolved against them (GitHub #24).
+    bridge_networks = build_mqtt_bridge_networks(ha_devices)
+
     # Build entity lookup: device_id → [entities]
     entity_map: dict[str, list[dict]] = {}
     for ent in ha_entities:
@@ -872,7 +938,7 @@ async def import_ha_devices(
                     primary_entity = sorted_entities[0]["entity_id"]
 
                 # Network type
-                network = _guess_network(integration_domain, dev)
+                network = _guess_network(integration_domain, dev, bridge_networks)
 
                 # Safely convert fields that might be lists
                 sw_version = dev.get("sw_version")

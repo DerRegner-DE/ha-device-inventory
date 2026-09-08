@@ -176,6 +176,7 @@
   "settings.recategorizeResult": "{updated} appareils mis à jour, {unchanged} inchangés (sur {total} vérifiés)",
   "settings.recategorizeFailed": "Échec de la recatégorisation",
   "recategorize.previewButton": "Aperçu et sélection",
+  "recategorize.network": "Réseau :",
   "recategorize.legacyDisclosure": "Ou tout appliquer directement (sans aperçu)",
   "recategorize.title": "Propositions de catégorie",
   "recategorize.subtitle": "Examinez les propositions et décochez les erronées. Seules les cases cochées seront appliquées.",

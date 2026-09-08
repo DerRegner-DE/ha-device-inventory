@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -428,8 +428,12 @@ async def _load_recategorize_context(uuids: Optional[list[str]]):
             config_entry_domains[ce] = platform
     ha_device_map = {d["id"]: d for d in ha_devices}
 
+    # Gateways fuer die Netzwerk-Bestimmung (GitHub #24 / Roadmap Nr. 7).
+    from app.services.ha_import import build_mqtt_bridge_networks
+    bridge_networks = build_mqtt_bridge_networks(ha_devices)
+
     query = (
-        "SELECT uuid, ha_device_id, typ, bezeichnung, hersteller, modell "
+        "SELECT uuid, ha_device_id, typ, netzwerk, bezeichnung, hersteller, modell "
         "FROM devices WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
     )
     params: list = []
@@ -441,7 +445,24 @@ async def _load_recategorize_context(uuids: Optional[list[str]]):
     with get_db() as conn:
         rows = dicts_from_rows(conn.execute(query, params).fetchall())
 
-    return rows, ha_device_map, entity_map, config_entry_domains
+    return rows, ha_device_map, entity_map, config_entry_domains, bridge_networks
+
+
+def _classify_network(row: dict, ha_device_map: dict, config_entry_domains: dict,
+                      bridge_networks: dict) -> Optional[str]:
+    """Recompute the network field for one inventory row.
+
+    Roadmap Nr. 7: ``_guess_network()`` only ever ran during import, so a
+    device imported before the Zigbee2MQTT fix (GitHub #24) kept its wrong
+    "WLAN" forever — "Kategorien neu zuordnen" touched the type only.
+    """
+    from app.services.ha_import import _guess_network, _resolve_primary_integration
+
+    ha_dev = ha_device_map.get(row["ha_device_id"])
+    if not ha_dev:
+        return None
+    integration_domain = _resolve_primary_integration(ha_dev, config_entry_domains)
+    return _guess_network(integration_domain, ha_dev, bridge_networks)
 
 
 def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
@@ -477,7 +498,7 @@ async def recategorize_preview(body: Optional[RecategorizeBody] = None):
     The frontend then posts the confirmed subset back via ``/recategorize/apply``.
     """
     uuids = body.uuids if body else None
-    rows, ha_device_map, entity_map, config_entry_domains = await _load_recategorize_context(uuids)
+    rows, ha_device_map, entity_map, config_entry_domains, bridge_networks = await _load_recategorize_context(uuids)
 
     changes: list[dict] = []
     unchanged = 0
@@ -489,7 +510,13 @@ async def recategorize_preview(body: Optional[RecategorizeBody] = None):
             skipped_no_ha += 1
             continue
         new_type, evidence = classified
-        if new_type != row["typ"]:
+        new_network = _classify_network(row, ha_device_map, config_entry_domains, bridge_networks)
+        type_changed = new_type != row["typ"]
+        # Nr. 7: ein Geraet kann allein wegen des Netzwerkfelds in der Liste
+        # stehen — sonst waeren die falschen WLAN-Werte aus GitHub #24 auf
+        # Bestandsinstallationen nicht zu reparieren.
+        network_changed = bool(new_network) and new_network != row.get("netzwerk")
+        if type_changed or network_changed:
             changes.append({
                 "uuid": row["uuid"],
                 "bezeichnung": row["bezeichnung"],
@@ -497,6 +524,8 @@ async def recategorize_preview(body: Optional[RecategorizeBody] = None):
                 "modell": row["modell"],
                 "old_type": row["typ"],
                 "new_type": new_type,
+                "old_network": row.get("netzwerk"),
+                "new_network": new_network if network_changed else None,
                 "evidence": evidence,
             })
         else:
@@ -529,7 +558,7 @@ async def recategorize_apply(body: RecategorizeApplyBody):
     uuids = [it.uuid for it in body.items]
     expected = {it.uuid: it.expected_new_type for it in body.items}
 
-    rows, ha_device_map, entity_map, config_entry_domains = await _load_recategorize_context(uuids)
+    rows, ha_device_map, entity_map, config_entry_domains, bridge_networks = await _load_recategorize_context(uuids)
 
     # Snapshot once for the whole apply batch.
     create_snapshot("recategorize_apply")
@@ -550,17 +579,24 @@ async def recategorize_apply(body: RecategorizeApplyBody):
                 # apply something the user didn't see in the preview.
                 skipped_toctou += 1
                 continue
-            if new_type == row["typ"]:
+            new_network = _classify_network(row, ha_device_map, config_entry_domains, bridge_networks)
+            felder: dict[str, Any] = {}
+            if new_type != row["typ"]:
+                felder["typ"] = str(new_type)
+            if new_network and new_network != row.get("netzwerk"):
+                felder["netzwerk"] = str(new_network)
+            if not felder:
                 continue  # nothing to do
             from app.services.history import log_changes  # local import, avoid startup-time coupling
+            sets = ", ".join(f"{k} = ?" for k in felder)
             conn.execute(
-                "UPDATE devices SET typ = ?, updated_at = datetime('now'), "
+                f"UPDATE devices SET {sets}, updated_at = datetime('now'), "
                 "sync_version = sync_version + 1 WHERE uuid = ?",
-                (str(new_type), row["uuid"]),
+                (*felder.values(), row["uuid"]),
             )
             log_changes(
                 conn, row["uuid"],
-                {"typ": row["typ"]}, {"typ": new_type},
+                {k: row.get(k) for k in felder}, felder,
                 source="recategorize",
             )
             applied += 1
@@ -586,7 +622,7 @@ async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
     from app.services.snapshots import create_snapshot
 
     uuids = body.uuids if body else None
-    rows, ha_device_map, entity_map, config_entry_domains = await _load_recategorize_context(uuids)
+    rows, ha_device_map, entity_map, config_entry_domains, bridge_networks = await _load_recategorize_context(uuids)
 
     create_snapshot("recategorize")
 
@@ -602,16 +638,23 @@ async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
                 skipped_no_ha += 1
                 continue
             new_type, evidence = classified
+            new_network = _classify_network(row, ha_device_map, config_entry_domains, bridge_networks)
+            felder: dict[str, Any] = {}
             if new_type != row["typ"]:
+                felder["typ"] = str(new_type)
+            if new_network and new_network != row.get("netzwerk"):
+                felder["netzwerk"] = str(new_network)
+            if felder:
                 from app.services.history import log_changes
+                sets = ", ".join(f"{k} = ?" for k in felder)
                 conn.execute(
-                    "UPDATE devices SET typ = ?, updated_at = datetime('now'), "
+                    f"UPDATE devices SET {sets}, updated_at = datetime('now'), "
                     "sync_version = sync_version + 1 WHERE uuid = ?",
-                    (str(new_type), row["uuid"]),
+                    (*felder.values(), row["uuid"]),
                 )
                 log_changes(
                     conn, row["uuid"],
-                    {"typ": row["typ"]}, {"typ": new_type},
+                    {k: row.get(k) for k in felder}, felder,
                     source="recategorize",
                 )
                 updated += 1
@@ -621,6 +664,8 @@ async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
                         "bezeichnung": row["bezeichnung"],
                         "old_type": row["typ"],
                         "new_type": new_type,
+                        "old_network": row.get("netzwerk"),
+                        "new_network": felder.get("netzwerk"),
                         "evidence": evidence,
                     })
             else:
