@@ -4,7 +4,6 @@
 
 Feature-Release rund um ein Thema: Was passiert mit der Anlage, wenn jemand anderes davorsteht? Ausgeloest von simon42-Thread 92060 („Updates einstellen? Ich mag nicht mehr!"), in dem gleich mehrere Nutzer denselben Rat gaben — jede Grundfunktion muss auch ohne Home Assistant laufen, und die Nachkommen brauchen eine Liste, die ein Elektriker lesen kann.
 
-Diese Version wird zuerst als **Preview-Add-on** ausgeliefert (`addon-preview/`, Slug `geraeteverwaltung-preview`). Es laesst sich parallel zur stabilen Installation betreiben und hat eine eigene Datenbank.
 
 ### Neu: „Funktioniert ohne Home Assistant?" pro Geraet
 
@@ -28,7 +27,7 @@ Neben *Versicherung* und *Nachlass* ein drittes Preset: Standort, Stockwerk, Net
 
 ### Intern: MQTT-Node-Name konfigurierbar
 
-Die Discovery-Topics benutzten fest den Knoten `geraeteverwaltung`. Sobald Preview und stabile Installation auf derselben HA-Instanz laufen, schreiben beide in dieselben retained Topics — „Discovery aufraeumen" in der Preview haette die Geraete der Produktivinstallation mitgeloescht. Neue Add-on-Option `mqtt_node_id` (Default `geraeteverwaltung`, Preview `geraeteverwaltung-preview`), durchgereicht als `GV_MQTT_NODE_ID`. Bestandsinstallationen aendern sich nicht; der Self-Import-Filter aus v2.5.2 greift weiterhin, weil beide Namen mit `geraeteverwaltung` beginnen.
+Die Discovery-Topics benutzten fest den Knoten `geraeteverwaltung`. Sobald zwei Installationen auf derselben HA-Instanz laufen, schreiben beide in dieselben retained Topics — „Discovery aufraeumen" in der Preview haette die Geraete der Produktivinstallation mitgeloescht. Neue Add-on-Option `mqtt_node_id` (Default `geraeteverwaltung`), durchgereicht als `GV_MQTT_NODE_ID`. Bestandsinstallationen aendern sich nicht; der Self-Import-Filter aus v2.5.2 greift weiterhin, weil beide Namen mit `geraeteverwaltung` beginnen.
 
 ### Alle drei Export-Vorlagen nach Zweck geschnitten
 
