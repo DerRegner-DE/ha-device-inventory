@@ -1,0 +1,50 @@
+name: Preview-Tags aufraeumen
+
+# Einmalige Aufraeumaktion: Die Vorabversionen 3.0.0-preview.1 bis .10 liegen
+# noch im oeffentlichen Image-Package und sind damit fuer jeden abrufbar, der
+# den Tag kennt. Vorabversionen gehoeren ausschliesslich in den privaten
+# Testkanal.
+#
+# Laeuft mit dem automatischen GITHUB_TOKEN dieses Repos (packages: write) —
+# deshalb ist keine persoenliche Anmeldung noetig.
+#
+# Sicherung: Geloescht wird eine Version nur, wenn ALLE ihre Tags mit
+# "3.0.0-preview." beginnen. Traegt eine Version zusaetzlich einen
+# Verkaufs-Tag, bleibt sie unangetastet.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Nur anzeigen, nichts loeschen"
+        type: boolean
+        default: true
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Preview-Versionen suchen und loeschen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          total=0
+          for PKG in amd64-ha-device-inventory aarch64-ha-device-inventory armv7-ha-device-inventory; do
+            echo "=== $PKG ==="
+            gh api --paginate "users/${{ github.repository_owner }}/packages/container/$PKG/versions?per_page=100"               --jq '.[] | select((.metadata.container.tags | length) > 0) | select([.metadata.container.tags[] | startswith("3.0.0-preview.")] | all) | "\(.id) \(.metadata.container.tags | join(","))"'               > versions.txt || true
+            while read -r ID TAGS; do
+              [ -z "${ID:-}" ] && continue
+              total=$((total+1))
+              if [ "$DRY_RUN" = "true" ]; then
+                echo "  WUERDE LOESCHEN  id=$ID  tags=$TAGS"
+              else
+                echo "  loesche  id=$ID  tags=$TAGS"
+                gh api -X DELETE "user/packages/container/$PKG/versions/$ID" >/dev/null
+              fi
+            done < versions.txt
+          done
+          echo "Betroffene Versionen: $total"
