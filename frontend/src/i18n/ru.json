@@ -176,6 +176,7 @@
   "settings.recategorizeResult": "{updated} устройств обновлено, {unchanged} без изменений (из {total} проверенных)",
   "settings.recategorizeFailed": "Ошибка перекатегоризации",
   "recategorize.previewButton": "Предпросмотр и выбор",
+  "recategorize.network": "Сеть:",
   "recategorize.legacyDisclosure": "Или применить всё сразу (без предпросмотра)",
   "recategorize.title": "Предложения категорий",
   "recategorize.subtitle": "Просмотрите предложения и снимите галочки с неверных. Применяются только отмеченные.",

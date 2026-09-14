@@ -176,6 +176,7 @@
   "settings.recategorizeResult": "{updated} dispositivos actualizados, {unchanged} sin cambios (de {total} comprobados)",
   "settings.recategorizeFailed": "Error en la recategorización",
   "recategorize.previewButton": "Vista previa y selección",
+  "recategorize.network": "Red:",
   "recategorize.legacyDisclosure": "O aplicar todo directamente (sin vista previa)",
   "recategorize.title": "Propuestas de categoría",
   "recategorize.subtitle": "Revisa las propuestas y desmarca las incorrectas. Solo las seleccionadas se aplican.",

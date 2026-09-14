@@ -332,7 +332,15 @@ export function DeviceForm({ device }: DeviceFormProps) {
       sync_version: (device?.sync_version ?? 0) + 1,
     };
 
-    await db.devices.put(deviceData);
+    // ``put()`` ersetzt den lokalen Datensatz vollstaendig. ``deviceData`` wird
+    // oben Feld fuer Feld aufgebaut und kennt ``parent_uuid``, ``reviewed``,
+    // ``nr`` und ``photos`` nicht — ohne den Spread waeren sie nach jedem
+    // Bearbeiten lokal weg. Zurueck kamen sie auch nicht: ``syncFromServer()``
+    // schreibt den Server-Datensatz nur bei hoeherer ``sync_version``, und
+    // Formular wie Backend zaehlen beide auf N+1. Der Verlust blieb also bis
+    // zum naechsten "Cache leeren". An die API geht weiterhin nur
+    // ``deviceData`` — der Server hat die fehlenden Felder ohnehin korrekt.
+    await db.devices.put({ ...(device ?? {}), ...deviceData } as Device);
 
     if (isEdit) {
       await apiPut(`/devices/${uuid}`, deviceData, "device", uuid);

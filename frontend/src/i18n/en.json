@@ -176,6 +176,7 @@
   "settings.recategorizeResult": "{updated} devices updated, {unchanged} unchanged (of {total} checked)",
   "settings.recategorizeFailed": "Recategorization failed",
   "recategorize.previewButton": "Preview & cherry-pick",
+  "recategorize.network": "Network:",
   "recategorize.legacyDisclosure": "Or apply everything directly (no preview)",
   "recategorize.title": "Category proposals",
   "recategorize.subtitle": "Review the proposals and uncheck any wrong ones. Only checked rows are applied.",

@@ -176,6 +176,7 @@
   "settings.recategorizeResult": "{updated} Geräte aktualisiert, {unchanged} unverändert (von {total} geprüften)",
   "settings.recategorizeFailed": "Neu-Kategorisierung fehlgeschlagen",
   "recategorize.previewButton": "Vorschau & gezielt zuordnen",
+  "recategorize.network": "Netzwerk:",
   "recategorize.legacyDisclosure": "Oder alles direkt anwenden (ohne Vorschau)",
   "recategorize.title": "Kategorie-Vorschläge",
   "recategorize.subtitle": "Prüfe die Vorschläge, hake Fehltreffer ab. Nur ausgewählte werden angewendet.",
