@@ -8,6 +8,7 @@ import { DiagnosticPanel } from "./DiagnosticPanel";
 import { CategoryManager } from "./CategoryManager";
 import { SnapshotManager } from "./SnapshotManager";
 import { TrashView } from "./TrashView";
+import { DuplicatesSection } from "./MergeDialog";
 import { RecategorizePreview } from "./RecategorizePreview";
 import { ExportPicker } from "./ExportPicker";
 import { hasFeature } from "../license";
@@ -220,6 +221,9 @@ export function Settings() {
           // v3.1.0 (GitHub #25): Seriennummer/MAC bei Bestandsgeraeten nachgetragen
           const backfilled = result.backfilled_identity || 0;
           if (backfilled > 0) breakdownParts.push(t("settings.haImportPartBackfilled", { count: backfilled }));
+          // v3.1.0 (Roadmap Nr. 12): HA-2026.8-Zwillinge, nicht doppelt angelegt
+          const aliased = result.aliased_twins || 0;
+          if (aliased > 0) breakdownParts.push(t("settings.haImportPartAliased", { count: aliased }));
           if (nonPhysical > 0) breakdownParts.push(t("settings.haImportPartNonPhysical", { count: nonPhysical }));
           if (noName > 0) breakdownParts.push(t("settings.haImportPartNoName", { count: noName }));
 
@@ -633,6 +637,22 @@ export function Settings() {
             {t("settings.snapshotsDesc")}
           </p>
           <SnapshotManager />
+        </details>
+
+        {/* v3.1.0 (Roadmap Nr. 12): Dubletten gleicher MAC — eingeklappt wie
+            Papierkorb und Schnappschuesse. */}
+        <details class="p-4 group">
+          <summary class="cursor-pointer list-none flex items-center justify-between">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t("duplicates.title")}
+            </h3>
+            <svg class="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <div class="mt-2">
+            <DuplicatesSection />
+          </div>
         </details>
 
         {/* Trash view (v2.4.2) — soft-deleted devices with restore.

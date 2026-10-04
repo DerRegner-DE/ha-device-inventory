@@ -552,5 +552,18 @@
   "exportPicker.images": "Bilder im PDF",
   "exportPicker.images.einbauort": "Einbauort-Bilder",
   "exportPicker.images.fotos": "Gerätefotos und Bild-Dokumente",
-  "exportPicker.imagesHint": "Erscheinen als Bildanhang am Ende des PDFs, in der Liste steht der Verweis (B1, B2 …). Gleiche Bilder nur einmal. Nicht im Excel-Export."
+  "exportPicker.imagesHint": "Erscheinen als Bildanhang am Ende des PDFs, in der Liste steht der Verweis (B1, B2 …). Gleiche Bilder nur einmal. Nicht im Excel-Export.",
+  "merge.open": "Mit anderem Gerät zusammenführen …",
+  "merge.title": "Geräte zusammenführen",
+  "merge.desc": "„{name}“ geht im gewählten Gerät auf: Fotos, Einbauort-Bilder, Dokumente und Verlauf wandern mit, leere Felder werden ergänzt, Anmerkungen angehängt. „{name}“ landet danach im Papierkorb.",
+  "merge.search": "Zielgerät suchen …",
+  "merge.summary": "„{source}“ wird in „{target}“ zusammengeführt.",
+  "merge.confirm": "Zusammenführen",
+  "merge.failed": "Zusammenführen fehlgeschlagen.",
+  "duplicates.title": "Mögliche Dubletten",
+  "duplicates.desc": "Geräte mit gleicher MAC-Adresse – seit HA 2026.8 oft dasselbe Gerät aus zwei Integrationen (z. B. Shelly und FRITZ!Box). Vorgeschlagen wird, das Gerät der steuernden Integration zu behalten.",
+  "duplicates.search": "Dubletten suchen",
+  "duplicates.none": "Keine Geräte mit gleicher MAC-Adresse gefunden.",
+  "duplicates.mergeInto": "→ in „{name}“",
+  "settings.haImportPartAliased": "{count} Zwillinge als Alias vermerkt"
 }

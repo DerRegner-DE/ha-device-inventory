@@ -278,6 +278,22 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
         if col not in cols:
             conn.execute(f"ALTER TABLE devices ADD COLUMN {col} TEXT")
 
+    # v3.1.0 (Roadmap Nr. 12/15): weitere HA-Geraete-IDs desselben physischen
+    # Geraets. Seit HA 2026.8 legt z. B. die FRITZ!Box-Integration fuer einen
+    # Shelly einen eigenen Registry-Eintrag an. Der zweite Eintrag wird nicht
+    # verworfen, sondern hier als Alias des Inventar-Geraets gefuehrt -- so
+    # legt ihn der naechste Import nicht wieder neu an.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS device_aliases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_uuid TEXT NOT NULL,
+            ha_device_id TEXT NOT NULL UNIQUE,
+            integration TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_device_aliases_uuid ON device_aliases(device_uuid)")
+
 
 def init_db() -> None:
     _ensure_dirs()

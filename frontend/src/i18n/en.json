@@ -552,5 +552,18 @@
   "exportPicker.images": "Images in PDF",
   "exportPicker.images.einbauort": "Installation photos",
   "exportPicker.images.fotos": "Device photos and image documents",
-  "exportPicker.imagesHint": "Added as an image appendix at the end of the PDF; the list shows the reference (B1, B2 …). Identical images appear once. Not in the Excel export."
+  "exportPicker.imagesHint": "Added as an image appendix at the end of the PDF; the list shows the reference (B1, B2 …). Identical images appear once. Not in the Excel export.",
+  "merge.open": "Merge with another device …",
+  "merge.title": "Merge devices",
+  "merge.desc": "“{name}” is merged into the chosen device: photos, installation photos, documents and history move along, empty fields are filled, notes appended. “{name}” then goes to the trash.",
+  "merge.search": "Search target device …",
+  "merge.summary": "“{source}” will be merged into “{target}”.",
+  "merge.confirm": "Merge",
+  "merge.failed": "Merge failed.",
+  "duplicates.title": "Possible duplicates",
+  "duplicates.desc": "Devices with the same MAC address – since HA 2026.8 often the same device from two integrations (e.g. Shelly and FRITZ!Box). The suggestion keeps the device of the controlling integration.",
+  "duplicates.search": "Find duplicates",
+  "duplicates.none": "No devices with the same MAC address found.",
+  "duplicates.mergeInto": "→ into “{name}”",
+  "settings.haImportPartAliased": "{count} twins recorded as alias"
 }

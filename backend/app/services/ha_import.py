@@ -984,10 +984,43 @@ async def import_ha_devices(
                 "WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
             ).fetchall()
         )
+        alias_rows = conn.execute("SELECT ha_device_id, device_uuid FROM device_aliases").fetchall()
     existing_ids = {d["ha_device_id"] for d in existing}
     existing_by_ha_id = {d["ha_device_id"]: d for d in existing}
+    # v3.1.0 (Roadmap Nr. 12): bekannte Zweit-IDs nicht erneut anlegen.
+    alias_ids = {r["ha_device_id"] for r in alias_rows}
+    existing_ids |= alias_ids
+
+    # v3.1.0 (Roadmap Nr. 12): Registry-Eintraege mit gleicher MAC/IEEE aus
+    # verschiedenen Integrationen sind dasselbe Geraet. Der Eintrag der
+    # steuernden Integration (kein Tracker, mehr Entities) wird importiert,
+    # die anderen werden Alias. Gleiche Kennung innerhalb *einer* Integration
+    # bleibt unangetastet -- das waere kein HA-2026.8-Zwilling.
+    from app.services.merge import connection_keys
+
+    integ_of = {d.get("id"): _resolve_primary_integration(d, config_entry_domains) for d in ha_devices}
+    by_key: dict[str, list[dict]] = {}
+    for d in ha_devices:
+        for key in connection_keys(d):
+            by_key.setdefault(key, []).append(d)
+    alias_of: dict[str, str] = {}
+    for group in by_key.values():
+        if len({integ_of.get(d.get("id")) for d in group}) < 2:
+            continue
+        primary = min(group, key=lambda d: (
+            integ_of.get(d.get("id")) in TRACKER_INTEGRATIONS,
+            -len(entity_map.get(d.get("id"), [])),
+            d.get("id") or "",
+        ))
+        for d in group:
+            if d is not primary and integ_of.get(d.get("id")) != integ_of.get(primary.get("id")):
+                alias_of.setdefault(d.get("id"), primary.get("id"))
+    # Hauptgeraete zuerst, damit ihre Inventar-UUID steht, wenn der Zwilling kommt.
+    ha_devices = sorted(ha_devices, key=lambda d: d.get("id") in alias_of)
+    imported_by_ha_id: dict[str, str] = {}
 
     imported = 0
+    aliased = 0
     backfilled = 0
     skipped_duplicates = 0
     skipped_no_name = 0
@@ -1018,13 +1051,32 @@ async def import_ha_devices(
                     skipped_no_name += 1
                     continue
 
+                # v3.1.0 (Roadmap Nr. 12): Zwilling eines Geraets, das schon im
+                # Inventar steht -> nur als Alias vermerken.
+                if device_id in alias_of and device_id not in existing_ids:
+                    primary_id = alias_of[device_id]
+                    target_uuid = imported_by_ha_id.get(primary_id) or (
+                        existing_by_ha_id.get(primary_id) or {}
+                    ).get("uuid")
+                    if target_uuid:
+                        conn.execute(
+                            "INSERT OR IGNORE INTO device_aliases (device_uuid, ha_device_id, integration) "
+                            "VALUES (?, ?, ?)",
+                            (target_uuid, device_id, integ_of.get(device_id)),
+                        )
+                        existing_ids.add(device_id)
+                        aliased += 1
+                        continue
+
                 # Skip duplicates (already imported)
                 if device_id in existing_ids:
                     skipped_duplicates += 1
                     # v3.1.0 (GitHub #25): Bestandsgeraete bekommen Seriennummer
                     # und MAC nachgetragen -- nur leere Felder, Handeingaben
                     # bleiben unangetastet.
-                    row = existing_by_ha_id[device_id]
+                    row = existing_by_ha_id.get(device_id)
+                    if row is None:
+                        continue  # bekannter Alias
                     serial, mac = _device_identity(dev)
                     felder: dict[str, str] = {}
                     if serial and not row.get("seriennummer"):
@@ -1140,6 +1192,7 @@ async def import_ha_devices(
                     ),
                 )
                 imported += 1
+                imported_by_ha_id[str(device_id)] = uuid
             except Exception as e:
                 # Log the bad device and keep going so a single broken record
                 # does not kill an import of 500+ devices.
@@ -1201,6 +1254,7 @@ async def import_ha_devices(
         "imported": imported,
         "skipped_duplicates": skipped_duplicates,
         "backfilled_identity": backfilled,
+        "aliased_twins": aliased,
         "skipped_no_name": skipped_no_name,
         "skipped_non_physical": skipped_non_physical,
         "parent_links": linked_parents,

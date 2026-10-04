@@ -7,12 +7,14 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
+from pydantic import BaseModel
 
 from app.database import get_db, dict_from_row, dicts_from_rows
 from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody, BulkRestoreBody
 from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
 from app.services.snapshots import create_snapshot
 from app.services.history import log_changes
+from app.services.merge import find_duplicates, merge_devices
 from app.routers.documents import normalize_link_url
 
 router = APIRouter(prefix="/devices", tags=["devices"])
@@ -502,6 +504,39 @@ def bulk_delete_devices(body: BulkDeleteBody):
             body.uuids,
         )
         return {"deleted": cursor.rowcount, "total": len(body.uuids)}
+
+
+class MergeBody(BaseModel):
+    into: str
+
+
+@router.get("/duplicates/list")
+def list_duplicates():
+    """v3.1.0 (Roadmap Nr. 12): aktive Geraete mit gleicher MAC. Das erste
+    Geraet jeder Gruppe ist der Vorschlag, der bleibt (steuernde Integration
+    vor Tracker wie FRITZ!Box)."""
+    with get_db() as conn:
+        return {"groups": find_duplicates(conn)}
+
+
+@router.post("/{uuid}/merge")
+def merge_device(uuid: str, body: MergeBody, background_tasks: BackgroundTasks):
+    """v3.1.0 (Roadmap Nr. 15): Geraet ``uuid`` in ``body.into`` zusammenfuehren.
+    Vorher Snapshot -- das Umhaengen von Fotos und Verlauf laesst sich sonst
+    nicht zurueckdrehen."""
+    create_snapshot("merge")
+    with get_db() as conn:
+        try:
+            result = merge_devices(conn, uuid, body.into)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except LookupError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+        row = dict_from_row(conn.execute("SELECT * FROM devices WHERE uuid = ?", (body.into,)).fetchone())
+        target = _build_device_response(row, conn)
+    background_tasks.add_task(mqtt_remove_device, uuid)
+    background_tasks.add_task(publish_device, target)
+    return {**result, "device": target}
 
 
 @router.post("/bulk/delete-all")

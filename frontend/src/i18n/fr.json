@@ -552,5 +552,18 @@
   "exportPicker.images": "Images dans le PDF",
   "exportPicker.images.einbauort": "Photos d’installation",
   "exportPicker.images.fotos": "Photos de l’appareil et documents image",
-  "exportPicker.imagesHint": "Ajoutées en annexe d’images à la fin du PDF ; la liste indique la référence (B1, B2 …). Les images identiques n’apparaissent qu’une fois. Pas dans l’export Excel."
+  "exportPicker.imagesHint": "Ajoutées en annexe d’images à la fin du PDF ; la liste indique la référence (B1, B2 …). Les images identiques n’apparaissent qu’une fois. Pas dans l’export Excel.",
+  "merge.open": "Fusionner avec un autre appareil …",
+  "merge.title": "Fusionner des appareils",
+  "merge.desc": "« {name} » est fusionné dans l’appareil choisi : photos, photos d’installation, documents et historique suivent, les champs vides sont complétés, les remarques ajoutées. « {name} » part ensuite à la corbeille.",
+  "merge.search": "Rechercher l’appareil cible …",
+  "merge.summary": "« {source} » sera fusionné dans « {target} ».",
+  "merge.confirm": "Fusionner",
+  "merge.failed": "Échec de la fusion.",
+  "duplicates.title": "Doublons possibles",
+  "duplicates.desc": "Appareils avec la même adresse MAC – depuis HA 2026.8 souvent le même appareil via deux intégrations (p. ex. Shelly et FRITZ!Box). La suggestion conserve celui de l’intégration qui le pilote.",
+  "duplicates.search": "Rechercher les doublons",
+  "duplicates.none": "Aucun appareil avec la même adresse MAC.",
+  "duplicates.mergeInto": "→ dans « {name} »",
+  "settings.haImportPartAliased": "{count} jumeaux enregistrés comme alias"
 }

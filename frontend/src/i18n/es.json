@@ -552,5 +552,18 @@
   "exportPicker.images": "Imágenes en el PDF",
   "exportPicker.images.einbauort": "Fotos de instalación",
   "exportPicker.images.fotos": "Fotos del dispositivo y documentos de imagen",
-  "exportPicker.imagesHint": "Se añaden como anexo de imágenes al final del PDF; la lista muestra la referencia (B1, B2 …). Las imágenes idénticas aparecen una sola vez. No en la exportación a Excel."
+  "exportPicker.imagesHint": "Se añaden como anexo de imágenes al final del PDF; la lista muestra la referencia (B1, B2 …). Las imágenes idénticas aparecen una sola vez. No en la exportación a Excel.",
+  "merge.open": "Fusionar con otro dispositivo …",
+  "merge.title": "Fusionar dispositivos",
+  "merge.desc": "«{name}» se integra en el dispositivo elegido: fotos, fotos de instalación, documentos e historial se trasladan, los campos vacíos se completan y las notas se añaden. Después «{name}» va a la papelera.",
+  "merge.search": "Buscar dispositivo destino …",
+  "merge.summary": "«{source}» se fusionará con «{target}».",
+  "merge.confirm": "Fusionar",
+  "merge.failed": "Error al fusionar.",
+  "duplicates.title": "Posibles duplicados",
+  "duplicates.desc": "Dispositivos con la misma dirección MAC: desde HA 2026.8 a menudo el mismo dispositivo desde dos integraciones (p. ej. Shelly y FRITZ!Box). Se propone conservar el de la integración que lo controla.",
+  "duplicates.search": "Buscar duplicados",
+  "duplicates.none": "No se encontraron dispositivos con la misma dirección MAC.",
+  "duplicates.mergeInto": "→ en «{name}»",
+  "settings.haImportPartAliased": "{count} gemelos registrados como alias"
 }

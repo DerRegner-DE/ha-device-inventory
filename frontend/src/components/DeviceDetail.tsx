@@ -9,6 +9,7 @@ import { apiDelete, apiGet, apiPost, apiPut, getPhotoUrl, getDocuments, getDocum
 import { showUndoToast } from "./UndoToast";
 import { AttachmentsSection } from "./AttachmentsSection";
 import { HistorySection } from "./HistorySection";
+import { MergeDialog } from "./MergeDialog";
 import { hasFeature } from "../license";
 
 /** Map device integration/type to HA setup URL */
@@ -112,6 +113,7 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const blobUrlRef = useRef<string | null>(null);
+  const [showMerge, setShowMerge] = useState(false);
 
   useEffect(() => {
     if (!uuid) return;
@@ -386,6 +388,18 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
       {uuid && <HistorySection deviceUuid={uuid} />}
 
       {uuid && <DocumentsSection deviceUuid={uuid} readOnly />}
+
+      {/* v3.1.0 (Roadmap Nr. 15): Dubletten zusammenfuehren */}
+      <div class="text-center">
+        <button
+          type="button"
+          onClick={() => setShowMerge(true)}
+          class="text-xs text-[#1F4E79] dark:text-[#7ab5d6] hover:underline"
+        >
+          {t("merge.open")}
+        </button>
+      </div>
+      {showMerge && <MergeDialog source={device} onClose={() => setShowMerge(false)} />}
 
       <div class="text-center text-[10px] text-gray-300 py-2">
         {t("detail.created")}: {new Date(device.created_at).toLocaleString("de-DE")}
