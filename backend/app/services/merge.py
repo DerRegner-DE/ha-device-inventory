@@ -22,7 +22,10 @@ FILLABLE_FIELDS = (
     "modell", "hersteller", "standort_area_id", "standort_name", "standort_floor_id",
     "seriennummer", "mac_adresse", "ip_adresse", "firmware", "integration",
     "stromversorgung", "netzwerk", "anschaffungsdatum", "garantie_bis",
-    "funktion", "ha_entity_id", "ain_artikelnr", "parent_uuid",
+    # parent_uuid bewusst NICHT: Box-Test 04.10.2026 -- der FRITZ!Box-Zwilling
+    # der Ring-Klingel haengt in HA unter der FRITZ!Box; uebernommen stand die
+    # Klingel danach als "Teil von Basis-FB6660" da.
+    "funktion", "ha_entity_id", "ain_artikelnr",
     "external_url", "ohne_ha", "ohne_ha_hinweis",
     "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
 )
@@ -74,8 +77,6 @@ def merge_devices(conn, source_uuid: str, target_uuid: str) -> dict:
 
     felder: dict[str, str] = {}
     for f in FILLABLE_FIELDS:
-        if f == "parent_uuid" and src.get(f) == target_uuid:
-            continue  # nicht zum eigenen Kind machen
         if not tgt.get(f) and src.get(f):
             felder[f] = src[f]
     if src.get("anmerkungen") and src["anmerkungen"] != tgt.get("anmerkungen"):

@@ -62,6 +62,8 @@ def test_merge_moves_everything_and_fills_gaps(client):
        "seriennummer, anmerkungen) VALUES (2, 'twin', 'Router', 'shelly1pm-ab12', 'ha-fritz', 'fritz', "
        "'192.168.178.50', 'SN-1', 'IP fest vergeben')")
     _x("INSERT INTO devices (id, uuid, typ, bezeichnung, parent_uuid) VALUES (3, 'child', 'Sensor', 'Kanal', 'twin')")
+    _x("INSERT INTO devices (id, uuid, typ, bezeichnung) VALUES (4, 'fritzbox', 'Router', 'Basis-FB6660')")
+    _x("UPDATE devices SET parent_uuid = 'fritzbox' WHERE uuid = 'twin'")
     _x("INSERT INTO photos (uuid, device_id, filename, is_primary) VALUES ('p1', 1, 'a.jpg', 1)")
     _x("INSERT INTO photos (uuid, device_id, filename, is_primary) VALUES ('p2', 2, 'b.jpg', 1)")
     _x("INSERT INTO attachments (uuid, device_id, filename) VALUES ('a1', 2, 'c.jpg')")
@@ -71,6 +73,7 @@ def test_merge_moves_everything_and_fills_gaps(client):
     dev = r.json()["device"]
     assert dev["ip_adresse"] == "192.168.178.50" and dev["seriennummer"] == "SN-1"
     assert dev["integration"] == "shelly", "Ziel behaelt seine Werte"
+    assert dev["parent_uuid"] is None, "Elterngeraet des Trackers (FRITZ!Box) wird nicht uebernommen"
     assert "Hinter Taster" in dev["anmerkungen"] and "IP fest vergeben" in dev["anmerkungen"]
     assert sorted(p["uuid"] for p in dev["photos"]) == ["p1", "p2"]
     assert [p["uuid"] for p in dev["photos"] if p["is_primary"]] == ["p1"]
