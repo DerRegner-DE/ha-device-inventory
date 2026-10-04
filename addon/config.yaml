@@ -9,6 +9,11 @@ arch:
   - armv7
 image: "ghcr.io/derregner-de/{arch}-ha-device-inventory"
 homeassistant_api: true
+# v3.1.0: MQTT-Zugangsdaten automatisch vom Supervisor (Mosquitto-Add-on).
+# run.sh fragt /services/mqtt ab -- ohne diese Freigabe verweigert der
+# Supervisor die Auskunft, und Benutzer/Passwort mussten von Hand rein.
+services:
+  - "mqtt:want"
 ingress: true
 ingress_port: 3001
 ingress_stream: true
