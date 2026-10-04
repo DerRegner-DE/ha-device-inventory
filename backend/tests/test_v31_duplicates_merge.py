@@ -203,3 +203,30 @@ def test_router_topology_is_not_a_parent(client, monkeypatch):
     assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'ring'") == [{"parent_uuid": None}]
     ap = _q("SELECT uuid FROM devices WHERE ha_device_id = 'ap'")[0]["uuid"]
     assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'trv'") == [{"parent_uuid": ap}]
+
+def test_topology_unlink_follows_aliases(client, monkeypatch):
+    """Box-Test 04.10.2026: das via_device zeigte auf den fritz-Zwilling der
+    FRITZ!Box, der als Alias im UPnP-Eintrag aufgegangen war."""
+    from app.services.ha_import import import_ha_devices
+
+    devices = [
+        {"id": "fb-upnp", "name": "Basis-FB6660", "config_entries": ["ce-upnp"], "primary_config_entry": "ce-upnp"},
+        {"id": "fb-fritz", "name": "Basis-FB6660", "config_entries": ["ce-fritz"], "primary_config_entry": "ce-fritz"},
+        {"id": "phone", "name": "S24", "config_entries": ["ce-fritz"], "primary_config_entry": "ce-fritz",
+         "via_device_id": "fb-fritz"},
+    ]
+    entities = [
+        {"entity_id": "sensor.fb_rx", "device_id": "fb-upnp", "config_entry_id": "ce-upnp", "platform": "upnp"},
+        {"entity_id": "switch.fb_wlan", "device_id": "fb-fritz", "config_entry_id": "ce-fritz", "platform": "fritz"},
+        {"entity_id": "device_tracker.s24", "device_id": "phone", "config_entry_id": "ce-fritz", "platform": "fritz"},
+    ]
+    _registry(monkeypatch, devices, entities)
+    asyncio.run(import_ha_devices())
+    keep = _q("SELECT uuid FROM devices WHERE ha_device_id = 'fb-upnp'")[0]["uuid"]
+    twin = _q("SELECT uuid FROM devices WHERE ha_device_id = 'fb-fritz'")[0]["uuid"]
+    _x("UPDATE devices SET parent_uuid = ? WHERE ha_device_id = 'phone'", (twin,))
+    assert client.post(f"/api/devices/{twin}/merge", json={"into": keep}).status_code == 200
+    _x("UPDATE devices SET parent_uuid = ? WHERE ha_device_id = 'phone'", (keep,))  # Stand vor v3.1
+    result = asyncio.run(import_ha_devices())
+    assert result["parent_links_removed"] == 1
+    assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'phone'") == [{"parent_uuid": None}]

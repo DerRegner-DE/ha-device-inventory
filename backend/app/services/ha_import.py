@@ -1252,6 +1252,12 @@ async def import_ha_devices(
             "WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
         ).fetchall())
         ha_id_to_uuid = {r["ha_device_id"]: r["uuid"] for r in rows}
+        # v3.1.0: Zweit-IDs zusammengefuehrter Geraete zeigen auf das Ziel. Box-
+        # Test 04.10.2026: 73 Geraete hatten als via_device den FRITZ!Box-Eintrag
+        # der Integration fritz, der als Alias im UPnP-Eintrag aufgegangen war --
+        # ohne diese Zuordnung blieb ihre Router-Verknuepfung stehen.
+        for r in conn.execute("SELECT ha_device_id, device_uuid FROM device_aliases").fetchall():
+            ha_id_to_uuid.setdefault(r["ha_device_id"], r["device_uuid"])
 
         for dev in ha_devices:
             via = dev.get("via_device_id")
