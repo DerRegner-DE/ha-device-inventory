@@ -170,6 +170,24 @@ INTEGRATION_TYPE_MAP = {
     "met": "Sensor",
     "co2signal": "Sensor",
     "airvisual": "Sensor",
+    # v3.1.0: Geraete der Bluetooth-Integration sind die Adapter selbst
+    # (Forum #47: "Bluetooth USB Adapter als Steckdose").
+    "bluetooth": "Controller/Gateway",
+    "bosch_shc": "Thermostat",
+}
+
+# v3.1.0 (Roadmap Nr. 8): Plattform-Integrationen bringen Geraete jeder Art
+# mit — ein ZHA-Geraet kann Lampe, Taster oder Rauchmelder sein, ein Shelly
+# auch ein Thermometer, ein Hue-Geraet auch ein Bewegungsmelder. Fuer sie ist
+# der Eintrag oben nur noch Rueckfall, wenn die Entities nichts hergeben.
+# Vorher gewann die Integration immer: jedes ZHA-/Z2M-Geraet wurde
+# "Controller/Gateway", jede IKEA-Fernbedienung ueber tradfri "Leuchtmittel".
+PLATFORM_INTEGRATIONS = {
+    "zha", "deconz", "zigbee2mqtt", "zwave_js", "matter", "homekit_controller",
+    "mqtt", "hue", "tradfri", "shelly", "tasmota", "esphome",
+    "tuya", "localtuya", "tplink", "kasa", "wemo", "meross", "switchbot",
+    "boschshc", "bosch_shc", "homematicip_cloud", "netatmo", "tado",
+    "xiaomi_miio", "xiaomi_aqara", "smartthings", "fibaro", "lutron_caseta",
 }
 
 # ---------------------------------------------------------------------------
@@ -220,6 +238,9 @@ MANUFACTURER_MODEL_HINTS: list[tuple[list[str], str | None, str]] = [
     (["netgear"], None, "Router"),
     (["tp-link", "tplink"], r"deco|archer|router", "Router"),
     (["tp-link", "tplink"], r"tapo.*cam|kasa.*cam", "Kamera"),
+    # v3.1.0 (Roadmap Nr. 8): UB400/UB500 sind Bluetooth-USB-Adapter, keine
+    # Steckdosen.
+    (["tp-link", "tplink"], r"\bub\d{3}\b|bluetooth|usb", "Controller/Gateway"),
     (["tp-link", "tplink"], None, "Steckdose"),
     # Kameras
     (["ring"], None, "Türklingel"),
@@ -257,8 +278,16 @@ MANUFACTURER_MODEL_HINTS: list[tuple[list[str], str | None, str]] = [
     (["tado"], None, "Thermostat"),
     (["netatmo"], r"therm|valve", "Thermostat"),
     (["netatmo"], None, "Sensor"),
-    # Ikea
-    (["ikea"], None, "Leuchtmittel"),
+    # Ikea — v3.1.0 (Roadmap Nr. 8, Forum #47): kein Pauschal-"Leuchtmittel"
+    # mehr. ON/OFF-Switch, RODRET, STYRBAR usw. landeten sonst als Leuchten.
+    # Lampen erkennt die light-Domain ohnehin vorher.
+    (["ikea"], r"remote|switch|rodret|styrbar|somrig|shortcut|dimmer|on/off|button|knapp", "Schalter/Taster"),
+    (["ikea"], r"outlet|plug|tretakt|askvader", "Steckdose"),
+    (["ikea"], r"motion|sensor|parasoll|vallhorn|badring|vindstyrka|timmerflotte|myggspray|myggbett", "Sensor"),
+    (["ikea"], r"starkvind|fornuftig|förnuftig|air purifier", "Ventilator"),
+    (["ikea"], r"repeater|signal", "Repeater"),
+    (["ikea"], r"gateway|dirigera|hub", "Controller/Gateway"),
+    (["ikea"], r"bulb|lamp|led|driver|panel|tradfri", "Leuchtmittel"),
     # Sony
     (["sony"], r"tv|bravia|xr-|kd-", "Smart TV"),
     (["sony"], r"playstation|ps\d", "Streaming"),
@@ -402,6 +431,9 @@ DEVICE_CLASS_TO_TYPE: dict[tuple[str | None, str], str] = {
     ("cover", "shade"): "Rollladen",
     ("cover", "shutter"): "Rollladen",
     ("cover", "window"): "Rollladen",
+    # v3.1.0: Taster/Fernbedienungen melden Tastendruecke als event-Entity.
+    ("event", "button"): "Schalter/Taster",
+    ("event", "doorbell"): "Türklingel",
     # Any-domain: these are almost always sensor-like
     (None, "smoke"): "Sensor",
     (None, "gas"): "Sensor",
@@ -432,6 +464,23 @@ DEVICE_CLASS_TO_TYPE: dict[tuple[str | None, str], str] = {
     (None, "voltage"): "Sensor",
     (None, "current"): "Sensor",
 }
+
+# v3.1.0 (Roadmap Nr. 8): Messwerte, die fast jedes Geraet nebenbei liefert —
+# eine Lampe mit Leistungsmessung, ein Taster mit Batterie, ein Herd mit
+# Temperatur. Sie duerfen Domain und Hersteller nicht mehr ueberstimmen und
+# zaehlen erst ganz am Ende als Hinweis auf "Sensor".
+_WEAK_DEVICE_CLASSES = {
+    "battery", "power", "energy", "voltage", "current",
+    "temperature", "humidity", "illuminance", "pressure",
+}
+
+_APPLIANCE_NAME = (
+    r"herd|backofen|ofen|kochfeld|induktion|dunstabzug|geschirrsp[uü]ler|"
+    r"sp[uü]lmaschine|waschmaschine|w[aä]schetrockner|trockner|k[uü]hlschrank|"
+    r"gefrier\w*|mikrowelle|kaffeevollautomat|oven|stove|cooktop|hob|dishwasher|"
+    r"washer|dryer|fridge|freezer|microwave"
+)
+_OUTLET_NAME = r"steckdose|zwischenstecker|plug|socket|outlet|steckerleiste"
 
 
 def _entity_classes_and_domains(entities: list[dict]) -> tuple[set[tuple[str, str]], set[str]]:
@@ -479,7 +528,11 @@ def _guess_device_type_with_evidence(
     dc_pairs, domains = _entity_classes_and_domains(entities)
 
     # --- 1. device_class is king ---------------------------------------------
-    for domain, dc in dc_pairs:
+    # Sortiert, damit das Ergebnis nicht von der Mengen-Reihenfolge abhaengt;
+    # reine Messwerte (battery, power, ...) zaehlen hier nicht.
+    for domain, dc in sorted(dc_pairs):
+        if dc in _WEAK_DEVICE_CLASSES:
+            continue
         if (domain, dc) in DEVICE_CLASS_TO_TYPE:
             return DEVICE_CLASS_TO_TYPE[(domain, dc)], f"device_class={dc} on {domain}"
         if (None, dc) in DEVICE_CLASS_TO_TYPE:
@@ -538,6 +591,20 @@ def _guess_device_type_with_evidence(
 
     # --- 4. Name/model patterns — LAST resort, word boundaries only ----------
     name_and_model = f"{model} {name}"
+    # v3.1.0 (Roadmap Nr. 8, Forum #47): Ein Zwischenstecker heisst nach dem,
+    # was an ihm haengt — "Steckdose Fernseher" ist keine Smart TV,
+    # "Waschmaschine" am Shelly Plug keine Waschmaschine. Hat das Geraet eine
+    # switch-Entity, beschreibt der Name die Last, nicht das Geraet.
+    if "switch" in domains:
+        if re.search(rf"\b({_OUTLET_NAME})\b", name_and_model, re.IGNORECASE) or \
+                re.search(r"\b(tv|television|fernseher|smart[- ]?tv)\b|" + rf"\b({_APPLIANCE_NAME})\b",
+                          name_and_model, re.IGNORECASE):
+            return "Steckdose", "domain=switch + name of the connected load/plug"
+        return "Aktor/Relais", "domain=switch (no device_class — could be relay or outlet)"
+    if re.search(rf"\b({_APPLIANCE_NAME})\b", name_and_model, re.IGNORECASE):
+        return "Haushaltsgerät", "name match: appliance (herd/ofen/waschmaschine/...)"
+    if re.search(r"\b(bridge|gateway|coordinator|koordinator|hub)\b", name_and_model, re.IGNORECASE):
+        return "Controller/Gateway", "name match: bridge/gateway/hub"
     if re.search(r"\b(tv|television|fernseher|smart[- ]?tv)\b", name_and_model, re.IGNORECASE):
         return "Smart TV", "name match: tv/fernseher (no device_class/domain hint)"
     if re.search(r"\b(echo|alexa)\b", name_and_model, re.IGNORECASE):
@@ -554,16 +621,38 @@ def _guess_device_type_with_evidence(
         return "Display", "name match: display/dashboard/wandpanel"
 
     # --- 5. Fallbacks on remaining domains -----------------------------------
-    if "switch" in domains:
-        return "Aktor/Relais", "domain=switch (no device_class — could be relay or outlet)"
-
+    # (switch wird seit v3.1.0 in Schritt 4 entschieden.)
     sensor_only = {"sensor", "binary_sensor", "update", "button", "number",
                    "select", "device_tracker", "event", "text"}
     if domains and domains <= sensor_only:
+        if "event" in domains:
+            return "Schalter/Taster", "only event/sensor domains (button presses)"
         if "sensor" in domains or "binary_sensor" in domains:
             return "Sensor", "only sensor/binary_sensor domains"
 
+    weak = sorted(dc for _dom, dc in dc_pairs if dc in _WEAK_DEVICE_CLASSES)
+    if weak:
+        return "Sensor", f"device_class={weak[0]} (measurement only)"
+
     return "Sonstiges", "no matching signal — default"
+
+
+def classify_device(device: dict, entities: list[dict],
+                    integration_domain: str | None) -> tuple[str, str]:
+    """Import and "Kategorien neu zuordnen" share this entry point.
+
+    v3.1.0 (Roadmap Nr. 8): Integrationen, die genau eine Geraeteart liefern
+    (fritz, ring, sonos, home_connect, bluetooth ...), entscheiden weiter
+    sofort. Bei Plattform-Integrationen entscheiden die Entities; die
+    Integration greift nur, wenn sonst "Sonstiges" herauskaeme.
+    """
+    int_type, int_evidence = _guess_type_from_integration_with_evidence(integration_domain)
+    if int_type is not None and integration_domain not in PLATFORM_INTEGRATIONS:
+        return int_type, int_evidence or f"integration={integration_domain}"
+    dtype, evidence = _guess_device_type_with_evidence(device, entities, integration_domain)
+    if dtype == "Sonstiges" and int_type is not None:
+        return int_type, f"integration={integration_domain} (fallback)"
+    return dtype, evidence
 
 
 def _guess_device_type(device: dict, entities: list[dict],
@@ -929,11 +1018,7 @@ async def import_ha_devices(
                 if not auto_categorize:
                     device_type = "Sonstiges"
                 else:
-                    type_from_integration = _guess_type_from_integration(integration_domain)
-                    if type_from_integration is None:
-                        device_type = _guess_device_type(dev, device_entities, integration_domain)
-                    else:
-                        device_type = type_from_integration
+                    device_type, _evidence = classify_device(dev, device_entities, integration_domain)
 
                 # Map area
                 area_id = dev.get("area_id")

@@ -1,0 +1,101 @@
+"""Roadmap Nr. 8 — Restfehler der Auto-Kategorisierung (Forum 83177 #47,
+Osorkon): IKEA-Schalter als Leuchte, Zigbee-Zwischenstecker mit "Fernseher"
+im Namen als Smart TV, Herd nicht als Haushaltsgeraet, Bluetooth-USB-Adapter
+als Steckdose.
+
+Grundursache: die Integrations-Tabelle gewann immer vor den Entities, und
+Messwert-device_classes (battery, power ...) gewannen vor der Domain.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from app.services.ha_import import classify_device
+
+
+def _dev(**kw) -> dict:
+    return {"id": "d1", **kw}
+
+
+def _ent(entity_id: str, dc: str | None = None) -> dict:
+    return {"entity_id": entity_id, "original_device_class": dc}
+
+
+def test_ikea_on_off_switch_is_a_button_not_a_light():
+    dev = _dev(manufacturer="IKEA of Sweden", model="TRADFRI on/off switch", name="Schalter Flur")
+    ents = [_ent("sensor.schalter_flur_battery", "battery"), _ent("event.schalter_flur", "button")]
+    for integration in ("zha", "tradfri", "zigbee2mqtt"):
+        assert classify_device(dev, ents, integration)[0] == "Schalter/Taster", integration
+
+
+def test_ikea_rodret_without_event_entity_is_still_a_button():
+    dev = _dev(manufacturer="IKEA of Sweden", model="RODRET Dimmer", name="Rodret Bad")
+    ents = [_ent("sensor.rodret_bad_battery", "battery")]
+    assert classify_device(dev, ents, "zha")[0] == "Schalter/Taster"
+
+
+def test_ikea_bulb_stays_a_light():
+    dev = _dev(manufacturer="IKEA of Sweden", model="TRADFRI bulb E27 WW 806lm", name="Lampe")
+    assert classify_device(dev, [_ent("light.lampe")], "zha")[0] == "Leuchtmittel"
+
+
+def test_zigbee_plug_named_after_the_tv_is_an_outlet():
+    dev = _dev(manufacturer="_TZ3000_okaz9tjs", model="TS011F", name="Fernseher")
+    ents = [_ent("switch.fernseher"), _ent("sensor.fernseher_power", "power")]
+    assert classify_device(dev, ents, "zigbee2mqtt")[0] == "Steckdose"
+    assert classify_device(dev, ents, "mqtt")[0] == "Steckdose"
+
+
+def test_stove_by_name_is_an_appliance():
+    dev = _dev(manufacturer="Neff", model="T36FB41X0", name="Herd")
+    ents = [_ent("sensor.herd_temperature", "temperature"), _ent("binary_sensor.herd_door", "door")]
+    # door ist ein starkes Sensor-Signal; der Name entscheidet nur ohne es.
+    assert classify_device(dev, ents[:1], "some_cloud")[0] == "Haushaltsgerät"
+
+
+def test_home_connect_stays_an_appliance():
+    dev = _dev(manufacturer="Siemens", model="HB676G0S1", name="Backofen")
+    ents = [_ent("sensor.backofen_temperature", "temperature"), _ent("switch.backofen_power")]
+    assert classify_device(dev, ents, "home_connect")[0] == "Haushaltsgerät"
+
+
+def test_bluetooth_adapter_is_not_an_outlet():
+    dev = _dev(manufacturer="TP-Link", model="UB500", name="hci0")
+    assert classify_device(dev, [], "bluetooth")[0] == "Controller/Gateway"
+    assert classify_device(dev, [], None)[0] == "Controller/Gateway"
+
+
+def test_zha_devices_are_no_longer_all_gateways():
+    lamp = _dev(manufacturer="Philips", model="LCT015", name="Lampe")
+    assert classify_device(lamp, [_ent("light.lampe")], "zha")[0] == "Leuchtmittel"
+    smoke = _dev(manufacturer="Heiman", model="SmokeSensor-N", name="Rauchmelder")
+    ents = [_ent("binary_sensor.rauchmelder", "smoke"), _ent("sensor.rauchmelder_battery", "battery")]
+    assert classify_device(smoke, ents, "zha")[0] == "Sensor"
+    # Der Koordinator selbst hat keine Entities -> Rueckfall auf die Integration.
+    coord = _dev(manufacturer="ITead", model="Sonoff Zigbee 3.0 USB Dongle Plus", name="Coordinator")
+    assert classify_device(coord, [], "zha")[0] == "Controller/Gateway"
+
+
+def test_battery_does_not_beat_the_domain():
+    mower = _dev(manufacturer="Positec", model="Landroid", name="Rasenmaeher")
+    ents = [_ent("sensor.rasen_battery", "battery"), _ent("lawn_mower.rasen")]
+    assert classify_device(mower, ents, "some_custom")[0] == "Mähroboter"
+    thermo = _dev(manufacturer="Eurotronic", model="Spirit", name="Heizung Bad")
+    ents = [_ent("climate.heizung_bad"), _ent("sensor.heizung_bad_battery", "battery")]
+    assert classify_device(thermo, ents, "zigbee2mqtt")[0] == "Thermostat"
+
+
+def test_plain_thermometer_is_still_a_sensor():
+    dev = _dev(manufacturer="Aqara", model="WSDCGQ11LM", name="Klima Bad")
+    ents = [_ent("sensor.klima_bad_temperature", "temperature"),
+            _ent("sensor.klima_bad_battery", "battery")]
+    assert classify_device(dev, ents, "zha")[0] == "Sensor"
+
+
+def test_dedicated_integrations_still_decide_directly():
+    box = _dev(manufacturer="AVM", model="FRITZ!Box 7590", name="fritz.box")
+    assert classify_device(box, [_ent("switch.wlan")], "fritz")[0] == "Router"

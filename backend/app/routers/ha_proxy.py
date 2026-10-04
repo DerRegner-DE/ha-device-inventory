@@ -488,11 +488,7 @@ def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
     """Evaluate a single inventory row. Returns ``(new_type, evidence)`` or
     None if the device has no matching HA device (shouldn't happen normally).
     """
-    from app.services.ha_import import (
-        _guess_device_type_with_evidence,
-        _guess_type_from_integration_with_evidence,
-        _resolve_primary_integration,
-    )
+    from app.services.ha_import import classify_device, _resolve_primary_integration
 
     ha_dev = ha_device_map.get(row["ha_device_id"])
     if not ha_dev:
@@ -500,12 +496,7 @@ def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
 
     device_entities = entity_map.get(row["ha_device_id"], [])
     integration_domain = _resolve_primary_integration(ha_dev, config_entry_domains)
-
-    int_type, int_evidence = _guess_type_from_integration_with_evidence(integration_domain)
-    if int_type is not None:
-        return int_type, int_evidence or f"integration={integration_domain}"
-
-    return _guess_device_type_with_evidence(ha_dev, device_entities, integration_domain)
+    return classify_device(ha_dev, device_entities, integration_domain)
 
 
 @router.post("/recategorize/preview")
