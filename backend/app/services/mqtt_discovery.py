@@ -195,10 +195,12 @@ async def ensure_addon_slug() -> str | None:
             logger.warning("Add-on-Slug ueber den Supervisor nicht ermittelbar", exc_info=True)
         if not _addon_slug:
             # Rueckfall: Der Supervisor benennt den Container nach dem Slug,
-            # mit Bindestrich statt Unterstrich ("a0d7b954-geraeteverwaltung").
+            # nur der Trenner nach dem Repo-Praefix wird zum Bindestrich
+            # ("a0d7b954-geraeteverwaltung", "local-geraeteverwaltung-preview"
+            # fuer den Slug "local_geraeteverwaltung-preview").
             host = os.environ.get("HOSTNAME", "")
             if "geraeteverwaltung" in host:
-                _addon_slug = host.replace("-", "_")
+                _addon_slug = host.replace("-", "_", 1)
     _addon_slug_checked = True
     return _addon_slug
 
