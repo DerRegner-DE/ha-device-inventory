@@ -307,6 +307,10 @@ def _build_discovery_messages(device: dict) -> list[tuple[str, dict]]:
             "unique_id": f"gv_{uuid}_type",
             "state_topic": state_topic,
             "value_template": "{{ value_json.typ }}",
+            # v3.1.0 (Roadmap Nr. 1, Forum #70/#74): gepflegte Angaben als
+            # Attribute -- Notizen sprengen sonst die 255 Zeichen eines Zustands.
+            "json_attributes_topic": state_topic,
+            "json_attributes_template": "{{ value_json.details | tojson }}",
             "icon": "mdi:devices",
             "device": dev_info,
         },
@@ -347,6 +351,24 @@ def _build_state_payload(device: dict) -> dict:
         "firmware": device.get("firmware", ""),
         "integration": device.get("integration", ""),
         "netzwerk": device.get("netzwerk", ""),
+        # v3.1.0 (Roadmap Nr. 1): Attribute der "Device type"-Entity. Leere
+        # Werte fallen weg, damit die Attributliste in HA lesbar bleibt.
+        "details": {
+            k: v for k, v in {
+                "standort": device.get("standort_name"),
+                "seriennummer": device.get("seriennummer"),
+                "stromversorgung": device.get("stromversorgung"),
+                "funktion": device.get("funktion"),
+                "anmerkungen": device.get("anmerkungen"),
+                "ohne_ha": device.get("ohne_ha"),
+                "ohne_ha_hinweis": device.get("ohne_ha_hinweis"),
+                "schalter_gebrueckt": device.get("schalter_gebrueckt"),
+                "schalter_gebrueckt_hinweis": device.get("schalter_gebrueckt_hinweis"),
+                "external_url": device.get("external_url"),
+                "fotos": len(device.get("photos") or []) or None,
+                "einbauort_bilder": device.get("attachments_count") or None,
+            }.items() if v not in (None, "")
+        },
     }
 
 
@@ -356,6 +378,17 @@ async def publish_device(device: dict) -> bool:
         return False
 
     await ensure_addon_slug()
+    if "attachments_count" not in device and device.get("id") is not None:
+        try:
+            from app.database import get_db
+
+            with get_db() as conn:
+                device = {**device, "attachments_count": conn.execute(
+                    "SELECT COUNT(*) FROM attachments WHERE device_id = ? AND deleted_at IS NULL",
+                    (device["id"],),
+                ).fetchone()[0]}
+        except Exception:
+            pass  # Zaehler ist Beiwerk, die Veroeffentlichung geht vor
     try:
         async with aiomqtt.Client(**_connect_kwargs()) as client:
             # Publish discovery configs (retained)
