@@ -32,6 +32,9 @@ export interface Device {
   external_url?: string;
   ohne_ha?: "yes" | "no" | "";
   ohne_ha_hinweis?: string;
+  // v3.1.0 (Roadmap Nr. 19): Wandschalter ueberbrueckt / Aktor entkoppelt
+  schalter_gebrueckt?: "yes" | "no" | "";
+  schalter_gebrueckt_hinweis?: string;
   reviewed?: number;
   created_at: string;
   updated_at: string;

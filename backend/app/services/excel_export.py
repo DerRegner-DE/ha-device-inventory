@@ -69,7 +69,13 @@ FIELD_LABELS: dict[str, str] = {
     "external_url": "Externer Link",
     "ohne_ha": "Ohne HA nutzbar",
     "ohne_ha_hinweis": "Hinweis ohne HA",
+    # v3.1.0 (Roadmap Nr. 19)
+    "schalter_gebrueckt": "Schalter gebrückt",
+    "schalter_gebrueckt_hinweis": "Hinweis Schalter",
 }
+
+# Felder, die sprachneutral als yes/no gespeichert werden.
+YES_NO_FIELDS = {"ohne_ha", "schalter_gebrueckt"}
 
 # v3.0.0: ``ohne_ha`` wird sprachneutral als yes/no gespeichert. Im Export
 # steht die deutsche Beschriftung, leer bleibt leer (= unbekannt).
@@ -102,6 +108,8 @@ FIELD_WIDTHS: dict[str, int] = {
     "external_url": 34,
     "ohne_ha": 16,
     "ohne_ha_hinweis": 34,
+    "schalter_gebrueckt": 16,
+    "schalter_gebrueckt_hinweis": 34,
 }
 
 DEFAULT_FIELDS: list[str] = [
@@ -141,7 +149,7 @@ def _device_to_row(
     for f in fields:
         if f == "nr":
             out.append(nr)
-        elif f == "ohne_ha":
+        elif f in YES_NO_FIELDS:
             out.append(OHNE_HA_LABELS.get(str(device.get(f) or ""), ""))
         else:
             out.append(device.get(f, ""))
@@ -212,8 +220,13 @@ def _categorize_devices(devices: list[dict[str, Any]]) -> list[tuple[str, list[d
 def export_devices_to_xlsx(
     devices: list[dict[str, Any]],
     fields: list[str] | None = None,
+    flat: bool = False,
 ) -> bytes:
     """Export devices to Excel bytes.
+
+    ``flat=True`` (v3.1.0, Roadmap Nr. 16): eine durchgehende Tabelle in der
+    uebergebenen Reihenfolge, ohne Kategorie-Zwischenzeilen -- die machten
+    die Liste in Excel unsortierbar.
 
     ``fields`` is the list of DB field names to include (in that order).
     When None, the default 16-column set from pre-v2.5.3 is used so existing
@@ -239,25 +252,28 @@ def export_devices_to_xlsx(
 
     ws.row_dimensions[1].height = 30
 
-    # --- Group by category ---
-    categories = _categorize_devices(devices)
+    # --- Group by category (or one flat block) ---
+    categories: list[tuple[str | None, list[dict[str, Any]]]] = (
+        [(None, devices)] if flat else _categorize_devices(devices)
+    )
 
     row = 2
     nr = 0
 
     for cat_name, cat_devices in categories:
-        # Category header row
-        for col in range(1, len(selected) + 1):
-            c = ws.cell(row=row, column=col)
-            c.fill = CATEGORY_FILL
-            c.font = CATEGORY_FONT
-            c.border = THIN_BORDER
+        if cat_name is not None:
+            # Category header row
+            for col in range(1, len(selected) + 1):
+                c = ws.cell(row=row, column=col)
+                c.fill = CATEGORY_FILL
+                c.font = CATEGORY_FONT
+                c.border = THIN_BORDER
 
-        ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=max(2, len(selected)))
-        cell = ws.cell(row=row, column=2, value=cat_name)
-        cell.font = CATEGORY_FONT
-        cell.fill = CATEGORY_FILL
-        row += 1
+            ws.merge_cells(start_row=row, start_column=2, end_row=row, end_column=max(2, len(selected)))
+            cell = ws.cell(row=row, column=2, value=cat_name)
+            cell.font = CATEGORY_FONT
+            cell.fill = CATEGORY_FILL
+            row += 1
 
         # Data rows
         data_row_idx = 0

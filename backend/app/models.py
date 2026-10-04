@@ -37,6 +37,9 @@ class DeviceBase(BaseModel):
     external_url: str | None = None
     ohne_ha: str | None = None  # 'yes' | 'no' | None (unbekannt)
     ohne_ha_hinweis: str | None = None
+    # v3.1.0 (Roadmap Nr. 19): ueberbrueckter Wandschalter / Aktor-Einstellung
+    schalter_gebrueckt: str | None = None  # 'yes' | 'no' | None (unbekannt)
+    schalter_gebrueckt_hinweis: str | None = None
 
 
 class DeviceCreate(DeviceBase):
@@ -70,6 +73,8 @@ class DeviceUpdate(BaseModel):
     external_url: str | None = None
     ohne_ha: str | None = None
     ohne_ha_hinweis: str | None = None
+    schalter_gebrueckt: str | None = None
+    schalter_gebrueckt_hinweis: str | None = None
 
 
 class Device(DeviceBase):

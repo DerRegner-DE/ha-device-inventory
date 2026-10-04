@@ -155,6 +155,8 @@ def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
         "parent_uuid",  # v2.5.0: parent-child grouping
         # v3.0.0: Uebergabe-Doku
         "external_url", "ohne_ha", "ohne_ha_hinweis",
+        # v3.1.0: Wandschalter gebrueckt
+        "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
     ]
     for f in optional:
         val = getattr(body, f, None)
@@ -166,8 +168,9 @@ def create_device(body: DeviceCreate, background_tasks: BackgroundTasks):
     # aufgeloest und laeuft auf 401.
     if fields.get("external_url"):
         fields["external_url"] = normalize_link_url(str(fields["external_url"]))
-    if fields.get("ohne_ha") is not None:
-        fields["ohne_ha"] = _clean_ohne_ha(fields["ohne_ha"])
+    for tri in ("ohne_ha", "schalter_gebrueckt"):
+        if fields.get(tri) is not None:
+            fields[tri] = _clean_ohne_ha(fields[tri])
 
     columns = ", ".join(fields.keys())
     placeholders = ", ".join(["?"] * len(fields))
@@ -211,8 +214,9 @@ def update_device(uuid: str, body: DeviceUpdate, background_tasks: BackgroundTas
     # v3.0.0: siehe create_device — Link absolut machen, Tri-State saeubern.
     if update_data.get("external_url"):
         update_data["external_url"] = normalize_link_url(str(update_data["external_url"]))
-    if "ohne_ha" in update_data:
-        update_data["ohne_ha"] = _clean_ohne_ha(update_data["ohne_ha"])
+    for tri in ("ohne_ha", "schalter_gebrueckt"):
+        if tri in update_data:
+            update_data[tri] = _clean_ohne_ha(update_data[tri])
 
     sets = []
     params: list[Any] = []

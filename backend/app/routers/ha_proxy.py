@@ -258,6 +258,7 @@ HANDGEPFLEGTE_FELDER = (
     "anmerkungen", "funktion", "seriennummer", "ain_artikelnr",
     "anschaffungsdatum", "garantie_bis", "external_url",
     "ohne_ha", "ohne_ha_hinweis", "stromversorgung",
+    "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
 )
 
 

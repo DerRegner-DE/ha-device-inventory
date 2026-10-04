@@ -312,8 +312,22 @@ export function DeviceDetail({ uuid }: DeviceDetailProps) {
 
       {/* v3.0.0: Uebergabe-Doku — bewusst als eigene Karte ueber den
           Notizen, damit sie beim Durchblaettern nicht untergeht. */}
-      {(device.ohne_ha || device.external_url) && (
+      {(device.ohne_ha || device.schalter_gebrueckt || device.external_url) && (
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+          {/* v3.1.0 (Roadmap Nr. 19): ueberbrueckter Wandschalter */}
+          {device.schalter_gebrueckt && (
+            <div>
+              <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1">{t("detail.bridgedSwitch")}</h3>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                {device.schalter_gebrueckt === "yes" ? t("detail.bridgedSwitchYes") : t("detail.bridgedSwitchNo")}
+              </p>
+              {device.schalter_gebrueckt_hinweis && (
+                <p class="text-sm text-gray-500 dark:text-gray-400 whitespace-pre-wrap mt-1">
+                  {device.schalter_gebrueckt_hinweis}
+                </p>
+              )}
+            </div>
+          )}
           {device.ohne_ha && (
             <div>
               <h3 class="text-xs font-medium text-gray-400 dark:text-gray-500 mb-1">{t("detail.withoutHa")}</h3>

@@ -184,6 +184,8 @@ export function DeviceForm({ device }: DeviceFormProps) {
     external_url: device?.external_url ?? "",
     ohne_ha: device?.ohne_ha ?? "",
     ohne_ha_hinweis: device?.ohne_ha_hinweis ?? "",
+    schalter_gebrueckt: device?.schalter_gebrueckt ?? "",
+    schalter_gebrueckt_hinweis: device?.schalter_gebrueckt_hinweis ?? "",
   });
 
   const [sections, setSections] = useState({
@@ -343,6 +345,8 @@ export function DeviceForm({ device }: DeviceFormProps) {
       external_url: form.external_url || undefined,
       ohne_ha: (form.ohne_ha as "yes" | "no" | "") || undefined,
       ohne_ha_hinweis: form.ohne_ha_hinweis || undefined,
+      schalter_gebrueckt: (form.schalter_gebrueckt as "yes" | "no" | "") || undefined,
+      schalter_gebrueckt_hinweis: form.schalter_gebrueckt_hinweis || undefined,
       created_at: device?.created_at ?? now,
       updated_at: now,
       sync_version: (device?.sync_version ?? 0) + 1,
@@ -773,6 +777,31 @@ export function DeviceForm({ device }: DeviceFormProps) {
                 class={inputClass + " resize-none"}
                 rows={2}
                 placeholder={t("form.withoutHaNotePlaceholder")}
+              />
+            </Field>
+          )}
+          {/* v3.1.0 (Roadmap Nr. 19, Forum 92177): ueberbrueckter Wandschalter.
+              Der Freitext muss auch den Fall "Aktor-Einstellung" tragen
+              (Shelly detached), nicht nur die Klemme in der Dose. */}
+          <Field label={t("form.bridgedSwitch")} hint={t("form.bridgedSwitchHint")}>
+            <select
+              value={form.schalter_gebrueckt}
+              onChange={(e) => updateField("schalter_gebrueckt", (e.target as HTMLSelectElement).value)}
+              class={inputClass}
+            >
+              <option value="">{t("form.bridgedSwitchUnknown")}</option>
+              <option value="yes">{t("form.bridgedSwitchYes")}</option>
+              <option value="no">{t("form.bridgedSwitchNo")}</option>
+            </select>
+          </Field>
+          {form.schalter_gebrueckt && (
+            <Field label={t("form.bridgedSwitchNote")}>
+              <textarea
+                value={form.schalter_gebrueckt_hinweis}
+                onInput={(e) => updateField("schalter_gebrueckt_hinweis", (e.target as HTMLTextAreaElement).value)}
+                class={inputClass + " resize-none"}
+                rows={2}
+                placeholder={t("form.bridgedSwitchNotePlaceholder")}
               />
             </Field>
           )}

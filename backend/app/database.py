@@ -33,6 +33,8 @@ CREATE TABLE IF NOT EXISTS devices (
     external_url TEXT,
     ohne_ha TEXT,
     ohne_ha_hinweis TEXT,
+    schalter_gebrueckt TEXT,
+    schalter_gebrueckt_hinweis TEXT,
     reviewed INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -264,7 +266,15 @@ def _migrate_db(conn: sqlite3.Connection) -> None:
     #   ohne_ha_hinweis - Freitext dazu ("Schalter direkt an der Wand",
     #                     "nur ueber App bedienbar").
     cols = {row[1] for row in conn.execute("PRAGMA table_info(devices)").fetchall()}
-    for col in ("external_url", "ohne_ha", "ohne_ha_hinweis"):
+    # v3.1.0 (Roadmap Nr. 19, Forum 92177): Wandschalter ueberbrueckt?
+    #   schalter_gebrueckt         - 'yes' | 'no' | NULL, sprachneutral wie ohne_ha.
+    #                                Wer zurueckbaut, muss wissen, welcher
+    #                                Lichtschalter ueberbrueckt wurde, sonst geht
+    #                                die "dumme" Lampe nicht mehr.
+    #   schalter_gebrueckt_hinweis - welcher Schalter/welche Dose -- oder dass es
+    #                                eine Aktor-Einstellung ist (Shelly detached).
+    for col in ("external_url", "ohne_ha", "ohne_ha_hinweis",
+                "schalter_gebrueckt", "schalter_gebrueckt_hinweis"):
         if col not in cols:
             conn.execute(f"ALTER TABLE devices ADD COLUMN {col} TEXT")
 

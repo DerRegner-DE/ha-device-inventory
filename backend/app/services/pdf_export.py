@@ -52,6 +52,9 @@ FIELD_LABELS_EN: dict[str, str] = {
     "external_url": "External Link",
     "ohne_ha": "Works without HA",
     "ohne_ha_hinweis": "Without-HA Note",
+    # v3.1.0 (Roadmap Nr. 19)
+    "schalter_gebrueckt": "Wall switch bridged",
+    "schalter_gebrueckt_hinweis": "Switch note",
 }
 
 FIELD_LABELS_DE: dict[str, str] = {
@@ -80,7 +83,12 @@ FIELD_LABELS_DE: dict[str, str] = {
     "external_url": "Externer Link",
     "ohne_ha": "Ohne HA nutzbar",
     "ohne_ha_hinweis": "Hinweis ohne HA",
+    "schalter_gebrueckt": "Schalter gebrückt",
+    "schalter_gebrueckt_hinweis": "Hinweis Schalter",
 }
+
+# Felder, die sprachneutral als yes/no gespeichert werden.
+YES_NO_FIELDS = {"ohne_ha", "schalter_gebrueckt"}
 
 # v3.0.0: stored language-neutrally as yes/no.
 OHNE_HA_LABELS_EN: dict[str, str] = {"yes": "Yes", "no": "No"}
@@ -120,6 +128,8 @@ FIELD_WEIGHTS: dict[str, float] = {
     "external_url": 3.5,
     "ohne_ha": 1.2,
     "ohne_ha_hinweis": 3.0,
+    "schalter_gebrueckt": 1.4,
+    "schalter_gebrueckt_hinweis": 3.0,
 }
 
 DEFAULT_FIELDS: list[str] = [
@@ -276,7 +286,10 @@ def export_devices_to_pdf(
     fill = False
 
     for idx, device in enumerate(devices, 1):
-        if pdf.get_y() > 265:
+        # v3.1.0: an der Seitenhoehe messen. Die feste 265 griff im Querformat
+        # (210 mm) nie -- fpdf brach selbst um, und ab Seite 2 fehlte der
+        # Tabellenkopf.
+        if pdf.get_y() > pdf.h - 32:
             pdf.add_page()
             _draw_header()
             pdf.set_font("Helvetica", "", 7)
@@ -288,7 +301,7 @@ def export_devices_to_pdf(
         for i, f in enumerate(selected):
             if f == "nr":
                 val = str(idx)
-            elif f == "ohne_ha":
+            elif f in YES_NO_FIELDS:
                 val = ohne_ha_labels.get(str(device.get(f) or ""), "")
             else:
                 val = str(device.get(f, "") or "")
@@ -329,7 +342,7 @@ def export_devices_to_pdf(
 
             for f in detail_fields:
                 value = device.get(f, "")
-                if f == "ohne_ha":
+                if f in YES_NO_FIELDS:
                     value = ohne_ha_labels.get(str(value or ""), "")
                 if not value:
                     continue

@@ -29,6 +29,8 @@ TRACKED_FIELDS = {
     "ha_entity_id", "ha_device_id", "ain_artikelnr", "parent_uuid",
     # v3.0.0: Uebergabe-Doku
     "external_url", "ohne_ha", "ohne_ha_hinweis",
+    # v3.1.0: Wandschalter gebrueckt
+    "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
 }
 
 

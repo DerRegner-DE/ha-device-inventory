@@ -17,7 +17,13 @@ const ALL_FIELDS: string[] = [
   "funktion", "anmerkungen",
   // v3.0.0: Uebergabe-Doku
   "ohne_ha", "ohne_ha_hinweis", "external_url",
+  // v3.1.0 (Roadmap Nr. 19)
+  "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
 ];
+
+// v3.1.0 (Roadmap Nr. 16): "standort" = Etage > Standort > Name, flache Liste.
+type SortKey = "nr" | "standort";
+const SORT_STORAGE_KEY = "gv_export_sort_v1";
 
 const STORAGE_KEY = "gv_export_fields_v1";
 // Die aktive Vorlage muss genauso ueberdauern wie die Feldauswahl. Sonst steht
@@ -61,6 +67,19 @@ export function ExportPicker({ onClose }: Props) {
       else localStorage.removeItem(PRESET_STORAGE_KEY);
     } catch {}
   }, [activePreset]);
+
+  const [sort, setSort] = useState<SortKey>(() => {
+    try {
+      return localStorage.getItem(SORT_STORAGE_KEY) === "standort" ? "standort" : "nr";
+    } catch {
+      return "nr";
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, sort);
+    } catch {}
+  }, [sort]);
   const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
@@ -117,7 +136,7 @@ export function ExportPicker({ onClose }: Props) {
   const download = async (format: Format) => {
     if (selected.size === 0 || busy) return;
     const fields = [...selected].join(",");
-    let url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}`;
+    let url = `${getApiBase()}/export/${format}?fields=${encodeURIComponent(fields)}&sort=${sort}`;
     // Die Rueckbau-Liste geht an einen Handwerker und soll auf ein paar
     // Blatt passen. Detailseiten je Geraet blaehen sie auf 60+ Seiten auf.
     if (format === "pdf" && activePreset === "rueckbau") url += "&details=false";
@@ -178,6 +197,19 @@ export function ExportPicker({ onClose }: Props) {
                 </button>
               ))}
             </div>
+          </div>
+          <div>
+            <h3 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+              {t("exportPicker.sort")}
+            </h3>
+            <select
+              value={sort}
+              onChange={(e) => setSort((e.target as HTMLSelectElement).value as SortKey)}
+              class="w-full px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+            >
+              <option value="nr">{t("exportPicker.sort.nr")}</option>
+              <option value="standort">{t("exportPicker.sort.standort")}</option>
+            </select>
           </div>
           <div>
             <h3 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">

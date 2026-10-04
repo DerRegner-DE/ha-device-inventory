@@ -42,6 +42,25 @@ EXPORT_FIELD_PRESETS: dict[str, list[str]] = {
         "standort_name", "standort_floor_id",
         "netzwerk", "stromversorgung",
         "ohne_ha", "ohne_ha_hinweis",
+        # v3.1.0 (Roadmap Nr. 19, Forum 92177): Pflichtspalte. Wer zurueckbaut,
+        # muss wissen, welcher Wandschalter ueberbrueckt ist.
+        "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
+        "external_url",
+        "funktion", "anmerkungen",
+    ],
+    # v3.1.0 (Roadmap Nr. 20, Forum 92177 #11/#14/#17/#18): Notfallmappe /
+    # Hausunterlagen zum Ausdrucken. Leser ist der Helfer, den die Angehoerigen
+    # holen -- Elektriker, Nachbar, Makler: Was ist es, wo haengt es, wer hat
+    # es gebaut, wo liegt die Anleitung, laeuft es ohne HA. Bewusst OHNE
+    # Kennwoerter (gibt es in der App nicht) und ohne Netzwerkdetails.
+    "notfallmappe": [
+        "nr", "typ", "bezeichnung", "hersteller", "modell",
+        "seriennummer",
+        "standort_floor_id", "standort_name",
+        "stromversorgung",
+        "ohne_ha", "ohne_ha_hinweis",
+        "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
+        "anschaffungsdatum", "garantie_bis",
         "external_url",
         "funktion", "anmerkungen",
     ],
@@ -58,6 +77,41 @@ EXPORT_FIELD_PRESETS: dict[str, list[str]] = {
         "funktion", "anmerkungen",
     ],
 }
+
+
+def _load_rows(sort: str) -> list[dict]:
+    """Aktive Geraete fuer den Export.
+
+    v3.1.0 (Roadmap Nr. 16, Forum #90): ``sort="standort"`` ordnet nach
+    Etage > Standort > Bezeichnung -- der Ausdruck haengt im Sicherungskasten,
+    und wer davor steht, sucht nach Raum, nicht nach Geraetename. Die Spalte
+    "Etage" zeigt dabei den Namen aus HA statt der internen floor_id.
+    """
+    with get_db() as conn:
+        rows = dicts_from_rows(
+            conn.execute(
+                "SELECT * FROM devices WHERE deleted_at IS NULL ORDER BY nr ASC, typ ASC, bezeichnung ASC"
+            ).fetchall()
+        )
+        floor_names = {
+            r["floor_id"]: r["floor_name"]
+            for r in conn.execute(
+                "SELECT DISTINCT floor_id, floor_name FROM ha_areas "
+                "WHERE floor_id IS NOT NULL AND floor_name IS NOT NULL"
+            ).fetchall()
+        }
+    for r in rows:
+        fid = r.get("standort_floor_id")
+        if fid and fid in floor_names:
+            r["standort_floor_id"] = floor_names[fid]
+    if sort == "standort":
+        def key(r: dict):
+            floor = (r.get("standort_floor_id") or "").casefold()
+            place = (r.get("standort_name") or "").casefold()
+            # Geraete ohne Etage/Standort ans Ende, nicht an den Anfang.
+            return (floor == "", floor, place == "", place, (r.get("bezeichnung") or "").casefold())
+        rows.sort(key=key)
+    return rows
 
 
 def _parse_fields(fields: str | None) -> list[str] | None:
@@ -77,7 +131,10 @@ def get_export_presets():
 
 
 @router.get("/xlsx")
-def export_xlsx(fields: str | None = Query(None, description="Comma-separated field allowlist")):
+def export_xlsx(
+    fields: str | None = Query(None, description="Comma-separated field allowlist"),
+    sort: str = Query("nr", description="'nr' (grouped by category) or 'standort' (flat, floor > location > name)"),
+):
     """Export all devices as formatted Excel. If ``fields`` is given, only
     those columns are rendered (in that order).
 
@@ -85,15 +142,14 @@ def export_xlsx(fields: str | None = Query(None, description="Comma-separated fi
     because the xlsx builder had a hardcoded 16-column header and pulled
     values via ``.get()`` with empty-string defaults — unselected fields
     came out as empty cells instead of being dropped.
-    """
-    with get_db() as conn:
-        rows = dicts_from_rows(
-            conn.execute(
-                "SELECT * FROM devices WHERE deleted_at IS NULL ORDER BY nr ASC, typ ASC, bezeichnung ASC"
-            ).fetchall()
-        )
 
-    xlsx_bytes = export_devices_to_xlsx(rows, fields=_parse_fields(fields))
+    v3.1.0: ``sort=standort`` liefert eine flache Tabelle ohne
+    Kategorie-Zwischenzeilen, damit sie in Excel frei sortierbar bleibt.
+    """
+    rows = _load_rows(sort)
+    xlsx_bytes = export_devices_to_xlsx(
+        rows, fields=_parse_fields(fields), flat=(sort == "standort"),
+    )
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"Device_Inventory_{timestamp}.xlsx"
@@ -115,15 +171,11 @@ def export_pdf(
             "requested fields are exactly the 'rueckbau' preset."
         ),
     ),
+    sort: str = Query("nr", description="'nr' or 'standort' (floor > location > name)"),
 ):
     """Export all devices as PDF. ``fields`` shapes both the summary table
     and the per-device detail pages. Same v2.5.3 fix as ``/xlsx``."""
-    with get_db() as conn:
-        rows = dicts_from_rows(
-            conn.execute(
-                "SELECT * FROM devices WHERE deleted_at IS NULL ORDER BY nr ASC, typ ASC, bezeichnung ASC"
-            ).fetchall()
-        )
+    rows = _load_rows(sort)
 
     selected = _parse_fields(fields)
     if details is None:
