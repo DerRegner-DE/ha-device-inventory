@@ -43,5 +43,6 @@ export function hasTranslation(key: string): boolean {
 export function t(key: string, params?: Record<string, string | number>): string {
   const value = translations[currentLang]?.[key] || translations['en']?.[key] || translations['de']?.[key] || key;
   if (!params) return value;
-  return Object.entries(params).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), value);
+  // v3.1.0: alle Vorkommen ersetzen -- replace() mit String-Muster traf nur das erste.
+  return Object.entries(params).reduce((s, [k, v]) => s.split(`{${k}}`).join(String(v)), value);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { apiGet, apiPost } from "../api/client";
 import { db, type Device } from "../db/schema";
 import { t } from "../i18n";
@@ -30,8 +30,10 @@ export function MergeDialog({ source, onClose }: { source: Device; onClose: () =
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
+  const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     db.devices.toArray().then((all) => setDevices(all.filter((d) => d.uuid !== source.uuid)));
+    searchRef.current?.focus();
   }, [source.uuid]);
 
   const shown = useMemo(() => {
@@ -81,7 +83,7 @@ export function MergeDialog({ source, onClose }: { source: Device; onClose: () =
             onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
             placeholder={t("merge.search")}
             class="w-full px-3 py-2 rounded-lg text-sm border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-            autoFocus
+            ref={searchRef}
           />
           <ul class="divide-y divide-gray-100 dark:divide-gray-700">
             {shown.map((d) => (
