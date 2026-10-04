@@ -136,9 +136,8 @@ def test_ha_version_uses_a_leading_slash_and_does_not_cache_failures(monkeypatch
 
 
 def test_ha_version_prefers_websocket_over_rest(monkeypatch):
-    """Roadmap Nr. 18: REST /config lieferte auf echten Installationen 403,
-    das Feld blieb in 3.0.x leer. Der WebSocket ist der erste Weg; REST
-    wird dann gar nicht mehr gefragt."""
+    """Roadmap Nr. 18: der WebSocket ist der erste Weg; REST wird dann gar
+    nicht mehr gefragt."""
     import asyncio
     from app.services import ha_client
 
@@ -157,6 +156,57 @@ def test_ha_version_prefers_websocket_over_rest(monkeypatch):
     assert asyncio.run(ha_client.get_ha_version()) == "2026.10.0"
     assert sent == [{"type": "get_config"}]
     ha_client._ha_version_cache = None
+
+
+def test_ha_version_cache_expires_after_an_ha_update(monkeypatch):
+    """Roadmap Nr. 18: 3.0.0 meldete nach einem HA-Update bis zum
+    Add-on-Neustart die alte Version (2026.9.0 statt 2026.9.2)."""
+    import asyncio
+    from app.services import ha_client
+
+    ha_client._ha_version_cache = None
+    now = [1000.0]
+    monkeypatch.setattr(ha_client.time, "monotonic", lambda: now[0])
+    current = ["2026.9.0"]
+
+    async def ws(cmd):
+        return {"version": current[0]}
+
+    monkeypatch.setattr(ha_client, "_ws_command", ws)
+    assert asyncio.run(ha_client.get_ha_version()) == "2026.9.0"
+    current[0] = "2026.9.2"
+    now[0] += 60
+    assert asyncio.run(ha_client.get_ha_version()) == "2026.9.0", "innerhalb der Stunde gemerkt"
+    now[0] += ha_client._HA_VERSION_TTL
+    assert asyncio.run(ha_client.get_ha_version()) == "2026.9.2"
+    ha_client._ha_version_cache = None
+
+
+def _ent(entity_id: str, device_class: str | None = None) -> dict:
+    return {"entity_id": entity_id, "original_device_class": device_class}
+
+
+def test_power_source_needs_a_battery_entity():
+    """Roadmap Nr. 17: ohne Beleg bleibt das Feld leer, statt "230V" zu raten."""
+    from app.services.ha_import import _guess_power_source
+
+    assert _guess_power_source([_ent("switch.steckdose"), _ent("sensor.power", "power")], "shelly") is None
+    assert _guess_power_source([], None) is None
+
+
+def test_power_source_battery_vs_rechargeable():
+    from app.services.ha_import import _guess_power_source
+
+    sensor = [_ent("binary_sensor.fenster", "window"), _ent("sensor.fenster_battery", "battery")]
+    assert _guess_power_source(sensor, "zha") == "Batterie"
+    charging = sensor + [_ent("binary_sensor.laedt", "battery_charging")]
+    assert _guess_power_source(charging, "zha") == "Akku"
+    mower = [_ent("lawn_mower.landroid"), _ent("sensor.landroid_battery", "battery")]
+    assert _guess_power_source(mower, "landroid_cloud") == "Akku"
+    phone = [_ent("sensor.handy_battery_level", "battery")]
+    assert _guess_power_source(phone, "mobile_app") == "Akku"
+    # Vom Nutzer ueberschriebene device_class zaehlt ebenso.
+    assert _guess_power_source([{"entity_id": "sensor.x", "device_class": "Battery"}], None) == "Batterie"
 
 
 def test_rueckbau_field_set_skips_detail_pages_without_an_explicit_flag(monkeypatch):

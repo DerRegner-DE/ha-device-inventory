@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from typing import Any
 
 import aiohttp
@@ -179,22 +180,26 @@ async def get_ha_entity_registry() -> list[dict[str, Any]]:
 # ueber den Supervisor ohnehin. Einmal geholt und gemerkt — /api/health wird
 # oft gepollt, und die Version aendert sich nur bei einem HA-Update.
 _ha_version_cache: str | None = None
+# v3.1.0 (Roadmap Nr. 18): ohne Ablaufzeit meldete 3.0.0 nach einem HA-Update
+# bis zum Add-on-Neustart die alte Version (2026.9.0 statt 2026.9.2).
+_HA_VERSION_TTL = 3600.0
+_ha_version_cached_at: float = 0.0
 
 
 async def get_ha_version() -> str:
     """HA core version, or "" when it cannot be determined.
 
-    Nur Treffer werden gemerkt. Ein Fehlversuch -- HA startet noch, Token
-    fehlt, Timeout -- darf sich nicht einbrennen, sonst bleibt das Feld bis
-    zum naechsten Add-on-Neustart leer.
+    Nur Treffer werden gemerkt, und nur eine Stunde. Ein Fehlversuch -- HA
+    startet noch, Token fehlt, Timeout -- darf sich nicht einbrennen, sonst
+    bleibt das Feld bis zum naechsten Add-on-Neustart leer.
     """
-    global _ha_version_cache
-    if _ha_version_cache:
+    global _ha_version_cache, _ha_version_cached_at
+    if _ha_version_cache and time.monotonic() - _ha_version_cached_at < _HA_VERSION_TTL:
         return _ha_version_cache
     version = ""
-    # v3.1.0: zuerst ueber den WebSocket. REST /config lieferte auf echten
-    # Installationen 403 (Feld blieb in 3.0.x leer, Roadmap Nr. 18), der
-    # WebSocket ist derselbe Weg, ueber den der Import zuverlaessig laeuft.
+    # v3.1.0: zuerst ueber den WebSocket, derselbe Weg, ueber den der Import
+    # zuverlaessig laeuft. REST /config fiel auf Testinstanzen aus (502 waehrend
+    # eines HA-Neustarts) und bleibt nur Rueckfall.
     try:
         data = await _ws_command({"type": "get_config"})
         version = str((data or {}).get("version") or "")
@@ -209,4 +214,5 @@ async def get_ha_version() -> str:
             logger.warning("HA-Version per REST nicht ermittelbar", exc_info=True)
     if version:
         _ha_version_cache = version
+        _ha_version_cached_at = time.monotonic()
     return version
