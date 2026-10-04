@@ -198,9 +198,12 @@ def test_router_topology_is_not_a_parent(client, monkeypatch):
     asyncio.run(import_ha_devices())
     fb = _q("SELECT uuid FROM devices WHERE ha_device_id = 'fb'")[0]["uuid"]
     _x("UPDATE devices SET parent_uuid = ? WHERE ha_device_id = 'ring'", (fb,))
+    before = _q("SELECT sync_version FROM devices WHERE ha_device_id = 'ring'")[0]["sync_version"]
     result = asyncio.run(import_ha_devices())
     assert result["parent_links_removed"] == 1
-    assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'ring'") == [{"parent_uuid": None}]
+    row = _q("SELECT parent_uuid, sync_version FROM devices WHERE ha_device_id = 'ring'")[0]
+    assert row["parent_uuid"] is None
+    assert row["sync_version"] == before + 1, "sonst holt die App die Aenderung nie ab"
     ap = _q("SELECT uuid FROM devices WHERE ha_device_id = 'ap'")[0]["uuid"]
     assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'trv'") == [{"parent_uuid": ap}]
 
