@@ -172,3 +172,34 @@ def test_import_keeps_controlling_entry_and_aliases_the_tracker_twin(client, mon
     result = asyncio.run(import_ha_devices())
     assert result["imported"] == 0 and result["aliased_twins"] == 0
     assert len(_q("SELECT * FROM devices WHERE deleted_at IS NULL")) == 3
+
+
+def test_router_topology_is_not_a_parent(client, monkeypatch):
+    """Box-Test 04.10.2026: 85 Geraete hingen per via_device unter der
+    FRITZ!Box (UPnP) -- Klingel, Maehroboter, Handys. Gateways bleiben Eltern."""
+    from app.services.ha_import import import_ha_devices
+
+    devices = [
+        {"id": "fb", "name": "Basis-FB6660", "config_entries": ["ce-upnp"], "primary_config_entry": "ce-upnp"},
+        {"id": "ring", "name": "Tor", "manufacturer": "Ring", "config_entries": ["ce-ring"],
+         "primary_config_entry": "ce-ring", "via_device_id": "fb"},
+        {"id": "ap", "name": "HmIP Access Point", "config_entries": ["ce-hmip"], "primary_config_entry": "ce-hmip"},
+        {"id": "trv", "name": "Thermostat Bad", "config_entries": ["ce-hmip"], "primary_config_entry": "ce-hmip",
+         "via_device_id": "ap"},
+    ]
+    entities = [
+        {"entity_id": "sensor.fb_rx", "device_id": "fb", "config_entry_id": "ce-upnp", "platform": "upnp"},
+        {"entity_id": "camera.tor", "device_id": "ring", "config_entry_id": "ce-ring", "platform": "ring"},
+        {"entity_id": "alarm_control_panel.ap", "device_id": "ap", "config_entry_id": "ce-hmip", "platform": "homematicip_cloud"},
+        {"entity_id": "climate.bad", "device_id": "trv", "config_entry_id": "ce-hmip", "platform": "homematicip_cloud"},
+    ]
+    _registry(monkeypatch, devices, entities)
+    # Altbestand aus v3.0: die Klingel haengt schon unter der FRITZ!Box.
+    asyncio.run(import_ha_devices())
+    fb = _q("SELECT uuid FROM devices WHERE ha_device_id = 'fb'")[0]["uuid"]
+    _x("UPDATE devices SET parent_uuid = ? WHERE ha_device_id = 'ring'", (fb,))
+    result = asyncio.run(import_ha_devices())
+    assert result["parent_links_removed"] == 1
+    assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'ring'") == [{"parent_uuid": None}]
+    ap = _q("SELECT uuid FROM devices WHERE ha_device_id = 'ap'")[0]["uuid"]
+    assert _q("SELECT parent_uuid FROM devices WHERE ha_device_id = 'trv'") == [{"parent_uuid": ap}]

@@ -373,6 +373,10 @@ TRACKER_INTEGRATIONS = {
     "mqtt_room",
 }
 
+# v3.1.0: Integrationen, deren via_device nur die Netzwerk-Topologie
+# beschreibt (wer haengt an welchem Router), nicht "ist Teil von".
+TOPOLOGY_INTEGRATIONS = TRACKER_INTEGRATIONS | {"upnp", "dlna_dms", "ssdp"}
+
 
 def _resolve_primary_integration(
     device: dict, config_entry_domains: dict[str, str]
@@ -1240,6 +1244,7 @@ async def import_ha_devices(
     # list) so parent-child links actually get written on import.
     _report("linking_parents", total, total)
     linked_parents = 0
+    unlinked_parents = 0
     with get_db() as conn:
         # Map ha_device_id -> inventory uuid for every imported device.
         rows = dicts_from_rows(conn.execute(
@@ -1257,6 +1262,20 @@ async def import_ha_devices(
                 continue
             parent_uuid = ha_id_to_uuid.get(via)
             child_uuid = ha_id_to_uuid.get(dev_id)
+            # v3.1.0 (Box-Test 04.10.2026): FRITZ!Box/UPnP tragen jedes Geraet
+            # im Netz als via_device ein -- 85 Geraete standen als "Teil von
+            # Basis-FB6660", darunter Klingel, Maehroboter und Handys, und
+            # verschwanden im Filter "Nur Hauptgeraete". Ein Netzwerk-
+            # Beobachter ist kein Elterngeraet; bestehende Verknuepfungen
+            # dieser Art werden geloest.
+            if integ_of.get(via) in TOPOLOGY_INTEGRATIONS:
+                if parent_uuid and child_uuid:
+                    cur = conn.execute(
+                        "UPDATE devices SET parent_uuid = NULL WHERE uuid = ? AND parent_uuid = ?",
+                        (child_uuid, parent_uuid),
+                    )
+                    unlinked_parents += cur.rowcount
+                continue
             if parent_uuid and child_uuid and parent_uuid != child_uuid:
                 cur = conn.execute(
                     "UPDATE devices SET parent_uuid = ? WHERE uuid = ? "
@@ -1282,6 +1301,7 @@ async def import_ha_devices(
         "skipped_no_name": skipped_no_name,
         "skipped_non_physical": skipped_non_physical,
         "parent_links": linked_parents,
+        "parent_links_removed": unlinked_parents,
         "errors": errors[:20],  # cap at 20 entries so response stays reasonable
         "error_count": len(errors),
         "total_ha_devices": total,

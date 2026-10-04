@@ -22,9 +22,9 @@ FILLABLE_FIELDS = (
     "modell", "hersteller", "standort_area_id", "standort_name", "standort_floor_id",
     "seriennummer", "mac_adresse", "ip_adresse", "firmware", "integration",
     "stromversorgung", "netzwerk", "anschaffungsdatum", "garantie_bis",
-    # parent_uuid bewusst NICHT: Box-Test 04.10.2026 -- der FRITZ!Box-Zwilling
-    # der Ring-Klingel haengt in HA unter der FRITZ!Box; uebernommen stand die
-    # Klingel danach als "Teil von Basis-FB6660" da.
+    # parent_uuid bewusst NICHT: Zwillinge aus Tracker-Integrationen haengen in
+    # HA unter dem Router (via_device), das ist Netzwerk-Topologie und kein
+    # "Teil von". Die Zuordnung des Ziels bleibt, wie sie ist.
     "funktion", "ha_entity_id", "ain_artikelnr",
     "external_url", "ohne_ha", "ohne_ha_hinweis",
     "schalter_gebrueckt", "schalter_gebrueckt_hinweis",
