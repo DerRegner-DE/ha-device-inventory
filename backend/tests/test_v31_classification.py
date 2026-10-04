@@ -135,3 +135,13 @@ def test_entity_registry_gets_device_class_from_states(monkeypatch):
     assert ents["sensor.a_battery"]["original_device_class"] == "battery"
     assert "original_device_class" not in ents["switch.b"], "Nutzer-Override bleibt fuehrend"
     assert "original_device_class" not in ents["sensor.c"]
+
+def test_box_test_thermostat_child_lock_and_water_alarm():
+    """Box-Test 04.10.2026 (preview.2): BOSCH TRV_GEN2 wurde wegen des
+    Kindersicherungs-Schalters "Aktor/Relais", der Wasseralarm (nur ein
+    Stummschalt-Button) fiel auf "Thermostat" zurueck."""
+    trv = _dev(manufacturer="BOSCH", model="TRV_GEN2", name="Thermostat Bad EG")
+    ents = [_ent("climate.bad"), _ent("switch.bad_child_lock", "switch"), _ent("sensor.bad_battery", "battery")]
+    assert classify_device(trv, ents, "bosch_shc")[0] == "Thermostat"
+    wa = _dev(manufacturer="BOSCH", model="WATERALARM", name="Wasseralarm")
+    assert classify_device(wa, [_ent("button.wasseralarm_stummschalten")], "bosch_shc")[0] == "Sensor"

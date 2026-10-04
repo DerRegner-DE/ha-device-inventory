@@ -533,6 +533,11 @@ def _guess_device_type_with_evidence(
     for domain, dc in sorted(dc_pairs):
         if dc in _WEAK_DEVICE_CLASSES:
             continue
+        # Box-Test 04.10.2026: Bosch-Heizkoerperthermostate haben einen
+        # Kindersicherungs-Schalter mit device_class "switch" -- der darf die
+        # climate-Domain nicht ueberstimmen. Schalter entscheidet Schritt 4.
+        if (domain, dc) == ("switch", "switch"):
+            continue
         if (domain, dc) in DEVICE_CLASS_TO_TYPE:
             return DEVICE_CLASS_TO_TYPE[(domain, dc)], f"device_class={dc} on {domain}"
         if (None, dc) in DEVICE_CLASS_TO_TYPE:
@@ -609,6 +614,11 @@ def _guess_device_type_with_evidence(
     if re.search(r"\b(rollladen|rolladen|rollo|jalousie|raffstore|markise|blind|shutter|curtain)\b",
                  name_and_model, re.IGNORECASE):
         return "Rollladen", "name match: rollladen/rollo/jalousie"
+    # Box-Test 04.10.2026: der Bosch-Wasseralarm meldet in HA nur einen
+    # Stummschalt-Button; ohne diese Regel fiel er auf "Thermostat" zurueck.
+    if re.search(r"(wasser(alarm|melder|sensor)|water[ _-]?(alarm|leak|sensor)|leck|leak|flood|"
+                 r"rauch(melder|warn)|smoke|kohlenmonoxid)", name_and_model, re.IGNORECASE):
+        return "Sensor", "name/model match: wasser/rauch/leck"
     if re.search(rf"\b({_APPLIANCE_NAME})\b", name_and_model, re.IGNORECASE):
         return "Haushaltsgerät", "name match: appliance (herd/ofen/waschmaschine/...)"
     if re.search(r"\b(bridge|gateway|coordinator|koordinator|hub)\b", name_and_model, re.IGNORECASE):
