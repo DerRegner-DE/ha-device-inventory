@@ -547,5 +547,6 @@
   "exportPicker.preset.notfallmappe": "Dossier d’urgence",
   "exportPicker.sort": "Ordre",
   "exportPicker.sort.nr": "Groupé par catégorie",
-  "exportPicker.sort.standort": "Étage › Emplacement › Nom (liste simple)"
+  "exportPicker.sort.standort": "Étage › Emplacement › Nom (liste simple)",
+  "settings.haImportPartBackfilled": "{count} complétés avec n° de série/MAC"
 }

@@ -773,6 +773,29 @@ def _guess_power_source(device_entities: list[dict],
     return "Batterie"
 
 
+_MAC_RE = re.compile(r"^[0-9a-f]{2}([:-]?[0-9a-f]{2}){5}$", re.IGNORECASE)
+
+
+def _device_identity(device: dict) -> tuple[str | None, str | None]:
+    """(Seriennummer, MAC) aus der HA-Device-Registry.
+
+    v3.1.0 (GitHub #25): HA kennt beides -- ``serial_number`` und
+    ``connections`` mit ``("mac", ...)`` --, der Import liess es liegen.
+    Die MAC wird einheitlich als ``AA:BB:CC:DD:EE:FF`` geschrieben.
+    """
+    serial = device.get("serial_number")
+    serial = str(serial).strip() if serial else None
+    mac = None
+    for conn in device.get("connections") or []:
+        if isinstance(conn, (list, tuple)) and len(conn) >= 2 and str(conn[0]).lower() == "mac":
+            raw = str(conn[1]).strip()
+            if _MAC_RE.match(raw):
+                hexed = re.sub(r"[^0-9a-fA-F]", "", raw).upper()
+                mac = ":".join(hexed[i:i + 2] for i in range(0, 12, 2))
+                break
+    return serial or None, mac
+
+
 def _guess_type_from_integration(integration_domain: str | None) -> str | None:
     """Try to get device type from integration domain."""
     if not integration_domain:
@@ -957,12 +980,15 @@ async def import_ha_devices(
     with get_db() as conn:
         existing = dicts_from_rows(
             conn.execute(
-                "SELECT ha_device_id FROM devices WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
+                "SELECT uuid, ha_device_id, seriennummer, mac_adresse FROM devices "
+                "WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
             ).fetchall()
         )
     existing_ids = {d["ha_device_id"] for d in existing}
+    existing_by_ha_id = {d["ha_device_id"]: d for d in existing}
 
     imported = 0
+    backfilled = 0
     skipped_duplicates = 0
     skipped_no_name = 0
     skipped_non_physical = 0
@@ -995,6 +1021,27 @@ async def import_ha_devices(
                 # Skip duplicates (already imported)
                 if device_id in existing_ids:
                     skipped_duplicates += 1
+                    # v3.1.0 (GitHub #25): Bestandsgeraete bekommen Seriennummer
+                    # und MAC nachgetragen -- nur leere Felder, Handeingaben
+                    # bleiben unangetastet.
+                    row = existing_by_ha_id[device_id]
+                    serial, mac = _device_identity(dev)
+                    felder: dict[str, str] = {}
+                    if serial and not row.get("seriennummer"):
+                        felder["seriennummer"] = serial
+                    if mac and not row.get("mac_adresse"):
+                        felder["mac_adresse"] = mac
+                    if felder:
+                        from app.services.history import log_changes
+                        sets = ", ".join(f"{k} = ?" for k in felder)
+                        conn.execute(
+                            f"UPDATE devices SET {sets}, sync_version = sync_version + 1, "
+                            "updated_at = datetime('now') WHERE uuid = ?",
+                            [*felder.values(), row["uuid"]],
+                        )
+                        log_changes(conn, row["uuid"], {k: row.get(k) for k in felder},
+                                    felder, source="ha_import")
+                        backfilled += 1
                     continue
 
                 # Get entities for this device
@@ -1060,6 +1107,8 @@ async def import_ha_devices(
                 if isinstance(manufacturer, list):
                     manufacturer = ", ".join(str(m) for m in manufacturer) if manufacturer else None
 
+                serial, mac = _device_identity(dev)
+
                 # Build device record
                 uuid = uuid4().hex
                 conn.execute(
@@ -1067,9 +1116,10 @@ async def import_ha_devices(
                         uuid, typ, bezeichnung, modell, hersteller,
                         standort_area_id, standort_name, standort_floor_id,
                         firmware, integration, netzwerk, stromversorgung,
+                        seriennummer, mac_adresse,
                         ha_device_id, ha_entity_id,
                         sync_version
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
                     (
                         uuid,
                         str(device_type),
@@ -1083,6 +1133,8 @@ async def import_ha_devices(
                         str(integration_domain) if integration_domain else "Sonstiges",
                         str(network) if network else None,
                         power,
+                        serial,
+                        mac,
                         str(device_id),
                         str(primary_entity) if primary_entity else None,
                     ),
@@ -1148,6 +1200,7 @@ async def import_ha_devices(
         "status": "ok",
         "imported": imported,
         "skipped_duplicates": skipped_duplicates,
+        "backfilled_identity": backfilled,
         "skipped_no_name": skipped_no_name,
         "skipped_non_physical": skipped_non_physical,
         "parent_links": linked_parents,

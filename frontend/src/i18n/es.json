@@ -547,5 +547,6 @@
   "exportPicker.preset.notfallmappe": "Carpeta de emergencia",
   "exportPicker.sort": "Orden",
   "exportPicker.sort.nr": "Agrupado por categoría",
-  "exportPicker.sort.standort": "Planta › Ubicación › Nombre (lista plana)"
+  "exportPicker.sort.standort": "Planta › Ubicación › Nombre (lista plana)",
+  "settings.haImportPartBackfilled": "{count} completados con n.º de serie/MAC"
 }

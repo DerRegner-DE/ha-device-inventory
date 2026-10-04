@@ -547,5 +547,6 @@
   "exportPicker.preset.notfallmappe": "Emergency folder",
   "exportPicker.sort": "Order",
   "exportPicker.sort.nr": "Grouped by category",
-  "exportPicker.sort.standort": "Floor › Location › Name (flat list)"
+  "exportPicker.sort.standort": "Floor › Location › Name (flat list)",
+  "settings.haImportPartBackfilled": "{count} completed with serial/MAC"
 }

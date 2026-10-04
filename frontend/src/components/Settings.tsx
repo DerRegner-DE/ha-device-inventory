@@ -217,6 +217,9 @@ export function Settings() {
 
           const breakdownParts: string[] = [];
           if (duplicates > 0) breakdownParts.push(t("settings.haImportPartDuplicates", { count: duplicates }));
+          // v3.1.0 (GitHub #25): Seriennummer/MAC bei Bestandsgeraeten nachgetragen
+          const backfilled = result.backfilled_identity || 0;
+          if (backfilled > 0) breakdownParts.push(t("settings.haImportPartBackfilled", { count: backfilled }));
           if (nonPhysical > 0) breakdownParts.push(t("settings.haImportPartNonPhysical", { count: nonPhysical }));
           if (noName > 0) breakdownParts.push(t("settings.haImportPartNoName", { count: noName }));
 

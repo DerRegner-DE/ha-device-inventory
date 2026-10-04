@@ -547,5 +547,6 @@
   "exportPicker.preset.notfallmappe": "Аварийная папка",
   "exportPicker.sort": "Порядок",
   "exportPicker.sort.nr": "По категориям",
-  "exportPicker.sort.standort": "Этаж › Место › Название (плоский список)"
+  "exportPicker.sort.standort": "Этаж › Место › Название (плоский список)",
+  "settings.haImportPartBackfilled": "{count} дополнены серийным номером/MAC"
 }
