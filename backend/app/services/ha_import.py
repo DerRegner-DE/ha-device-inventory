@@ -661,6 +661,29 @@ def _guess_network(integration_domain: str | None,
     return NETWORK_MAP.get(integration_domain)
 
 
+# v3.1.0 (Roadmap Nr. 17): Stromversorgung beim Import. HA kennt sie nicht als
+# Geraeteeigenschaft, aber jede Integration mit Batterie legt eine Entity mit
+# device_class "battery" an. Nur belegte Faelle werden gesetzt — ohne Beleg
+# bleibt das Feld leer, statt "230V" zu raten.
+_RECHARGEABLE_DOMAINS = {"lawn_mower", "vacuum"}
+_RECHARGEABLE_INTEGRATIONS = {"mobile_app"}
+
+
+def _guess_power_source(device_entities: list[dict],
+                        integration_domain: str | None) -> str | None:
+    """Return "Batterie", "Akku" or None (no evidence)."""
+    classes, domains = _entity_classes_and_domains(device_entities)
+    device_classes = {dc for _dom, dc in classes}
+    has_battery = bool(device_classes & {"battery", "battery_charging"})
+    if not has_battery:
+        return None
+    if ("battery_charging" in device_classes
+            or domains & _RECHARGEABLE_DOMAINS
+            or integration_domain in _RECHARGEABLE_INTEGRATIONS):
+        return "Akku"
+    return "Batterie"
+
+
 def _guess_type_from_integration(integration_domain: str | None) -> str | None:
     """Try to get device type from integration domain."""
     if not integration_domain:
@@ -939,6 +962,7 @@ async def import_ha_devices(
 
                 # Network type
                 network = _guess_network(integration_domain, dev, bridge_networks)
+                power = _guess_power_source(device_entities, integration_domain)
 
                 # Safely convert fields that might be lists
                 sw_version = dev.get("sw_version")
@@ -957,10 +981,10 @@ async def import_ha_devices(
                     """INSERT INTO devices (
                         uuid, typ, bezeichnung, modell, hersteller,
                         standort_area_id, standort_name, standort_floor_id,
-                        firmware, integration, netzwerk,
+                        firmware, integration, netzwerk, stromversorgung,
                         ha_device_id, ha_entity_id,
                         sync_version
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)""",
                     (
                         uuid,
                         str(device_type),
@@ -973,6 +997,7 @@ async def import_ha_devices(
                         str(sw_version) if sw_version else None,
                         str(integration_domain) if integration_domain else "Sonstiges",
                         str(network) if network else None,
+                        power,
                         str(device_id),
                         str(primary_entity) if primary_entity else None,
                     ),

@@ -433,7 +433,7 @@ async def _load_recategorize_context(uuids: Optional[list[str]]):
     bridge_networks = build_mqtt_bridge_networks(ha_devices)
 
     query = (
-        "SELECT uuid, ha_device_id, typ, netzwerk, bezeichnung, hersteller, modell "
+        "SELECT uuid, ha_device_id, typ, netzwerk, stromversorgung, bezeichnung, hersteller, modell "
         "FROM devices WHERE ha_device_id IS NOT NULL AND deleted_at IS NULL"
     )
     params: list = []
@@ -463,6 +463,24 @@ def _classify_network(row: dict, ha_device_map: dict, config_entry_domains: dict
         return None
     integration_domain = _resolve_primary_integration(ha_dev, config_entry_domains)
     return _guess_network(integration_domain, ha_dev, bridge_networks)
+
+
+def _classify_power(row: dict, ha_device_map: dict, entity_map: dict,
+                    config_entry_domains: dict) -> Optional[str]:
+    """Roadmap Nr. 17: Stromversorgung fuer Bestandsgeraete nachtragen.
+
+    Nur wenn das Feld leer ist — eine von Hand gesetzte Angabe ist immer
+    besser als die Ableitung aus den Entities.
+    """
+    from app.services.ha_import import _guess_power_source, _resolve_primary_integration
+
+    if row.get("stromversorgung"):
+        return None
+    ha_dev = ha_device_map.get(row["ha_device_id"])
+    if not ha_dev:
+        return None
+    integration_domain = _resolve_primary_integration(ha_dev, config_entry_domains)
+    return _guess_power_source(entity_map.get(row["ha_device_id"], []), integration_domain)
 
 
 def _classify_row(row: dict, ha_device_map: dict, entity_map: dict,
@@ -516,7 +534,8 @@ async def recategorize_preview(body: Optional[RecategorizeBody] = None):
         # stehen — sonst waeren die falschen WLAN-Werte aus GitHub #24 auf
         # Bestandsinstallationen nicht zu reparieren.
         network_changed = bool(new_network) and new_network != row.get("netzwerk")
-        if type_changed or network_changed:
+        new_power = _classify_power(row, ha_device_map, entity_map, config_entry_domains)
+        if type_changed or network_changed or new_power:
             changes.append({
                 "uuid": row["uuid"],
                 "bezeichnung": row["bezeichnung"],
@@ -526,6 +545,7 @@ async def recategorize_preview(body: Optional[RecategorizeBody] = None):
                 "new_type": new_type,
                 "old_network": row.get("netzwerk"),
                 "new_network": new_network if network_changed else None,
+                "new_power": new_power,
                 "evidence": evidence,
             })
         else:
@@ -585,6 +605,9 @@ async def recategorize_apply(body: RecategorizeApplyBody):
                 felder["typ"] = str(new_type)
             if new_network and new_network != row.get("netzwerk"):
                 felder["netzwerk"] = str(new_network)
+            new_power = _classify_power(row, ha_device_map, entity_map, config_entry_domains)
+            if new_power:
+                felder["stromversorgung"] = new_power
             if not felder:
                 continue  # nothing to do
             from app.services.history import log_changes  # local import, avoid startup-time coupling
@@ -644,6 +667,9 @@ async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
                 felder["typ"] = str(new_type)
             if new_network and new_network != row.get("netzwerk"):
                 felder["netzwerk"] = str(new_network)
+            new_power = _classify_power(row, ha_device_map, entity_map, config_entry_domains)
+            if new_power:
+                felder["stromversorgung"] = new_power
             if felder:
                 from app.services.history import log_changes
                 sets = ", ".join(f"{k} = ?" for k in felder)
@@ -666,6 +692,7 @@ async def recategorize_ha_devices(body: Optional[RecategorizeBody] = None):
                         "new_type": new_type,
                         "old_network": row.get("netzwerk"),
                         "new_network": felder.get("netzwerk"),
+                        "new_power": felder.get("stromversorgung"),
                         "evidence": evidence,
                     })
             else:

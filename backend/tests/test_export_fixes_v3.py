@@ -112,6 +112,11 @@ def test_ha_version_uses_a_leading_slash_and_does_not_cache_failures(monkeypatch
     ha_client._ha_version_cache = None
     calls: list[str] = []
 
+    async def failing_ws(cmd):
+        raise RuntimeError("WebSocket nicht erreichbar")
+
+    monkeypatch.setattr(ha_client, "_ws_command", failing_ws)
+
     async def failing_get(path):
         calls.append(path)
         raise RuntimeError("HA nicht erreichbar")
@@ -127,6 +132,30 @@ def test_ha_version_uses_a_leading_slash_and_does_not_cache_failures(monkeypatch
     monkeypatch.setattr(ha_client, "_get", working_get)
     # Der Fehlversuch darf nicht gecacht worden sein.
     assert asyncio.run(ha_client.get_ha_version()) == "2026.8.3"
+    ha_client._ha_version_cache = None
+
+
+def test_ha_version_prefers_websocket_over_rest(monkeypatch):
+    """Roadmap Nr. 18: REST /config lieferte auf echten Installationen 403,
+    das Feld blieb in 3.0.x leer. Der WebSocket ist der erste Weg; REST
+    wird dann gar nicht mehr gefragt."""
+    import asyncio
+    from app.services import ha_client
+
+    ha_client._ha_version_cache = None
+    sent: list[dict] = []
+
+    async def ws(cmd):
+        sent.append(cmd)
+        return {"version": "2026.10.0"}
+
+    async def rest_must_not_run(path):
+        raise AssertionError("REST darf nicht gefragt werden")
+
+    monkeypatch.setattr(ha_client, "_ws_command", ws)
+    monkeypatch.setattr(ha_client, "_get", rest_must_not_run)
+    assert asyncio.run(ha_client.get_ha_version()) == "2026.10.0"
+    assert sent == [{"type": "get_config"}]
     ha_client._ha_version_cache = None
 
 

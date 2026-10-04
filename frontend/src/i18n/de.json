@@ -528,5 +528,6 @@
   "history.field.ohne_ha": "Ohne HA nutzbar",
   "history.field.ohne_ha_hinweis": "Hinweis ohne HA",
   "settings.reportNoGithub": "Kein GitHub-Konto? Schreib stattdessen an support@derregner.info.",
-  "exportPicker.insecureHint": "Beim lokalen Zugriff über http:// blockiert der Browser den Download — klick im Download-Bereich auf „Behalten“. Über eine verschlüsselte Verbindung, etwa Home Assistant Cloud, tritt das nicht auf."
+  "exportPicker.insecureHint": "Beim lokalen Zugriff über http:// blockiert der Browser den Download — klick im Download-Bereich auf „Behalten“. Über eine verschlüsselte Verbindung, etwa Home Assistant Cloud, tritt das nicht auf.",
+  "recategorize.power": "Strom:"
 }

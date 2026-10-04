@@ -528,5 +528,6 @@
   "history.field.ohne_ha": "Работает без HA",
   "history.field.ohne_ha_hinweis": "Примечание без HA",
   "settings.reportNoGithub": "Нет учётной записи GitHub? Напишите на support@derregner.info.",
-  "exportPicker.insecureHint": "При локальном доступе по http:// браузер блокирует загрузку — нажмите «Сохранить» в разделе загрузок. При зашифрованном подключении, например через Home Assistant Cloud, этого не происходит."
+  "exportPicker.insecureHint": "При локальном доступе по http:// браузер блокирует загрузку — нажмите «Сохранить» в разделе загрузок. При зашифрованном подключении, например через Home Assistant Cloud, этого не происходит.",
+  "recategorize.power": "Питание:"
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "preact/hooks";
 import { apiPost, syncFromServer } from "../api/client";
 import { t } from "../i18n";
+import { POWER_SOURCES } from "../utils/constants";
 
 interface Change {
   uuid: string;
@@ -12,6 +13,7 @@ interface Change {
   /** Nr. 7: nur gesetzt, wenn sich auch das Netzwerkfeld aendert. */
   old_network?: string | null;
   new_network?: string | null;
+  new_power?: string | null;
   evidence: string;
   /** client-only: user unchecked this row → don't apply */
   excluded?: boolean;
@@ -80,7 +82,7 @@ export function RecategorizePreview({ uuids, onClose, onApplied }: Props) {
     if (!q) return data.changes;
     return data.changes.filter((c) =>
       [c.bezeichnung, c.hersteller, c.modell, c.old_type, c.new_type,
-       c.old_network, c.new_network, c.evidence]
+       c.old_network, c.new_network, c.new_power, c.evidence]
         .filter(Boolean)
         .some((v) => (v as string).toLowerCase().includes(q)),
     );
@@ -250,6 +252,23 @@ export function RecategorizePreview({ uuids, onClose, onApplied }: Props) {
                             <span class="text-gray-400">→</span>
                             <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
                               {c.new_network}
+                            </span>
+                          </div>
+                        )}
+                        {c.new_power && (
+                          <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                              {t("recategorize.power")}
+                            </span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                              —
+                            </span>
+                            <span class="text-gray-400">→</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                              {(() => {
+                                const ps = POWER_SOURCES.find((p) => p.id === c.new_power);
+                                return ps ? t(ps.labelKey) : c.new_power;
+                              })()}
                             </span>
                           </div>
                         )}

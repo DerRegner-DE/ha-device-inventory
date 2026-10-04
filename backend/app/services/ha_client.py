@@ -191,13 +191,22 @@ async def get_ha_version() -> str:
     global _ha_version_cache
     if _ha_version_cache:
         return _ha_version_cache
+    version = ""
+    # v3.1.0: zuerst ueber den WebSocket. REST /config lieferte auf echten
+    # Installationen 403 (Feld blieb in 3.0.x leer, Roadmap Nr. 18), der
+    # WebSocket ist derselbe Weg, ueber den der Import zuverlaessig laeuft.
     try:
-        # _BASE endet bereits auf /api, der fuehrende Schraegstrich gehoert dazu.
-        data = await _get("/config")
+        data = await _ws_command({"type": "get_config"})
         version = str((data or {}).get("version") or "")
     except Exception:
-        logger.warning("HA-Version nicht ermittelbar", exc_info=True)
-        return ""
+        logger.warning("HA-Version per WebSocket nicht ermittelbar", exc_info=True)
+    if not version:
+        try:
+            # _BASE endet bereits auf /api, der fuehrende Schraegstrich gehoert dazu.
+            data = await _get("/config")
+            version = str((data or {}).get("version") or "")
+        except Exception:
+            logger.warning("HA-Version per REST nicht ermittelbar", exc_info=True)
     if version:
         _ha_version_cache = version
     return version
