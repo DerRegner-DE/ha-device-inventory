@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 from datetime import date, datetime
 
 import aiomqtt
@@ -164,6 +165,53 @@ def _warranty_days(garantie_bis: str | None) -> int | None:
         return None
 
 
+# v3.1.0 (Roadmap Nr. 2 / GitHub #27): Ruecklink aus der HA-Geraeteseite in
+# die App. Der Slug des Add-ons (bei Store-Add-ons mit Repo-Praefix, z. B.
+# "a0d7b954_geraeteverwaltung") kommt vom Supervisor; ohne Supervisor
+# (Standalone/Tests) gibt es keinen Link.
+_addon_slug: str | None = None
+_addon_slug_checked = False
+
+
+async def ensure_addon_slug() -> str | None:
+    global _addon_slug, _addon_slug_checked
+    if _addon_slug_checked:
+        return _addon_slug
+    token = os.environ.get("SUPERVISOR_TOKEN")
+    if token:
+        try:
+            import aiohttp
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    "http://supervisor/addons/self/info",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as resp:
+                    if resp.status == 200:
+                        data = (await resp.json()).get("data") or {}
+                        _addon_slug = data.get("slug") or None
+        except Exception:
+            logger.warning("Add-on-Slug ueber den Supervisor nicht ermittelbar", exc_info=True)
+        if not _addon_slug:
+            # Rueckfall: Der Supervisor benennt den Container nach dem Slug,
+            # mit Bindestrich statt Unterstrich ("a0d7b954-geraeteverwaltung").
+            host = os.environ.get("HOSTNAME", "")
+            if "geraeteverwaltung" in host:
+                _addon_slug = host.replace("-", "_")
+    _addon_slug_checked = True
+    return _addon_slug
+
+
+def configuration_url(device_uuid: str) -> str | None:
+    """``homeassistant://``-Link, den HA als "Besuchen" auf der Geraeteseite
+    zeigt. Die App liest die Route-Endung beim Start (home-assistant/properties)
+    und oeffnet das Geraet."""
+    if not _addon_slug:
+        return None
+    return f"homeassistant://app/{_addon_slug}/devices/{device_uuid}"
+
+
 def _device_info(device: dict) -> dict:
     """Build HA device info block from inventory device."""
     info: dict = {
@@ -171,6 +219,9 @@ def _device_info(device: dict) -> dict:
         "name": device.get("bezeichnung") or "Unknown Device",
         "via_device": f"{STATE_PREFIX}_hub",
     }
+    url = configuration_url(device["uuid"])
+    if url:
+        info["configuration_url"] = url
     if device.get("hersteller"):
         info["manufacturer"] = device["hersteller"]
     if device.get("modell"):
@@ -304,6 +355,7 @@ async def publish_device(device: dict) -> bool:
     if not settings.MQTT_DISCOVERY_ENABLED:
         return False
 
+    await ensure_addon_slug()
     try:
         async with aiomqtt.Client(**_connect_kwargs()) as client:
             # Publish discovery configs (retained)

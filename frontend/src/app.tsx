@@ -11,6 +11,7 @@ import { t } from "./i18n";
 import { useLanguage } from "./i18n";
 import { useDarkMode } from "./hooks/useDarkMode";
 import { getBasePath, stripBasePath, navigate } from "./utils/navigate";
+import { initHaDeepLink } from "./utils/haDeepLink";
 
 function EditDeviceLoader({ uuid }: { uuid: string }) {
   useLanguage();
@@ -79,7 +80,12 @@ export function App() {
       setCurrentPath(stripBasePath(window.location.pathname));
     };
 
+    // v3.1.0 (GitHub #27): erst jetzt, da navigate() ueber den Hook oben
+    // ein Neuzeichnen ausloest.
+    const stopDeepLink = initHaDeepLink();
+
     return () => {
+      stopDeepLink();
       window.removeEventListener("popstate", onPopState);
       history.pushState = origPush;
       history.replaceState = origReplace;
