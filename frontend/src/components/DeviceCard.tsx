@@ -2,7 +2,7 @@ import { useState } from "preact/hooks";
 import { navigate } from "../utils/navigate";
 import { type Device } from "../db/schema";
 import { db } from "../db/schema";
-import { apiPut } from "../api/client";
+import { apiPut, getPhotoUrl } from "../api/client";
 import { getAreaName, getDeviceTypeLabel } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
@@ -14,6 +14,9 @@ interface DeviceCardProps {
 export function DeviceCard({ device }: DeviceCardProps) {
   useLanguage();
   const [reviewed, setReviewed] = useState<number>((device as any).reviewed ?? 0);
+  const primaryPhoto = device.photos?.find((p) => p.is_primary) ?? device.photos?.[0];
+  const thumbUrl = primaryPhoto ? `${getPhotoUrl(primaryPhoto.uuid)}?thumb=1` : null;
+  const [thumbFailed, setThumbFailed] = useState(false);
 
   const toggleReviewed = async (e: Event) => {
     e.stopPropagation();
@@ -32,11 +35,22 @@ export function DeviceCard({ device }: DeviceCardProps) {
       class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 flex gap-3 active:bg-gray-50 dark:active:bg-gray-700 cursor-pointer transition-colors"
     >
       <div class="relative w-14 h-14 shrink-0">
-        <div class="w-14 h-14 rounded-lg bg-[#1F4E79]/10 dark:bg-[#1F4E79]/20 flex items-center justify-center">
-          <span class="text-[#1F4E79] dark:text-[#7ab5d6] text-xl font-bold">
-            {device.bezeichnung.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        {/* v3.1.0 (Roadmap Nr. 11): Hauptfoto als Miniatur, sonst Initiale. */}
+        {thumbUrl && !thumbFailed ? (
+          <img
+            src={thumbUrl}
+            alt=""
+            loading="lazy"
+            onError={() => setThumbFailed(true)}
+            class="w-14 h-14 rounded-lg object-cover bg-gray-100 dark:bg-gray-700"
+          />
+        ) : (
+          <div class="w-14 h-14 rounded-lg bg-[#1F4E79]/10 dark:bg-[#1F4E79]/20 flex items-center justify-center">
+            <span class="text-[#1F4E79] dark:text-[#7ab5d6] text-xl font-bold">
+              {device.bezeichnung.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
         <button
           onClick={toggleReviewed}
           class={`absolute -bottom-1 -left-1 rounded-full bg-white dark:bg-gray-800 cursor-pointer transition-colors ${

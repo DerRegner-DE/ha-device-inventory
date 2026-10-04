@@ -92,8 +92,34 @@ async def upload_photo(
     return row
 
 
+THUMB_SIZE = 160  # px, lange Kante -- reicht fuer die 56-px-Kachel auf Retina
+
+
+def _thumbnail_path(filepath, photo_uuid: str):
+    """v3.1.0 (Roadmap Nr. 11): kleine JPEG-Miniatur fuer die Geraeteliste.
+
+    Einmal erzeugt und neben den Fotos abgelegt. Schlaegt Pillow fehl
+    (exotisches Format), liefert der Aufrufer das Original.
+    """
+    thumbs = settings.PHOTOS_DIR / "thumbs"
+    target = thumbs / f"{photo_uuid}.jpg"
+    if target.exists():
+        return target
+    try:
+        from PIL import Image, ImageOps
+
+        thumbs.mkdir(parents=True, exist_ok=True)
+        with Image.open(filepath) as img:
+            img = ImageOps.exif_transpose(img)
+            img.thumbnail((THUMB_SIZE, THUMB_SIZE))
+            img.convert("RGB").save(target, "JPEG", quality=80)
+        return target
+    except Exception:
+        return None
+
+
 @router.get("/photos/{photo_uuid}")
-def get_photo(photo_uuid: str):
+def get_photo(photo_uuid: str, thumb: bool = False):
     with get_db() as conn:
         row = dict_from_row(
             conn.execute("SELECT * FROM photos WHERE uuid = ? AND deleted_at IS NULL", (photo_uuid,)).fetchone()
@@ -104,6 +130,12 @@ def get_photo(photo_uuid: str):
     filepath = settings.PHOTOS_DIR / row["filename"]
     if not filepath.exists():
         raise HTTPException(status_code=404, detail="Photo file not found on disk")
+
+    if thumb:
+        small = _thumbnail_path(filepath, photo_uuid)
+        if small is not None:
+            return FileResponse(path=str(small), media_type="image/jpeg",
+                                headers={"Cache-Control": "max-age=86400"})
 
     return FileResponse(
         path=str(filepath),
