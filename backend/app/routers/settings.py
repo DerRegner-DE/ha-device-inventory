@@ -6,6 +6,8 @@ assign a category automatically). Designed to hold future feature flags.
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -51,3 +53,30 @@ async def get_auto_categorize():
 async def set_auto_categorize(body: BoolSetting):
     set_setting("auto_categorize", "1" if body.enabled else "0")
     return {"status": "ok", "enabled": body.enabled}
+
+
+# v3.1.0 (Roadmap Nr. 5): die eigene Feldauswahl im Export lag nur im
+# localStorage des Browsers. Anderes Geraet, anderer Browser, "Websitedaten
+# loeschen" -- und sie stand wieder auf Standard. Jetzt merkt sie der Server.
+class ExportFieldsSetting(BaseModel):
+    fields: list[str]
+    preset: str | None = None
+
+
+@router.get("/export_fields")
+async def get_export_fields():
+    raw = get_setting("export_fields")
+    if not raw:
+        return {"fields": None, "preset": None}
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return {"fields": None, "preset": None}
+    return {"fields": data.get("fields"), "preset": data.get("preset")}
+
+
+@router.post("/export_fields")
+async def set_export_fields(body: ExportFieldsSetting):
+    fields = [f for f in body.fields if isinstance(f, str) and f.strip()]
+    set_setting("export_fields", json.dumps({"fields": fields, "preset": body.preset}))
+    return {"status": "ok", "fields": fields, "preset": body.preset}

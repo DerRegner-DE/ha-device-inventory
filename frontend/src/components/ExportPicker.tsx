@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "preact/hooks";
-import { apiGet } from "../api/client";
+import { apiGet, apiPost } from "../api/client";
 import { t } from "../i18n";
 import { getApiBase } from "../utils/navigate";
 import { downloadFile } from "../utils/download";
@@ -71,11 +71,33 @@ export function ExportPicker({ onClose }: Props) {
       .catch(() => {});
   }, []);
 
+  // v3.1.0 (Roadmap Nr. 5): der Server ist fuehrend, localStorage nur noch
+  // Rueckfall. Vorher fiel die eigene Auswahl auf einem anderen Geraet oder
+  // nach dem Loeschen der Browserdaten auf Standard zurueck.
+  const [serverLoaded, setServerLoaded] = useState(false);
+  useEffect(() => {
+    apiGet<{ fields: string[] | null; preset: string | null }>("/settings/export_fields")
+      .then((r) => {
+        if (r?.fields && r.fields.length > 0) {
+          setSelected(new Set(r.fields.filter((f) => ALL_FIELDS.includes(f))));
+          setActivePreset(r.preset || null);
+        }
+      })
+      .finally(() => setServerLoaded(true));
+  }, []);
+
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify([...selected]));
     } catch {}
-  }, [selected]);
+    // Erst nach dem Laden schreiben, sonst ueberschreibt der lokale Stand
+    // beim Oeffnen die Auswahl auf dem Server.
+    if (!serverLoaded) return;
+    const timer = window.setTimeout(() => {
+      apiPost("/settings/export_fields", { fields: [...selected], preset: activePreset });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [selected, activePreset, serverLoaded]);
 
   const toggle = (f: string) => {
     const next = new Set(selected);
