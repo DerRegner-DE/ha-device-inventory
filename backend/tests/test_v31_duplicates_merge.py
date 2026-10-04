@@ -94,6 +94,24 @@ def test_duplicates_list_suggests_controlling_integration(client):
     assert groups[0]["mac"] == "AA:BB:CC:DD:EE:FF"
 
 
+def test_merge_all_takes_every_suggestion(client):
+    for uuid, name, integ, mac in (
+        ("r", "Tor", "ring", "AA:BB:CC:DD:EE:FF"),
+        ("f1", "Ring-c79075", "fritz", "aa:bb:cc:dd:ee:ff"),
+        ("f2", "ring-doorbell01", "fritz", "AABBCCDDEEFF"),
+        ("h1", "S24", "fritz", "11:22:33:44:55:66"),
+        ("h2", "S24", "fritz", "11:22:33:44:55:66"),
+        ("solo", "Allein", "zha", "99:99:99:99:99:99"),
+    ):
+        _x("INSERT INTO devices (uuid, typ, bezeichnung, integration, mac_adresse) VALUES (?, 'Sensor', ?, ?, ?)",
+           (uuid, name, integ, mac))
+    r = client.post("/api/devices/duplicates/merge-all").json()
+    assert r["merged"] == 3 and r["groups"] == 2
+    alive = sorted(d["uuid"] for d in _q("SELECT uuid FROM devices WHERE deleted_at IS NULL"))
+    assert alive == ["h1", "r", "solo"]
+    assert client.get("/api/devices/duplicates/list").json()["groups"] == []
+
+
 def _registry(monkeypatch, devices, entities):
     from app.services import ha_import
 
@@ -121,7 +139,10 @@ def test_import_keeps_controlling_entry_and_aliases_the_tracker_twin(client, mon
          "primary_config_entry": "ce-fritz", "connections": mac},
         {"id": "ha-shelly", "name": "Licht Flur", "manufacturer": "Shelly", "model": "Plus 1PM",
          "config_entries": ["ce-shelly"], "primary_config_entry": "ce-shelly", "connections": mac},
-        # Gleiche MAC, gleiche Integration: kein Zwilling, beide bleiben.
+        # Zweite FRITZ!Box (eigener Konfigurationseintrag) meldet dasselbe Geraet.
+        {"id": "ha-fritz-og", "name": "shellyplus1pm-ab12", "config_entries": ["ce-fritz-og"],
+         "primary_config_entry": "ce-fritz-og", "connections": mac},
+        # Gleiche MAC, gleicher Konfigurationseintrag: kein Zwilling, beide bleiben.
         {"id": "esp-a", "name": "ESP A", "config_entries": ["ce-esp"], "primary_config_entry": "ce-esp",
          "connections": [["mac", "11:11:11:11:11:11"]]},
         {"id": "esp-b", "name": "ESP B", "config_entries": ["ce-esp"], "primary_config_entry": "ce-esp",
@@ -129,17 +150,20 @@ def test_import_keeps_controlling_entry_and_aliases_the_tracker_twin(client, mon
     ]
     entities = [
         {"entity_id": "device_tracker.shelly", "device_id": "ha-fritz", "config_entry_id": "ce-fritz", "platform": "fritz"},
+        {"entity_id": "device_tracker.shelly_og", "device_id": "ha-fritz-og", "config_entry_id": "ce-fritz-og", "platform": "fritz"},
         {"entity_id": "switch.licht_flur", "device_id": "ha-shelly", "config_entry_id": "ce-shelly", "platform": "shelly"},
         {"entity_id": "sensor.esp_a", "device_id": "esp-a", "config_entry_id": "ce-esp", "platform": "esphome"},
         {"entity_id": "sensor.esp_b", "device_id": "esp-b", "config_entry_id": "ce-esp", "platform": "esphome"},
     ]
     _registry(monkeypatch, devices, entities)
     result = asyncio.run(import_ha_devices())
-    assert result["aliased_twins"] == 1
+    assert result["aliased_twins"] == 2
     names = sorted(r["bezeichnung"] for r in _q("SELECT bezeichnung FROM devices WHERE deleted_at IS NULL"))
     assert names == ["ESP A", "ESP B", "Licht Flur"]
-    alias = _q("SELECT a.ha_device_id, d.bezeichnung FROM device_aliases a JOIN devices d ON d.uuid = a.device_uuid")
-    assert alias == [{"ha_device_id": "ha-fritz", "bezeichnung": "Licht Flur"}]
+    alias = _q("SELECT a.ha_device_id, d.bezeichnung FROM device_aliases a JOIN devices d ON d.uuid = a.device_uuid "
+               "ORDER BY a.ha_device_id")
+    assert alias == [{"ha_device_id": "ha-fritz", "bezeichnung": "Licht Flur"},
+                     {"ha_device_id": "ha-fritz-og", "bezeichnung": "Licht Flur"}]
 
     # Zweiter Import: nichts Neues, Alias wird nicht wieder angelegt.
     result = asyncio.run(import_ha_devices())

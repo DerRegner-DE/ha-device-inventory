@@ -137,7 +137,11 @@ async def _ws_command(cmd: dict) -> Any:
     url = _get_ws_url()
 
     async with aiohttp.ClientSession() as session:
-        async with session.ws_connect(url, timeout=aiohttp.ClientTimeout(total=30)) as ws:
+        # max_msg_size: get_states liefert auf grossen Anlagen mehr als die
+        # 4 MB, die aiohttp standardmaessig annimmt.
+        async with session.ws_connect(
+            url, timeout=aiohttp.ClientTimeout(total=30), max_msg_size=64 * 1024 * 1024,
+        ) as ws:
             # Wait for auth_required
             msg = await ws.receive_json()
             if msg.get("type") != "auth_required":
@@ -168,12 +172,33 @@ async def get_ha_device_registry() -> list[dict[str, Any]]:
 
 
 async def get_ha_entity_registry() -> list[dict[str, Any]]:
-    """Fetch complete HA entity registry via WebSocket API."""
+    """Fetch complete HA entity registry via WebSocket API.
+
+    v3.1.0: ``config/entity_registry/list`` liefert KEINE device_class
+    (gemessen an HA 2026.9.4: die Eintraege haben nur area_id, entity_id,
+    platform, ...). Die Klassifizierung nach device_class (seit v2.4.0) und
+    die Stromversorgung (Roadmap Nr. 17) liefen damit auf echten Anlagen ins
+    Leere. Die device_class steht in den Zustaenden -- sie wird hier als
+    ``original_device_class`` nachgetragen, wo sie fehlt.
+    """
     try:
-        return await _ws_command({"type": "config/entity_registry/list"})
+        entities = await _ws_command({"type": "config/entity_registry/list"})
     except Exception as e:
         logger.error("Failed to get entity registry: %s", e)
         return []
+    try:
+        states = await _ws_command({"type": "get_states"})
+        classes = {
+            s.get("entity_id"): (s.get("attributes") or {}).get("device_class")
+            for s in states or []
+        }
+        for ent in entities:
+            dc = classes.get(ent.get("entity_id"))
+            if dc and not ent.get("device_class") and not ent.get("original_device_class"):
+                ent["original_device_class"] = dc
+    except Exception as e:
+        logger.warning("device_class aus den Zustaenden nicht ermittelbar: %s", e)
+    return entities
 
 # v3.0.0: HA-Kernversion fuer das Bug-Formular. Der Melder musste sie bisher
 # von Hand unter Einstellungen -> Ueber nachschlagen; das Add-on kennt sie

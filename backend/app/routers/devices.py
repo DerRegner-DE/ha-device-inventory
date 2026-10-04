@@ -519,6 +519,40 @@ def list_duplicates():
         return {"groups": find_duplicates(conn)}
 
 
+@router.post("/duplicates/merge-all")
+def merge_all_duplicates(background_tasks: BackgroundTasks):
+    """Alle Vorschlaege der Dublettenliste auf einmal uebernehmen: je Gruppe
+    gehen die weiteren Geraete im ersten auf. Box-Test 04.10.2026: 73 Gruppen,
+    meist dasselbe Geraet von drei FRITZ!Boxen -- einzeln klicken ist dafuer
+    keine Loesung. Ein Snapshot davor macht es umkehrbar."""
+    create_snapshot("merge_all")
+    merged = 0
+    removed: list[str] = []
+    targets: list[str] = []
+    with get_db() as conn:
+        for group in find_duplicates(conn):
+            keep, *rest = group["devices"]
+            for dev in rest:
+                try:
+                    merge_devices(conn, dev["uuid"], keep["uuid"])
+                except (ValueError, LookupError):
+                    continue
+                merged += 1
+                removed.append(dev["uuid"])
+            targets.append(keep["uuid"])
+        rows = [
+            _build_device_response(dict_from_row(r), conn)
+            for r in conn.execute(
+                f"SELECT * FROM devices WHERE uuid IN ({','.join('?' * len(targets))})", targets,
+            ).fetchall()
+        ] if targets else []
+    for u in removed:
+        background_tasks.add_task(mqtt_remove_device, u)
+    for dev in rows:
+        background_tasks.add_task(publish_device, dev)
+    return {"merged": merged, "groups": len(targets), "removed": removed}
+
+
 @router.post("/{uuid}/merge")
 def merge_device(uuid: str, body: MergeBody, background_tasks: BackgroundTasks):
     """v3.1.0 (Roadmap Nr. 15): Geraet ``uuid`` in ``body.into`` zusammenfuehren.

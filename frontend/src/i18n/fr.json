@@ -565,5 +565,8 @@
   "duplicates.search": "Rechercher les doublons",
   "duplicates.none": "Aucun appareil avec la même adresse MAC.",
   "duplicates.mergeInto": "→ dans « {name} »",
-  "settings.haImportPartAliased": "{count} jumeaux enregistrés comme alias"
+  "settings.haImportPartAliased": "{count} jumeaux enregistrés comme alias",
+  "duplicates.count": "{count} groupes",
+  "duplicates.mergeAll": "Appliquer toutes les suggestions",
+  "duplicates.mergeAllConfirm": "Vraiment tout fusionner ? (un instantané est créé)"
 }

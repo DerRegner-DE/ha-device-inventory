@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { apiGet, apiPost } from "../api/client";
+import { apiGet, apiPost, syncFromServer } from "../api/client";
 import { db, type Device } from "../db/schema";
 import { t } from "../i18n";
 import { navigate } from "../utils/navigate";
@@ -153,6 +153,25 @@ export function DuplicatesSection() {
     await load();
   };
 
+  // Box-Test 04.10.2026: 73 Gruppen, meist dasselbe Geraet von drei
+  // FRITZ!Boxen. Einzeln klicken ist dafuer keine Loesung.
+  const [confirmAll, setConfirmAll] = useState(false);
+  const mergeAll = async () => {
+    if (!confirmAll) {
+      setConfirmAll(true);
+      return;
+    }
+    setConfirmAll(false);
+    setBusy("*");
+    const r = await apiPost<{ removed: string[] }>("/devices/duplicates/merge-all", {});
+    if (r?.removed?.length) {
+      await db.devices.bulkDelete(r.removed);
+      await syncFromServer();
+    }
+    setBusy(null);
+    await load();
+  };
+
   return (
     <div class="space-y-2">
       <p class="text-xs text-gray-400">{t("duplicates.desc")}</p>
@@ -167,6 +186,22 @@ export function DuplicatesSection() {
       ) : groups.length === 0 ? (
         <p class="text-xs text-gray-500 dark:text-gray-400">{t("duplicates.none")}</p>
       ) : (
+        <>
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs text-gray-500 dark:text-gray-400">
+            {t("duplicates.count", { count: groups.length })}
+          </span>
+          <button
+            type="button"
+            disabled={busy !== null}
+            onClick={mergeAll}
+            class={`px-3 py-1.5 rounded-lg text-xs text-white disabled:opacity-40 ${
+              confirmAll ? "bg-red-700" : "bg-[#1F4E79]"
+            }`}
+          >
+            {busy === "*" ? "…" : confirmAll ? t("duplicates.mergeAllConfirm") : t("duplicates.mergeAll")}
+          </button>
+        </div>
         <ul class="space-y-2">
           {groups.map((g) => {
             const [keep, ...rest] = g.devices;
@@ -196,6 +231,7 @@ export function DuplicatesSection() {
             );
           })}
         </ul>
+        </>
       )}
     </div>
   );

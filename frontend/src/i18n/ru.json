@@ -565,5 +565,8 @@
   "duplicates.search": "Найти дубликаты",
   "duplicates.none": "Устройства с одинаковым MAC-адресом не найдены.",
   "duplicates.mergeInto": "→ в «{name}»",
-  "settings.haImportPartAliased": "{count} двойников записаны как псевдонимы"
+  "settings.haImportPartAliased": "{count} двойников записаны как псевдонимы",
+  "duplicates.count": "Групп: {count}",
+  "duplicates.mergeAll": "Применить все предложения",
+  "duplicates.mergeAllConfirm": "Объединить все? (будет создан снимок)"
 }

@@ -99,3 +99,39 @@ def test_plain_thermometer_is_still_a_sensor():
 def test_dedicated_integrations_still_decide_directly():
     box = _dev(manufacturer="AVM", model="FRITZ!Box 7590", name="fritz.box")
     assert classify_device(box, [_ent("switch.wlan")], "fritz")[0] == "Router"
+
+
+def test_measuring_plug_and_named_shutter_from_box_test():
+    """Box-Test 04.10.2026: "WP Garage" (Tuya smart plug, nur Messwerte) wurde
+    Sensor, "Rollladen" (TS0601 ohne cover-Entity) wurde Sensor."""
+    plug = _dev(manufacturer="Tuya", model="Tuya smart plug (bfc87ac5)", name="WP Garage")
+    ents = [_ent("sensor.wp_garage_power", "power"), _ent("sensor.wp_garage_energy", "energy")]
+    assert classify_device(plug, ents, "tuya")[0] == "Steckdose"
+    shutter = _dev(manufacturer="_TZE284_uqfph8ah", model="TS0601", name="Rollladen")
+    assert classify_device(shutter, [_ent("sensor.rollladen_x")], "zigbee2mqtt")[0] == "Rollladen"
+
+
+def test_water_alarm_with_moisture_class_is_sensor():
+    dev = _dev(manufacturer="BOSCH", model="WATERALARM", name="Wasseralarm")
+    ents = [_ent("binary_sensor.wasseralarm", "moisture"), _ent("sensor.wasseralarm_battery", "battery")]
+    assert classify_device(dev, ents, "bosch_shc")[0] == "Sensor"
+
+
+def test_entity_registry_gets_device_class_from_states(monkeypatch):
+    """HA 2026.9: config/entity_registry/list liefert keine device_class."""
+    import asyncio
+    from app.services import ha_client
+
+    async def ws(cmd):
+        if cmd["type"] == "config/entity_registry/list":
+            return [{"entity_id": "sensor.a_battery"}, {"entity_id": "switch.b", "device_class": "outlet"},
+                    {"entity_id": "sensor.c"}]
+        return [{"entity_id": "sensor.a_battery", "attributes": {"device_class": "battery"}},
+                {"entity_id": "switch.b", "attributes": {"device_class": "switch"}},
+                {"entity_id": "sensor.c", "attributes": {}}]
+
+    monkeypatch.setattr(ha_client, "_ws_command", ws)
+    ents = {e["entity_id"]: e for e in asyncio.run(ha_client.get_ha_entity_registry())}
+    assert ents["sensor.a_battery"]["original_device_class"] == "battery"
+    assert "original_device_class" not in ents["switch.b"], "Nutzer-Override bleibt fuehrend"
+    assert "original_device_class" not in ents["sensor.c"]

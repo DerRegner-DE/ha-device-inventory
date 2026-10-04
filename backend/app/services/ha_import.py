@@ -601,6 +601,14 @@ def _guess_device_type_with_evidence(
                           name_and_model, re.IGNORECASE):
             return "Steckdose", "domain=switch + name of the connected load/plug"
         return "Aktor/Relais", "domain=switch (no device_class — could be relay or outlet)"
+    # Box-Test 04.10.2026: Tuya-Zwischenstecker, die nur Messwerte melden
+    # ("Tuya smart plug"), wurden zu "Sensor". Nennt sich das MODELL selbst
+    # Stecker, ist es einer -- der Name kann dagegen die Last sein.
+    if re.search(rf"\b({_OUTLET_NAME})\b", model, re.IGNORECASE):
+        return "Steckdose", "model name: plug/socket"
+    if re.search(r"\b(rollladen|rolladen|rollo|jalousie|raffstore|markise|blind|shutter|curtain)\b",
+                 name_and_model, re.IGNORECASE):
+        return "Rollladen", "name match: rollladen/rollo/jalousie"
     if re.search(rf"\b({_APPLIANCE_NAME})\b", name_and_model, re.IGNORECASE):
         return "Haushaltsgerät", "name match: appliance (herd/ofen/waschmaschine/...)"
     if re.search(r"\b(bridge|gateway|coordinator|koordinator|hub)\b", name_and_model, re.IGNORECASE):
@@ -992,20 +1000,26 @@ async def import_ha_devices(
     existing_ids |= alias_ids
 
     # v3.1.0 (Roadmap Nr. 12): Registry-Eintraege mit gleicher MAC/IEEE aus
-    # verschiedenen Integrationen sind dasselbe Geraet. Der Eintrag der
-    # steuernden Integration (kein Tracker, mehr Entities) wird importiert,
-    # die anderen werden Alias. Gleiche Kennung innerhalb *einer* Integration
-    # bleibt unangetastet -- das waere kein HA-2026.8-Zwilling.
+    # verschiedenen Konfigurationseintraegen sind dasselbe Geraet. Der Eintrag
+    # der steuernden Integration (kein Tracker, mehr Entities) wird importiert,
+    # die anderen werden Alias. Massstab ist der Konfigurationseintrag, nicht
+    # der Integrationsname: Box-Test 04.10.2026 -- drei FRITZ!Boxen im Mesh
+    # melden dasselbe Handy dreimal, alle mit Integration "fritz". Gleiche
+    # Kennung innerhalb *eines* Eintrags bleibt dagegen unangetastet.
     from app.services.merge import connection_keys
 
     integ_of = {d.get("id"): _resolve_primary_integration(d, config_entry_domains) for d in ha_devices}
+
+    def _entry_of(d: dict) -> str | None:
+        return d.get("primary_config_entry") or next(iter(d.get("config_entries") or []), None)
+
     by_key: dict[str, list[dict]] = {}
     for d in ha_devices:
         for key in connection_keys(d):
             by_key.setdefault(key, []).append(d)
     alias_of: dict[str, str] = {}
     for group in by_key.values():
-        if len({integ_of.get(d.get("id")) for d in group}) < 2:
+        if len({_entry_of(d) for d in group}) < 2:
             continue
         primary = min(group, key=lambda d: (
             integ_of.get(d.get("id")) in TRACKER_INTEGRATIONS,
@@ -1013,7 +1027,7 @@ async def import_ha_devices(
             d.get("id") or "",
         ))
         for d in group:
-            if d is not primary and integ_of.get(d.get("id")) != integ_of.get(primary.get("id")):
+            if d is not primary and _entry_of(d) != _entry_of(primary):
                 alias_of.setdefault(d.get("id"), primary.get("id"))
     # Hauptgeraete zuerst, damit ihre Inventar-UUID steht, wenn der Zwilling kommt.
     ha_devices = sorted(ha_devices, key=lambda d: d.get("id") in alias_of)

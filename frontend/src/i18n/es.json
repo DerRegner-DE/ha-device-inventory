@@ -565,5 +565,8 @@
   "duplicates.search": "Buscar duplicados",
   "duplicates.none": "No se encontraron dispositivos con la misma dirección MAC.",
   "duplicates.mergeInto": "→ en «{name}»",
-  "settings.haImportPartAliased": "{count} gemelos registrados como alias"
+  "settings.haImportPartAliased": "{count} gemelos registrados como alias",
+  "duplicates.count": "{count} grupos",
+  "duplicates.mergeAll": "Aplicar todas las sugerencias",
+  "duplicates.mergeAllConfirm": "¿Fusionar todo? (se crea una instantánea)"
 }

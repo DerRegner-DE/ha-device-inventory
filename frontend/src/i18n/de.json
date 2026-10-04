@@ -565,5 +565,8 @@
   "duplicates.search": "Dubletten suchen",
   "duplicates.none": "Keine Geräte mit gleicher MAC-Adresse gefunden.",
   "duplicates.mergeInto": "→ in „{name}“",
-  "settings.haImportPartAliased": "{count} Zwillinge als Alias vermerkt"
+  "settings.haImportPartAliased": "{count} Zwillinge als Alias vermerkt",
+  "duplicates.count": "{count} Gruppen",
+  "duplicates.mergeAll": "Alle Vorschläge übernehmen",
+  "duplicates.mergeAllConfirm": "Wirklich alle zusammenführen? (Schnappschuss wird angelegt)"
 }

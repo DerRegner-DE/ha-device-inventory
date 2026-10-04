@@ -565,5 +565,8 @@
   "duplicates.search": "Find duplicates",
   "duplicates.none": "No devices with the same MAC address found.",
   "duplicates.mergeInto": "→ into “{name}”",
-  "settings.haImportPartAliased": "{count} twins recorded as alias"
+  "settings.haImportPartAliased": "{count} twins recorded as alias",
+  "duplicates.count": "{count} groups",
+  "duplicates.mergeAll": "Apply all suggestions",
+  "duplicates.mergeAllConfirm": "Really merge all? (a snapshot is created)"
 }
