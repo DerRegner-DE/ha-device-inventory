@@ -1276,15 +1276,19 @@ async def import_ha_devices(
             # dieser Art werden geloest.
             if integ_of.get(via) in TOPOLOGY_INTEGRATIONS:
                 if parent_uuid and child_uuid:
+                    # sync_version mitzaehlen, sonst behaelt die App im
+                    # Browser ihren alten Stand (Box-Test preview.5).
                     cur = conn.execute(
-                        "UPDATE devices SET parent_uuid = NULL WHERE uuid = ? AND parent_uuid = ?",
+                        "UPDATE devices SET parent_uuid = NULL, sync_version = sync_version + 1, "
+                        "updated_at = datetime('now') WHERE uuid = ? AND parent_uuid = ?",
                         (child_uuid, parent_uuid),
                     )
                     unlinked_parents += cur.rowcount
                 continue
             if parent_uuid and child_uuid and parent_uuid != child_uuid:
                 cur = conn.execute(
-                    "UPDATE devices SET parent_uuid = ? WHERE uuid = ? "
+                    "UPDATE devices SET parent_uuid = ?, sync_version = sync_version + 1, "
+                    "updated_at = datetime('now') WHERE uuid = ? "
                     "AND (parent_uuid IS NULL OR parent_uuid != ?)",
                     (parent_uuid, child_uuid, parent_uuid),
                 )
