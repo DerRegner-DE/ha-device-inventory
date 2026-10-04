@@ -12,6 +12,7 @@ import { apiPost } from "../api/client";
 import { showUndoToast } from "./UndoToast";
 import { db, type Device } from "../db/schema";
 import { DEVICE_TYPES, INTEGRATIONS } from "../utils/constants";
+import { useCategories, sortedCategoryOptions } from "./CategoryManager";
 
 const WARRANTY_LABEL_KEY: Record<string, string> = {
   ok: "dashboard.warrantyOk",
@@ -27,25 +28,20 @@ export function DeviceList() {
   useLanguage();
   const license = useLicense();
 
+  // v3.1.0 (Roadmap Nr. 6): Sammelbearbeitung bietet die Kategorien aus der
+  // Verwaltung an (inkl. eigener), nicht nur die festen DEVICE_TYPES.
+  const categories = useCategories();
   const sortedTypes = useMemo(
-    () => [...DEVICE_TYPES].sort((a, b) => {
-      const ao = OTHER_BULK_IDS.has(a.id);
-      const bo = OTHER_BULK_IDS.has(b.id);
-      if (ao && !bo) return 1;
-      if (!ao && bo) return -1;
-      return t(a.labelKey).localeCompare(t(b.labelKey), undefined, { sensitivity: "base" });
-    }),
-    [],
-  );
-  const sortedIntegrations = useMemo(
-    () => [...INTEGRATIONS].sort((a, b) => {
-      const ao = OTHER_BULK_IDS.has(a.id);
-      const bo = OTHER_BULK_IDS.has(b.id);
-      if (ao && !bo) return 1;
-      if (!ao && bo) return -1;
-      return a.id.localeCompare(b.id, undefined, { sensitivity: "base" });
-    }),
-    [],
+    () => categories.length > 0
+      ? sortedCategoryOptions(categories)
+      : [...DEVICE_TYPES].sort((a, b) => {
+          const ao = OTHER_BULK_IDS.has(a.id);
+          const bo = OTHER_BULK_IDS.has(b.id);
+          if (ao && !bo) return 1;
+          if (!ao && bo) return -1;
+          return t(a.labelKey).localeCompare(t(b.labelKey), undefined, { sensitivity: "base" });
+        }).map((dt) => ({ value: dt.id, label: t(dt.labelKey), isCustom: false })),
+    [categories],
   );
   const [search, _setSearch] = useState(() => sessionStorage.getItem("gv_filter_search") || "");
   const [activeType, _setActiveType] = useState(() => sessionStorage.getItem("gv_filter_type") || "");
@@ -131,6 +127,19 @@ export function DeviceList() {
       if (d.typ) s.add(d.typ);
     }
     return s;
+  }, [allDevices]);
+
+  // v3.1.0 (Roadmap Nr. 14): feste Liste plus alle Integrationen im Bestand.
+  const sortedIntegrations = useMemo(() => {
+    const ids = new Set(INTEGRATIONS.map((i) => i.id));
+    for (const d of allDevices) if (d.integration) ids.add(d.integration);
+    return [...ids].sort((a, b) => {
+      const ao = OTHER_BULK_IDS.has(a);
+      const bo = OTHER_BULK_IDS.has(b);
+      if (ao && !bo) return 1;
+      if (!ao && bo) return -1;
+      return a.localeCompare(b, undefined, { sensitivity: "base" });
+    });
   }, [allDevices]);
 
   // Donut segment click: replaces whatever was active, stays on the list view.
@@ -485,14 +494,14 @@ export function DeviceList() {
               >
                 <option value="">{t("bulk.selectValue")}</option>
                 {bulkAction === "typ" &&
-                  sortedTypes.map((dt) => (
-                    <option key={dt.id} value={dt.id}>
-                      {t(dt.labelKey)}
+                  sortedTypes.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
                     </option>
                   ))}
                 {bulkAction === "integration" &&
-                  sortedIntegrations.map((i) => (
-                    <option key={i.id} value={i.id}>{i.id}</option>
+                  sortedIntegrations.map((id) => (
+                    <option key={id} value={id}>{id}</option>
                   ))}
               </select>
               <button

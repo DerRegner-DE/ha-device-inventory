@@ -130,10 +130,26 @@ export function DeviceForm({ device }: DeviceFormProps) {
     () => sortByLabel(DEVICE_TYPES, (dt) => t(dt.labelKey)),
     [],
   );
-  const sortedIntegrations = useMemo(
-    () => sortByLabel(INTEGRATIONS, (i) => t(i.labelKey) || i.id),
-    [],
-  );
+  // v3.1.0 (Roadmap Nr. 14): Integration ist ein freies Feld mit
+  // Vorschlagsliste. Das <select> kannte nur 36 feste Domains — bei bosch_shc,
+  // fritzbox, upnp usw. blieb es leer, obwohl der Wert in der DB stand, und
+  // verleitete zum Ueberschreiben. Vorgeschlagen werden die festen Eintraege
+  // plus alle Integrationen, die im Bestand tatsaechlich vorkommen.
+  const [knownIntegrations, setKnownIntegrations] = useState<string[]>([]);
+  useEffect(() => {
+    db.devices.orderBy("integration").uniqueKeys()
+      .then((keys) => setKnownIntegrations(keys.map(String).filter(Boolean)))
+      .catch(() => setKnownIntegrations([]));
+  }, []);
+  const integrationSuggestions = useMemo(() => {
+    const fixed = sortByLabel(INTEGRATIONS, (i) => t(i.labelKey) || i.id);
+    const fixedIds = new Set(fixed.map((i) => i.id));
+    const extra = knownIntegrations
+      .filter((id) => !fixedIds.has(id))
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }))
+      .map((id) => ({ id, label: id }));
+    return [...fixed.map((i) => ({ id: i.id, label: t(i.labelKey) || i.id })), ...extra];
+  }, [knownIntegrations]);
   const sortedNetworks = useMemo(
     () => sortByLabel(NETWORKS, (n) => t(n.labelKey)),
     [],
@@ -570,6 +586,16 @@ export function DeviceForm({ device }: DeviceFormProps) {
               placeholder={t("form.manufacturerPlaceholder")}
             />
           </Field>
+          {/* v3.1.0 (Roadmap Nr. 13): Firmware gehoert zum Geraet, nicht zu
+              "Netzwerk & Strom". */}
+          <Field label={t("form.firmware")}>
+            <input
+              type="text"
+              value={form.firmware}
+              onInput={(e) => updateField("firmware", (e.target as HTMLInputElement).value)}
+              class={inputClass}
+            />
+          </Field>
         </Section>
 
         <Section title={t("form.sectionLocation")} open={sections.location} onToggle={() => toggleSection("location")}>
@@ -587,18 +613,6 @@ export function DeviceForm({ device }: DeviceFormProps) {
         </Section>
 
         <Section title={t("form.sectionNetwork")} open={sections.network} onToggle={() => toggleSection("network")}>
-          <Field label={t("form.integration")}>
-            <select
-              value={form.integration}
-              onChange={(e) => updateField("integration", (e.target as HTMLSelectElement).value)}
-              class={selectClass}
-            >
-              <option value="">{t("form.selectIntegration")}</option>
-              {sortedIntegrations.map((i) => (
-                <option key={i.id} value={i.id}>{t(i.labelKey)}</option>
-              ))}
-            </select>
-          </Field>
           <Field label={t("form.network")}>
             <select
               value={form.netzwerk}
@@ -641,14 +655,6 @@ export function DeviceForm({ device }: DeviceFormProps) {
               placeholder={t("form.macPlaceholder")}
             />
           </Field>
-          <Field label={t("form.firmware")}>
-            <input
-              type="text"
-              value={form.firmware}
-              onInput={(e) => updateField("firmware", (e.target as HTMLInputElement).value)}
-              class={inputClass}
-            />
-          </Field>
         </Section>
 
         <Section title={t("form.sectionDetails")} open={sections.details} onToggle={() => toggleSection("details")}>
@@ -688,6 +694,24 @@ export function DeviceForm({ device }: DeviceFormProps) {
         </Section>
 
         <Section title={t("form.sectionHA")} open={sections.ha} onToggle={() => toggleSection("ha")}>
+          {/* v3.1.0 (Roadmap Nr. 13/14): Integration in der HA-Sektion, als
+              freies Feld mit Vorschlagsliste statt festem <select>. */}
+          <Field label={t("form.integration")}>
+            <input
+              type="text"
+              list="gv-integration-suggestions"
+              value={form.integration}
+              onInput={(e) => updateField("integration", (e.target as HTMLInputElement).value)}
+              class={inputClass}
+              placeholder={t("form.selectIntegration")}
+              autoComplete="off"
+            />
+            <datalist id="gv-integration-suggestions">
+              {integrationSuggestions.map((i) => (
+                <option key={i.id} value={i.id}>{i.label !== i.id ? i.label : ""}</option>
+              ))}
+            </datalist>
+          </Field>
           <Field label={t("form.entityId")}>
             <input
               type="text"

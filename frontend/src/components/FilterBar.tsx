@@ -2,7 +2,7 @@ import { useMemo } from "preact/hooks";
 import { DEVICE_TYPES } from "../utils/constants";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
-import { useCategories } from "./CategoryManager";
+import { useCategories, sortedCategoryOptions } from "./CategoryManager";
 
 interface FilterBarProps {
   search: string;
@@ -34,26 +34,24 @@ export function FilterBar({
   // definition order, so custom categories were missing entirely and the
   // order looked random.
   const chipTypes = useMemo(() => {
-    const entries: { value: string; label: string }[] = [];
-    if (categories.length > 0) {
-      for (const c of categories) {
-        const label = c.label_key ? t(c.label_key) || c.name : c.name;
-        entries.push({ value: c.name, label });
-      }
-    } else {
-      for (const dt of DEVICE_TYPES) {
-        entries.push({ value: dt.id, label: t(dt.labelKey) });
-      }
+    const entries: { value: string; label: string; isCustom: boolean }[] =
+      categories.length > 0
+        ? sortedCategoryOptions(categories)
+        : DEVICE_TYPES.map((dt) => ({ value: dt.id, label: t(dt.labelKey), isCustom: false }));
+    // v3.1.0 (Roadmap Nr. 17): Typen, die im Bestand stehen, aber in keiner
+    // Kategorie (Freitext ueber "Sonstiges" im Formular), bekamen nie einen
+    // Reiter. Sie werden jetzt wie eigene Kategorien behandelt.
+    const known = new Set(entries.map((e) => e.value));
+    for (const typ of usedTypes ?? []) {
+      if (!known.has(typ)) entries.push({ value: typ, label: typ, isCustom: true });
     }
-    const sorted = entries.sort((a, b) =>
-      a.label.localeCompare(b.label, undefined, { sensitivity: "base" }),
-    );
-    // v2.6.0: drop categories that aren't represented in the current dataset.
-    // Keep the currently active filter visible regardless so the user can
-    // tap it again to clear.
-    if (!usedTypes) return sorted;
-    return sorted.filter(
-      (e) => usedTypes.has(e.value) || e.value === activeType,
+    entries.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }));
+    // v2.6.0: drop built-in categories that aren't represented in the current
+    // dataset. Eigene Kategorien bleiben immer sichtbar (v3.1.0) — wer sie
+    // anlegt, will sie auch finden. Der aktive Filter bleibt ebenfalls stehen.
+    if (!usedTypes) return entries;
+    return entries.filter(
+      (e) => e.isCustom || usedTypes.has(e.value) || e.value === activeType,
     );
   }, [categories, usedTypes, activeType]);
   return (

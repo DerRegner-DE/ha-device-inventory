@@ -48,6 +48,31 @@ export function getCategoryLabel(name: string): string {
   return cat.name;
 }
 
+export interface CategoryOption {
+  value: string;
+  label: string;
+  isCustom: boolean;
+}
+
+/** v3.1.0 (Roadmap Nr. 6/16/17): eine Liste fuer alle Auswahlstellen —
+ *  eingebaute und eigene Kategorien, alphabetisch nach angezeigtem Namen,
+ *  "Sonstiges" am Ende. Vorher nutzte die Sammelbearbeitung nur die festen
+ *  DEVICE_TYPES, eigene Kategorien fehlten dort ganz. */
+export function sortedCategoryOptions(cats: Category[]): CategoryOption[] {
+  return cats
+    .map((c) => ({
+      value: c.name,
+      label: c.label_key ? t(c.label_key) || c.name : c.name,
+      isCustom: !!c.is_custom,
+    }))
+    .sort((a, b) => {
+      const aOther = a.value === "Sonstiges";
+      const bOther = b.value === "Sonstiges";
+      if (aOther !== bOther) return aOther ? 1 : -1;
+      return a.label.localeCompare(b.label, undefined, { sensitivity: "base" });
+    });
+}
+
 export function CategoryManager() {
   const cats = useCategories();
   const [newName, setNewName] = useState("");
@@ -125,8 +150,12 @@ export function CategoryManager() {
     }
   };
 
-  const custom = cats.filter((c) => c.is_custom);
-  const builtin = cats.filter((c) => !c.is_custom);
+  // v3.1.0 (Roadmap Nr. 16): beide Listen alphabetisch, bisher in Anlagereihenfolge.
+  const byLabel = (a: Category, b: Category) =>
+    (a.label_key ? t(a.label_key) || a.name : a.name).localeCompare(
+      b.label_key ? t(b.label_key) || b.name : b.name, undefined, { sensitivity: "base" });
+  const custom = cats.filter((c) => c.is_custom).sort(byLabel);
+  const builtin = cats.filter((c) => !c.is_custom).sort(byLabel);
 
   return (
     <div class="space-y-3">
