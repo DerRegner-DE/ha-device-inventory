@@ -126,9 +126,9 @@ FIELD_WEIGHTS: dict[str, float] = {
     "funktion": 3.5,
     "anmerkungen": 3.5,
     "external_url": 3.5,
-    "ohne_ha": 1.2,
+    "ohne_ha": 1.8,
     "ohne_ha_hinweis": 3.0,
-    "schalter_gebrueckt": 1.4,
+    "schalter_gebrueckt": 1.8,
     "schalter_gebrueckt_hinweis": 3.0,
 }
 
@@ -144,9 +144,10 @@ USABLE_WIDTH_MM = 190.0
 class DevicePDF(FPDF):
     """Custom PDF with header/footer for device inventory."""
 
-    def __init__(self, title: str = "Device Inventory", orientation: str = "P"):
+    def __init__(self, title: str = "Device Inventory", orientation: str = "P", page_word: str = "Page"):
         super().__init__(orientation=orientation)
         self._doc_title = title
+        self._page_word = page_word
         self._timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
 
     def header(self):
@@ -163,7 +164,7 @@ class DevicePDF(FPDF):
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
         self.set_text_color(150)
-        self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
+        self.cell(0, 10, f"{self._page_word} {self.page_no()}/{{nb}}", align="C")
 
 
 def _compute_col_widths(fields: list[str], usable_width_mm: float = USABLE_WIDTH_MM) -> list[float]:
@@ -206,6 +207,8 @@ def export_devices_to_pdf(
     fields: list[str] | None = None,
     detail_pages: bool = True,
     language: str | None = None,
+    image_refs: dict | None = None,
+    images: list | None = None,
 ) -> bytes:
     """Generate a PDF document from device list.
 
@@ -225,13 +228,21 @@ def export_devices_to_pdf(
     selected = [f for f in (fields or DEFAULT_FIELDS) if f in field_labels]
     if not selected:
         selected = DEFAULT_FIELDS
+    # v3.1.0 (GitHub #26): Verweisspalte auf den Bildanhang.
+    image_refs = image_refs or {}
+    images = images or []
+    de = field_labels is FIELD_LABELS_DE
+    if images:
+        field_labels = {**field_labels, IMAGE_REF_FIELD: "Bilder" if de else "Images"}
+        selected = [*selected, IMAGE_REF_FIELD]
 
     # Testrunde 05.09.2026: Mit 15 Spalten blieben auf A4 hochkant rund 12 mm
     # je Spalte -- Koepfe ueberlappten, Werte waren auf sechs Zeichen gekuerzt
     # ("PC-10-F6.", "FRITZ."). Ab neun Spalten deshalb Querformat.
     landscape = len(selected) > 8
 
-    pdf = DevicePDF(title=doc_title, orientation="L" if landscape else "P")
+    pdf = DevicePDF(title=doc_title, orientation="L" if landscape else "P",
+                    page_word="Seite" if de else "Page")
     pdf.alias_nb_pages()
     pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
@@ -239,7 +250,7 @@ def export_devices_to_pdf(
     # --- Summary ---
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(31, 78, 121)
-    pdf.cell(0, 8, "Summary", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, "Übersicht" if de else "Summary", new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0)
     pdf.set_font("Helvetica", "", 10)
 
@@ -248,16 +259,16 @@ def export_devices_to_pdf(
     locations = len(set(d.get("standort_name", "") for d in devices if d.get("standort_name")))
     manufacturers = len(set(d.get("hersteller", "") for d in devices if d.get("hersteller")))
 
-    pdf.cell(50, 6, f"Total devices: {total}")
-    pdf.cell(50, 6, f"Types: {types}")
-    pdf.cell(50, 6, f"Locations: {locations}")
-    pdf.cell(0, 6, f"Manufacturers: {manufacturers}", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(50, 6, f"{'Geräte gesamt' if de else 'Total devices'}: {total}")
+    pdf.cell(50, 6, f"{'Typen' if de else 'Types'}: {types}")
+    pdf.cell(50, 6, f"{'Standorte' if de else 'Locations'}: {locations}")
+    pdf.cell(0, 6, f"{'Hersteller' if de else 'Manufacturers'}: {manufacturers}", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(4)
 
     # --- Device Table ---
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(31, 78, 121)
-    pdf.cell(0, 8, "Device List", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 8, "Geräteliste" if de else "Device List", new_x="LMARGIN", new_y="NEXT")
     pdf.set_text_color(0)
 
     usable = pdf.w - pdf.l_margin - pdf.r_margin
@@ -303,6 +314,8 @@ def export_devices_to_pdf(
                 val = str(idx)
             elif f in YES_NO_FIELDS:
                 val = ohne_ha_labels.get(str(device.get(f) or ""), "")
+            elif f == IMAGE_REF_FIELD:
+                val = ", ".join(image_refs.get(device.get("id"), []))
             else:
                 val = str(device.get(f, "") or "")
             align = "C" if f == "nr" else "L"
@@ -319,7 +332,7 @@ def export_devices_to_pdf(
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 11)
         pdf.set_text_color(31, 78, 121)
-        pdf.cell(0, 8, "Device Details", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 8, "Gerätedetails" if de else "Device Details", new_x="LMARGIN", new_y="NEXT")
 
         # Detail pages show the selected fields as label/value rows. "nr"
         # and "bezeichnung" are surfaced in the heading, so skip them below.
@@ -342,6 +355,8 @@ def export_devices_to_pdf(
 
             for f in detail_fields:
                 value = device.get(f, "")
+                if f == IMAGE_REF_FIELD:
+                    value = ", ".join(image_refs.get(device.get("id"), []))
                 if f in YES_NO_FIELDS:
                     value = ohne_ha_labels.get(str(value or ""), "")
                 if not value:
@@ -376,7 +391,7 @@ def export_devices_to_pdf(
                     pdf.add_page()
 
                 pdf.set_font("Helvetica", "B", 8)
-                pdf.cell(30, 5, "Notes:")
+                pdf.cell(30, 5, "Anmerkungen:" if de else "Notes:")
                 pdf.set_font("Helvetica", "", 8)
                 pdf.multi_cell(0, 5, shown)
 
@@ -395,9 +410,51 @@ def export_devices_to_pdf(
             pdf.line(10, pdf.get_y(), 200, pdf.get_y())
             pdf.ln(2)
 
+    if images:
+        _render_image_appendix(pdf, images, de)
+
     buf = BytesIO()
     pdf.output(buf)
     return buf.getvalue()
+
+
+IMAGE_REF_FIELD = "_bilder"
+
+
+def _render_image_appendix(pdf: FPDF, images: list, de: bool) -> None:
+    """GitHub #26: jedes Bild einmal, mit Marke, Beschriftung und Geraeten."""
+    from app.services.export_images import load_for_pdf
+
+    usable_w = pdf.w - pdf.l_margin - pdf.r_margin
+    max_h = (pdf.h - 20 - 30) / 2 - 14  # zwei Bilder je Seite
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(31, 78, 121)
+    pdf.cell(0, 8, "Bildanhang" if de else "Image appendix", new_x="LMARGIN", new_y="NEXT")
+    pdf.set_text_color(0)
+
+    for img in images:
+        pil = load_for_pdf(img.path)
+        if pil is None:
+            continue
+        w_px, h_px = pil.size
+        w = usable_w
+        h = w * h_px / w_px
+        if h > max_h:
+            h = max_h
+            w = h * w_px / h_px
+        if pdf.get_y() + h + 14 > pdf.h - 20:
+            pdf.add_page()
+        pdf.set_font("Helvetica", "B", 9)
+        title = img.label
+        if img.caption:
+            title += f" - {img.caption}"
+        pdf.cell(0, 5, _fit(pdf, title, usable_w), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 7)
+        prefix = "Gehört zu: " if de else "Belongs to: "
+        pdf.cell(0, 4, _fit(pdf, prefix + ", ".join(img.devices), usable_w), new_x="LMARGIN", new_y="NEXT")
+        pdf.image(pil, x=pdf.l_margin, y=pdf.get_y() + 1, w=w, h=h)
+        pdf.set_y(pdf.get_y() + h + 5)
 
 
 def _safe_text(text: str) -> str:

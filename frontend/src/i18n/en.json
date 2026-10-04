@@ -548,5 +548,9 @@
   "exportPicker.sort": "Order",
   "exportPicker.sort.nr": "Grouped by category",
   "exportPicker.sort.standort": "Floor › Location › Name (flat list)",
-  "settings.haImportPartBackfilled": "{count} completed with serial/MAC"
+  "settings.haImportPartBackfilled": "{count} completed with serial/MAC",
+  "exportPicker.images": "Images in PDF",
+  "exportPicker.images.einbauort": "Installation photos",
+  "exportPicker.images.fotos": "Device photos and image documents",
+  "exportPicker.imagesHint": "Added as an image appendix at the end of the PDF; the list shows the reference (B1, B2 …). Identical images appear once. Not in the Excel export."
 }

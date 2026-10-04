@@ -548,5 +548,9 @@
   "exportPicker.sort": "Порядок",
   "exportPicker.sort.nr": "По категориям",
   "exportPicker.sort.standort": "Этаж › Место › Название (плоский список)",
-  "settings.haImportPartBackfilled": "{count} дополнены серийным номером/MAC"
+  "settings.haImportPartBackfilled": "{count} дополнены серийным номером/MAC",
+  "exportPicker.images": "Изображения в PDF",
+  "exportPicker.images.einbauort": "Фото места установки",
+  "exportPicker.images.fotos": "Фото устройств и документы-изображения",
+  "exportPicker.imagesHint": "Добавляются как приложение с изображениями в конце PDF; в списке указана ссылка (B1, B2 …). Одинаковые изображения — один раз. Не в экспорте Excel."
 }

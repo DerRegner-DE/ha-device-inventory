@@ -548,5 +548,9 @@
   "exportPicker.sort": "Reihenfolge",
   "exportPicker.sort.nr": "Nach Kategorie gruppiert",
   "exportPicker.sort.standort": "Etage › Standort › Name (flache Liste)",
-  "settings.haImportPartBackfilled": "{count} mit Seriennummer/MAC ergänzt"
+  "settings.haImportPartBackfilled": "{count} mit Seriennummer/MAC ergänzt",
+  "exportPicker.images": "Bilder im PDF",
+  "exportPicker.images.einbauort": "Einbauort-Bilder",
+  "exportPicker.images.fotos": "Gerätefotos und Bild-Dokumente",
+  "exportPicker.imagesHint": "Erscheinen als Bildanhang am Ende des PDFs, in der Liste steht der Verweis (B1, B2 …). Gleiche Bilder nur einmal. Nicht im Excel-Export."
 }

@@ -9,6 +9,7 @@ from fastapi.responses import Response
 
 from app.database import get_db, dicts_from_rows
 from app.services.excel_export import export_devices_to_xlsx
+from app.services.export_images import collect_images, parse_kinds
 from app.services.pdf_export import export_devices_to_pdf
 
 router = APIRouter(prefix="/export", tags=["export"])
@@ -172,10 +173,21 @@ def export_pdf(
         ),
     ),
     sort: str = Query("nr", description="'nr' or 'standort' (floor > location > name)"),
+    images: str | None = Query(
+        None, description="Comma-separated image kinds for the appendix: 'einbauort', 'fotos'",
+    ),
 ):
     """Export all devices as PDF. ``fields`` shapes both the summary table
-    and the per-device detail pages. Same v2.5.3 fix as ``/xlsx``."""
+    and the per-device detail pages. Same v2.5.3 fix as ``/xlsx``.
+
+    v3.1.0 (GitHub #26): ``images`` haengt einen Bildanhang an."""
     rows = _load_rows(sort)
+    image_refs: dict = {}
+    appendix: list = []
+    kinds = parse_kinds(images)
+    if kinds:
+        with get_db() as conn:
+            image_refs, appendix = collect_images(conn, rows, kinds)
 
     selected = _parse_fields(fields)
     if details is None:
@@ -190,7 +202,8 @@ def export_pdf(
             and any(set(selected) == set(p) for p in EXPORT_FIELD_PRESETS.values())
         )
 
-    pdf_bytes = export_devices_to_pdf(rows, fields=selected, detail_pages=details)
+    extra = {"image_refs": image_refs, "images": appendix} if appendix else {}
+    pdf_bytes = export_devices_to_pdf(rows, fields=selected, detail_pages=details, **extra)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"Device_Inventory_{timestamp}.pdf"

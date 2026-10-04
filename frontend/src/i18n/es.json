@@ -548,5 +548,9 @@
   "exportPicker.sort": "Orden",
   "exportPicker.sort.nr": "Agrupado por categoría",
   "exportPicker.sort.standort": "Planta › Ubicación › Nombre (lista plana)",
-  "settings.haImportPartBackfilled": "{count} completados con n.º de serie/MAC"
+  "settings.haImportPartBackfilled": "{count} completados con n.º de serie/MAC",
+  "exportPicker.images": "Imágenes en el PDF",
+  "exportPicker.images.einbauort": "Fotos de instalación",
+  "exportPicker.images.fotos": "Fotos del dispositivo y documentos de imagen",
+  "exportPicker.imagesHint": "Se añaden como anexo de imágenes al final del PDF; la lista muestra la referencia (B1, B2 …). Las imágenes idénticas aparecen una sola vez. No en la exportación a Excel."
 }

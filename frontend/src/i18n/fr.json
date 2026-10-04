@@ -548,5 +548,9 @@
   "exportPicker.sort": "Ordre",
   "exportPicker.sort.nr": "Groupé par catégorie",
   "exportPicker.sort.standort": "Étage › Emplacement › Nom (liste simple)",
-  "settings.haImportPartBackfilled": "{count} complétés avec n° de série/MAC"
+  "settings.haImportPartBackfilled": "{count} complétés avec n° de série/MAC",
+  "exportPicker.images": "Images dans le PDF",
+  "exportPicker.images.einbauort": "Photos d’installation",
+  "exportPicker.images.fotos": "Photos de l’appareil et documents image",
+  "exportPicker.imagesHint": "Ajoutées en annexe d’images à la fin du PDF ; la liste indique la référence (B1, B2 …). Les images identiques n’apparaissent qu’une fois. Pas dans l’export Excel."
 }

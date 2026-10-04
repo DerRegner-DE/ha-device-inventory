@@ -24,6 +24,8 @@ const ALL_FIELDS: string[] = [
 // v3.1.0 (Roadmap Nr. 16): "standort" = Etage > Standort > Name, flache Liste.
 type SortKey = "nr" | "standort";
 const SORT_STORAGE_KEY = "gv_export_sort_v1";
+const IMAGES_STORAGE_KEY = "gv_export_images_v1";
+const IMAGE_KINDS = ["einbauort", "fotos"] as const;
 
 const STORAGE_KEY = "gv_export_fields_v1";
 // Die aktive Vorlage muss genauso ueberdauern wie die Feldauswahl. Sonst steht
@@ -80,6 +82,25 @@ export function ExportPicker({ onClose }: Props) {
       localStorage.setItem(SORT_STORAGE_KEY, sort);
     } catch {}
   }, [sort]);
+
+  // v3.1.0 (GitHub #26): Bildanhang im PDF
+  const [imageKinds, setImageKinds] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem(IMAGES_STORAGE_KEY);
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const toggleImageKind = (k: string) => {
+    const next = new Set(imageKinds);
+    if (next.has(k)) next.delete(k);
+    else next.add(k);
+    setImageKinds(next);
+    try {
+      localStorage.setItem(IMAGES_STORAGE_KEY, JSON.stringify([...next]));
+    } catch {}
+  };
   const isSecure = typeof window !== "undefined" ? window.isSecureContext : true;
   const [busy, setBusy] = useState(false);
   const [blocked, setBlocked] = useState(false);
@@ -140,6 +161,7 @@ export function ExportPicker({ onClose }: Props) {
     // Die Rueckbau-Liste geht an einen Handwerker und soll auf ein paar
     // Blatt passen. Detailseiten je Geraet blaehen sie auf 60+ Seiten auf.
     if (format === "pdf" && activePreset === "rueckbau") url += "&details=false";
+    if (format === "pdf" && imageKinds.size > 0) url += `&images=${[...imageKinds].join(",")}`;
 
     setBusy(true);
     setBlocked(false);
@@ -210,6 +232,20 @@ export function ExportPicker({ onClose }: Props) {
               <option value="nr">{t("exportPicker.sort.nr")}</option>
               <option value="standort">{t("exportPicker.sort.standort")}</option>
             </select>
+          </div>
+          <div>
+            <h3 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+              {t("exportPicker.images")}
+            </h3>
+            <div class="flex flex-col gap-1">
+              {IMAGE_KINDS.map((k) => (
+                <label key={k} class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" checked={imageKinds.has(k)} onChange={() => toggleImageKind(k)} />
+                  <span class="text-gray-700 dark:text-gray-300">{t(`exportPicker.images.${k}`)}</span>
+                </label>
+              ))}
+            </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">{t("exportPicker.imagesHint")}</p>
           </div>
           <div>
             <h3 class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
