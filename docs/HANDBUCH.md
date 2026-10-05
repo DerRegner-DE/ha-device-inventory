@@ -2,39 +2,134 @@
 
 Stand: v3.1.0 · 2026-10-05
 
-Dieses Handbuch ist die Antwort auf die immer wieder gleichen Forum-Fragen. Wenn du noch keine vorherige Version kennst, fang oben beim Schnellstart an. Wer schon eine ältere Version genutzt hat, springt direkt zum Kapitel mit dem Feature, das gerade Fragen aufwirft.
+Dieses Handbuch beschreibt Einrichtung und Bedienung der Geräteverwaltung und beantwortet die häufigsten Fragen aus dem Forum. Neu dabei? Dann am besten mit dem ersten Kapitel und dem Schnellstart beginnen. Wer eine ältere Version kennt, springt direkt zum Kapitel, das gerade Fragen aufwirft.
 
 ---
 
 ## Inhalt
 
-1. [Schnellstart in 5 Schritten](#schnellstart-in-5-schritten)
-2. [Home Assistant Integration (MQTT-Discovery)](#home-assistant-integration-mqtt-discovery)
-3. [Multi-Channel-Geräte (Parent-Child)](#multi-channel-geräte-parent-child)
-4. [Doppelte Geräte zusammenführen](#doppelte-geräte-zusammenführen)
-5. [Versicherungs-Doku & Nachlass — die typischen Workflows](#versicherungs-doku--nachlass--die-typischen-workflows)
-6. [Filter, Suche und Sortierung](#filter-suche-und-sortierung)
-7. [Papierkorb & Datenbank-Schnappschüsse](#papierkorb--datenbank-schnappschüsse)
-8. [Häufige Fragen (FAQ)](#häufige-fragen-faq)
-9. [Probleme beheben](#probleme-beheben)
+1. [Wofür die Geräteverwaltung da ist](#wofür-die-geräteverwaltung-da-ist)
+2. [Installation, Update, Deinstallation](#installation-update-deinstallation)
+3. [Free und Pro](#free-und-pro)
+4. [Schnellstart in 5 Schritten](#schnellstart-in-5-schritten)
+5. [Geräte erfassen](#geräte-erfassen)
+6. [Home Assistant Integration (MQTT-Discovery)](#home-assistant-integration-mqtt-discovery)
+7. [Multi-Channel-Geräte (Parent-Child)](#multi-channel-geräte-parent-child)
+8. [Doppelte Geräte zusammenführen](#doppelte-geräte-zusammenführen)
+9. [Versicherungs-Doku & Nachlass — die typischen Workflows](#versicherungs-doku--nachlass--die-typischen-workflows)
+10. [Filter, Suche und Sortierung](#filter-suche-und-sortierung)
+11. [Papierkorb & Datenbank-Schnappschüsse](#papierkorb--datenbank-schnappschüsse)
+12. [Häufige Fragen (FAQ)](#häufige-fragen-faq)
+13. [Probleme beheben](#probleme-beheben)
+14. [Datenschutz und Rechtliches](#datenschutz-und-rechtliches)
+15. [Support und Kontakt](#support-und-kontakt)
+
+---
+
+## Wofür die Geräteverwaltung da ist
+
+Ein Smart Home wächst: Router, Sensoren, Steckdosen, Kameras, Thermostate, Gateways. Wo steht die Seriennummer des Repeaters, wann wurde der Thermostat gekauft, läuft die Garantie noch, welcher Lichtschalter ist überbrückt? Die Geräteverwaltung ist eine durchsuchbare Inventarliste aller Geräte im Haus — direkt in Home Assistant.
+
+Typische Einsätze:
+
+- **Versicherung** — Inventar mit Seriennummern, Kaufdaten, Fotos und Belegen; im Schadensfall alles griffbereit.
+- **Garantie** — Kaufdatum und Garantieende je Gerät.
+- **Wartung** — Firmware, IP- und MAC-Adresse, Netzwerk und Integration auf einen Blick.
+- **Übergabe, Rückbau, Nachlass** — die Liste für Angehörige, Elektriker oder Käufer: was läuft ohne Home Assistant, welche Schalter sind überbrückt, wo liegen die Unterlagen.
+- **Vermietung und Steuer** — Ausstattung von Mietwohnungen oder betrieblich genutzte Geräte dokumentieren.
+
+Die App läuft als Home-Assistant-Add-on mit eigener Datenbank, ist auf Handy, Tablet und PC nutzbar und funktioniert auch ohne Verbindung; Änderungen werden abgeglichen, sobald die Verbindung wieder steht.
+
+---
+
+## Installation, Update, Deinstallation
+
+**Voraussetzungen:** Home Assistant OS oder Supervised (Add-ons müssen verfügbar sein), Architektur amd64, aarch64 (z. B. Raspberry Pi 4/5) oder armv7, ein aktueller Browser. Kamera und Barcode-Scanner brauchen eine verschlüsselte Verbindung (HTTPS), siehe [Kamera und Scanner](#kamera-und-scanner).
+
+**Installieren:**
+
+1. In Home Assistant **Einstellungen → Add-ons** (in neueren Versionen **Apps**) → **Add-on Store**.
+2. Oben rechts das Drei-Punkte-Menü → **Repositories**.
+3. `https://github.com/DerRegner-DE/ha-device-inventory` einfügen, **Hinzufügen**, Dialog schließen.
+4. Im Store nach **Geraeteverwaltung** suchen (ggf. Seite neu laden) → **Installieren**.
+5. **Starten**, **In Seitenleiste anzeigen** einschalten, **Benutzeroberfläche öffnen**.
+
+**Aktualisieren:** Ein verfügbares Update zeigt Home Assistant unter *Einstellungen → Add-ons → Geräteverwaltung* (und bei den Benachrichtigungen) an. **Aktualisieren** klicken; *Backup der letzten Version behalten* ist empfehlenswert, weil Updates die Datenbank erweitern können. Alternativ *Automatische Updates* einschalten. Was neu ist, steht im Änderungsprotokoll (Changelog) des Add-ons. Nach einem Update lohnt ein Blick in den Abschnitt „Nach dem Update" des Schnellstarts.
+
+**Deinstallieren:** *Einstellungen → Add-ons → Geräteverwaltung → Deinstallieren*. Dabei löscht Home Assistant das Datenverzeichnis des Add-ons mit Datenbank, Fotos und Lizenz. Vorher sichern: *Einstellungen → Daten exportieren* (JSON, Excel, PDF) oder ein Home-Assistant-Backup, das das Add-on einschließt.
+
+---
+
+## Free und Pro
+
+Die Grundfunktionen sind kostenlos; erweiterte Funktionen schaltet ein einmalig gekaufter Lizenzschlüssel frei (**9,99 €**, kein Abo).
+
+| | Free | Pro |
+|---|:---:|:---:|
+| Geräte | bis 50 | unbegrenzt |
+| Sprachen | Englisch | Deutsch, Englisch, Spanisch, Französisch, Russisch |
+| Dashboard, Suche, Filter, Offline-Betrieb, Seitenleiste | ✓ | ✓ |
+| JSON-Export | ✓ | ✓ |
+| HA-Import, automatische Typerkennung, Neu-Kategorisieren | — | ✓ |
+| Excel- und PDF-Export mit Vorlagen | — | ✓ |
+| Kamera, QR-/Barcode-Scanner, Fotos und Dokumente | — | ✓ |
+| Sammelbearbeitung | — | ✓ |
+| MQTT-Discovery (Geräte in HA veröffentlichen) | — | ✓ |
+
+**Kaufen:** über den Link im README des GitHub-Repositorys; der Schlüssel kommt mit der Kaufbestätigung per E-Mail. Ein Schlüssel gilt für bis zu drei Installationen und läuft nicht ab.
+
+**Aktivieren:** *Einstellungen → Lizenz*, Schlüssel in das Feld *Lizenzschlüssel* eintragen, **Aktivieren**. Die Pro-Funktionen sind sofort frei. Beim Aktivieren und gelegentlich danach prüft das Add-on den Schlüssel beim Zahlungsanbieter Lemon Squeezy; ohne Internet gilt die zuletzt erfolgreiche Prüfung weiter.
+
+Kommt nach dem Kauf keine E-Mail an: Spam-Ordner prüfen, sonst an support@derregner.info schreiben.
 
 ---
 
 ## Schnellstart in 5 Schritten
 
 1. **Add-on installieren** über die Home-Assistant-Add-on-Store-URL (siehe README im GitHub-Repo). Nach der Installation erscheint die Geräteverwaltung als Eintrag in der HA-Sidebar.
-2. **Pro-Lizenz aktivieren** unter *Einstellungen → Lizenz*. Ohne Lizenz kannst du bis zu 50 Geräte verwalten und nur Englisch nutzen — alles andere (mehrsprachig, Excel, MQTT, Kamera, Barcode, Dokumente) ist Pro.
+2. **Pro-Lizenz aktivieren** unter *Einstellungen → Lizenz*. Ohne Lizenz lassen sich bis zu 50 Geräte verwalten, die Oberfläche ist dann englisch — alles andere (mehrsprachig, Excel, MQTT, Kamera, Barcode, Dokumente) ist Pro.
 3. **HA-Geräte importieren** unter *Einstellungen → Home Assistant Import → HA-Geräte importieren*. Der Import kann bei großen Setups (300+) eine Minute dauern; er läuft im Hintergrund mit einer Fortschrittsanzeige. Übernommen werden Name, Hersteller, Modell, Firmware, Raum und Etage, Integration, Netzwerk und — seit 3.1.0 — Seriennummer, MAC-Adresse und Stromversorgung (Batterie/Akku), soweit Home Assistant sie kennt. Ein erneuter Import legt keine Geräte doppelt an und trägt bei vorhandenen Geräten Seriennummer und MAC nur in leere Felder nach.
-4. **Optional: MQTT-Discovery aktivieren** unter *Einstellungen → Home Assistant Integration → Geräte in HA veröffentlichen* — siehe das nächste Kapitel, ob das für dich sinnvoll ist.
-5. **Erste Geräte ergänzen**: Tippe auf ein Gerät in der Liste, dann *Bearbeiten*, und füll mindestens Anschaffungsdatum, Garantie-Ende und Kaufpreis aus. Foto und Einbauort-Bilder ergänzen, Belege als Dokumente hochladen — fertig für Versicherungs-Doku.
+4. **Optional: MQTT-Discovery aktivieren** unter *Einstellungen → Home Assistant Integration → Geräte in HA veröffentlichen* — ob das sinnvoll ist, steht im Kapitel [Home Assistant Integration](#home-assistant-integration-mqtt-discovery).
+5. **Erste Geräte ergänzen**: Ein Gerät in der Liste antippen, dann *Bearbeiten*, und mindestens Anschaffungsdatum, Garantie-Ende und Kaufpreis eintragen. Foto und Einbauort-Bilder ergänzen, Belege als Dokumente hochladen — fertig für Versicherungs-Doku.
 
 ### Nach dem Update auf 3.1.0
 
 Einmal in dieser Reihenfolge:
 
-1. *Einstellungen → Aus Home Assistant importieren* — ergänzt Seriennummer und MAC bei vorhandenen Geräten und löst falsche Router-Zuordnungen (siehe [Multi-Channel-Geräte](#multi-channel-geräte-parent-child)).
+1. *Einstellungen → Home Assistant Import → HA-Geräte importieren* — ergänzt Seriennummer und MAC bei vorhandenen Geräten und löst falsche Router-Zuordnungen (siehe [Multi-Channel-Geräte](#multi-channel-geräte-parent-child)).
 2. *Einstellungen → Mögliche Dubletten* — doppelte Geräte prüfen und zusammenführen (siehe [Doppelte Geräte](#doppelte-geräte-zusammenführen)).
-3. *Einstellungen → Kategorien neu zuordnen* — die Vorschau zeigt nach 3.1.0 deutlich mehr Vorschläge als früher, weil die Erkennung erstmals die Geräteklassen aus Home Assistant sieht. Außerdem wird die Stromversorgung nachgetragen. Erst die Vorschau ansehen, einzelne Zeilen abwählen, dann übernehmen. Alles ist über Schnappschuss und Geräte-Historie zurücknehmbar.
+3. *Einstellungen → Geräte neu kategorisieren → Vorschau & gezielt zuordnen* — die Vorschau zeigt nach 3.1.0 deutlich mehr Vorschläge als früher, weil die Erkennung erstmals die Geräteklassen aus Home Assistant sieht. Außerdem wird die Stromversorgung nachgetragen. Erst die Vorschau ansehen, einzelne Zeilen abwählen, dann übernehmen. Alles ist über Schnappschuss und Geräte-Historie zurücknehmbar.
+
+---
+
+## Geräte erfassen
+
+Neue Geräte über **Hinzufügen** in der unteren Leiste, vorhandene über die Detailseite → **Bearbeiten**. Pflicht sind nur *Gerätetyp* und *Bezeichnung*. Das Formular ist in Bereiche gegliedert, die sich auf- und zuklappen lassen:
+
+| Bereich | Felder |
+|---|---|
+| Grunddaten | Gerätetyp, Bezeichnung, Modell, Hersteller, Firmware |
+| Standort | Bereich aus Home Assistant (die Etage ergibt sich daraus) |
+| Netzwerk & Strom | Netzwerk, Stromversorgung, IP-Adresse, MAC-Adresse |
+| Details | Seriennummer, AIN/Artikelnummer, Anschaffungsdatum, Garantie bis |
+| Home Assistant | Integration, Entity-ID, Device-ID |
+| Notizen | Funktion, Anmerkungen, „Funktioniert ohne Home Assistant?", „Wandschalter überbrückt?", Externer Link |
+
+Beim Bearbeiten kommen darunter **Einbauort-Bilder** (mit Beschriftung, z. B. „hinter der Abdeckung oben links") und **Dokumente** (Rechnung, Anleitung — als Datei oder Link) hinzu. Ein Gerätefoto lässt sich oben im Formular per Kamera oder Datei anhängen. Jede Änderung landet in der *Änderungshistorie* auf der Detailseite und lässt sich dort einzeln zurücknehmen.
+
+**Integration** ist ein freies Feld: Die Vorschlagsliste enthält die gängigen Integrationen und alle, die im eigenen Bestand vorkommen; jeder andere Wert lässt sich eintippen.
+
+**Auswahlwerte:**
+
+- *Netzwerk:* WLAN, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
+- *Stromversorgung:* Netzteil, 230V, Batterie, Akku, USB, PoE, Solar, Starkstrom
+- *Gerätetypen (32):* Router, Repeater, Powerline, DECT Repeater, Steckdose, Lichtschalter, Leuchtmittel, Aktor/Relais, Schalter/Taster, Rollladen, Thermostat, Controller/Gateway, Kamera, Türklingel, Gong, Schloss, Alarmanlage, Sprachassistent, Smart TV, Streaming, Display/Dashboard, Tablet, Lautsprecher, Haushaltsgerät, Mähroboter, Bewässerung, Ventilator, Fernbedienung, Drucker, Sensor, Smartphone, Sonstiges
+
+Eigene Gerätetypen legt man unter *Einstellungen → Kategorien verwalten* an; sie stehen danach in allen Auswahllisten, in der Sammelbearbeitung und als Filter-Reiter.
+
+### Kamera und Scanner
+
+Mit Pro lassen sich Fotos direkt aufnehmen und QR-/Barcodes scannen. Eine MAC-Adresse im Code wird erkannt und eingetragen, sonst landet der Inhalt als Seriennummer im Formular; strukturierte Codes (z. B. `SN:…|MAC:…|MODEL:…`) füllen mehrere Felder auf einmal. Browser geben die Kamera nur über eine verschlüsselte Verbindung frei: über Home Assistant Cloud (Nabu Casa), ein eigenes Zertifikat oder einen Reverse Proxy. Bei Zugriff über `http://<IP>:8123` bleibt die Auswahl eines vorhandenen Bildes möglich, die Kamera nicht.
 
 ---
 
@@ -44,7 +139,7 @@ Die mit Abstand häufigste Forum-Frage. Wir erklären, **was** der Toggle macht,
 
 ### Was passiert beim Aktivieren?
 
-Wenn du *Geräte in HA veröffentlichen* einschaltest, publiziert das Add-on **pro Inventar-Gerät bis zu 6 MQTT-Discovery-Einträge** auf dem in den Add-on-Optionen konfigurierten Broker (default: `core-mosquitto`):
+Wenn Sie *Geräte in HA veröffentlichen* einschalten, publiziert das Add-on **pro Inventar-Gerät bis zu 6 MQTT-Discovery-Einträge** auf dem in den Add-on-Optionen konfigurierten Broker (default: `core-mosquitto`):
 
 | Entity-Typ | Inhalt | Beispiel |
 |------------|--------|----------|
@@ -78,19 +173,19 @@ Warum ein eigener Benutzer statt des eigenen Kontos: Er hat keine Administratorr
 
 ### Wann ist das sinnvoll?
 
-- **Garantie-Erinnerungen**: Eine HA-Automation auf den Binary-Sensor `*_warranty_active`, die dich 30 Tage vor Ablauf benachrichtigt.
+- **Garantie-Erinnerungen**: Eine HA-Automation auf den Binary-Sensor `*_warranty_active`, die 30 Tage vor Ablauf benachrichtigt.
 - **Dashboard-Karten**: "Alle Geräte unter Garantie", "Geräte deren Garantie demnächst abläuft", sortiert nach `*_warranty_days`.
 - **Inventar-Statistiken** im HA-Dashboard, ohne die Geräteverwaltung selbst öffnen zu müssen.
 
-**Nicht** sinnvoll, wenn du das Add-on rein als Doku-Tool nutzt — dann legt es nur HA-Karten an, die du nie anschaust.
+**Nicht** sinnvoll, wenn Sie das Add-on rein als Doku-Werkzeug nutzen — dann legt es nur HA-Karten an, die niemand anschaut.
 
 ### Aufräumen, wenn man's nicht mehr will
 
 Eine häufig gestellte Frage: *"Wie lösche ich die ganzen MQTT-Topics wieder, wenn ich das Add-on ausschalte?"*
 
-Standardmäßig **bleiben** die retained MQTT-Topics auf dem Broker liegen, auch wenn du den Toggle deaktivierst. Das ist eine MQTT-Discovery-Eigenheit (HA löscht keine retained Messages, die ein anderer Producer geschrieben hat). Drei Wege zum sauberen Aufräumen:
+Standardmäßig **bleiben** die retained MQTT-Topics auf dem Broker liegen, auch wenn Sie den Schalter ausschalten. Das ist eine MQTT-Discovery-Eigenheit (HA löscht keine retained Messages, die ein anderer Producer geschrieben hat). Drei Wege zum sauberen Aufräumen:
 
-1. **(Empfohlen) Verwaiste Einträge aufräumen**: Im Settings-Block *Home Assistant Integration* gibt es seit v2.6.0 den Button **„Verwaiste Einträge aufräumen"**. Der Button entfernt alle retained Topics für Inventar-Geräte, die du in der Geräteverwaltung schon gelöscht hast. Aktive Geräte bleiben unberührt. Sicher als Routine-Aktion.
+1. **(Empfohlen) Verwaiste Einträge aufräumen**: Im Settings-Block *Home Assistant Integration* gibt es seit v2.6.0 den Button **„Verwaiste Einträge aufräumen"**. Der Button entfernt alle retained Topics für Inventar-Geräte, die Sie in der Geräteverwaltung schon gelöscht haben. Aktive Geräte bleiben unberührt. Sicher als Routine-Aktion.
 
 2. **Alle MQTT-Einträge entfernen**: Daneben der Button **„Alle MQTT-Einträge entfernen"** (rot). Mit Bestätigung. Räumt **jede** vom Add-on publizierte Discovery-Message weg, auch für Geräte die noch im Inventar sind. Sinnvoller letzter Schritt vor dem dauerhaften Deaktivieren von MQTT-Discovery.
 
@@ -117,7 +212,7 @@ Beispiele: Shelly 2PM (zwei Steckdosen-Kanäle in einem Gehäuse), Tuya-Hubs, US
 
 Bei Multi-Channel-Setups bläht die Liste schnell auf — drei Zeilen für ein physisches Gerät. In der Liste rechts neben der Sortierung gibt es den Button **„Nur Hauptgeräte"**. Aktiv: Untergeräte sind versteckt, das Button-Label zeigt die Anzahl der versteckten Children. Filter ist Session-persistent.
 
-**Router sind kein Hauptgerät (seit 3.1.0):** FRITZ!Box und UPnP melden in Home Assistant *jedes* Gerät im Netz als an sich hängend. Früher machte der Import daraus „Teil von FRITZ!Box" — Klingel, Mähroboter und Handys verschwanden dann im Filter *Nur Hauptgeräte*. Solche Router-Zuordnungen übernimmt der Import nicht mehr, vorhandene löst er beim nächsten Lauf. Echte Zentralen wie Zigbee-Koordinator, Bosch Smart Home Controller oder HomematicIP Access Point bleiben Hauptgerät ihrer Geräte. Zeigt ein bereits geöffneter Browser danach noch die alte Zuordnung: *Einstellungen → Cache leeren*.
+**Router sind kein Hauptgerät (seit 3.1.0):** FRITZ!Box und UPnP melden in Home Assistant *jedes* Gerät im Netz als an sich hängend. Früher machte der Import daraus „Teil von FRITZ!Box" — Klingel, Mähroboter und Handys verschwanden dann im Filter *Nur Hauptgeräte*. Solche Router-Zuordnungen übernimmt der Import nicht mehr, vorhandene löst er beim nächsten Lauf. Echte Zentralen wie Zigbee-Koordinator, Bosch Smart Home Controller oder HomematicIP Access Point bleiben Hauptgerät ihrer Geräte. Zeigt ein bereits geöffneter Browser danach noch die alte Zuordnung: *Einstellungen → Lokalen Cache leeren → Cache leeren*.
 
 **Routing-Hubs werden nicht versteckt:** HA setzt `via_device_id` auch für Geräte, die über eine Bridge angebunden sind (Zigbee2MQTT-Bridge → Hue/IKEA/Aqara, ZHA-Coordinator → Endgeräte, Z-Wave-JS-Stick → Endgeräte, Matter-Server → Endgeräte). Diese „Children" sind eigene Hardware, nur die Bridge ist Software. Der Filter behandelt Geräte mit Integration `mqtt`, `zha`, `zwave_js` oder `matter` deshalb wie Hauptgeräte — sonst würde der Hauptgeräte-Filter die echten Lampen verstecken und nur die Bridge übrig lassen.
 
@@ -145,7 +240,7 @@ Beim Bearbeiten eines Hauptgeräts mit Untergeräten erscheint am Ende der Form 
 
 1. *Einstellungen → Mögliche Dubletten* aufklappen, **Dubletten suchen**.
 2. Die Liste zeigt Gruppen mit gleicher MAC-Adresse. Das oberste Gerät jeder Gruppe ist der Vorschlag, der bleibt.
-3. Pro Zeile **→ in „…"** führt dieses eine Gerät zusammen — oder **Alle Vorschläge übernehmen** (zweimal klicken zur Bestätigung) für alle Gruppen auf einmal.
+3. Der Knopf **→ in „Name des Zielgeräts"** in einer Zeile führt dieses eine Gerät zusammen — oder **Alle Vorschläge übernehmen** (zweimal klicken zur Bestätigung) für alle Gruppen auf einmal.
 
 **Von Hand**, für Geräte ohne gemeinsame Kennung: auf der Detailseite **Mit anderem Gerät zusammenführen …**, Zielgerät suchen und auswählen, **Zusammenführen**.
 
@@ -192,7 +287,7 @@ Netzwerkdetails (MAC, IP, Firmware, Integration) sind seit 3.0.0 bewusst nicht m
 
 *Neu in 3.0.0.* Der Fall dahinter: Irgendwann steht jemand anderes vor der Anlage — Angehörige, ein Elektriker, ein Käufer. Diese Person kennt weder Home Assistant noch die Historie des Hauses.
 
-Dafür gibt es zwei Felder pro Gerät, ganz unten im Bearbeiten-Formular unter *Anmerkungen*:
+Dafür gibt es zwei Felder pro Gerät, ganz unten im Bearbeiten-Formular unter *Notizen*:
 
 **„Funktioniert ohne Home Assistant?"** — drei Möglichkeiten: *Unbekannt* (Voreinstellung, nichts wird ausgegeben), *Ja, läuft auch ohne HA*, *Nein, braucht HA*. Bei *Ja* oder *Nein* erscheint darunter ein Hinweisfeld für den Klartext: „Schalter direkt an der Wand", „Thermostat lässt sich am Gerät stellen", „ohne HA gar nicht bedienbar".
 
@@ -266,7 +361,7 @@ Als PDF kommt bei allen Vorlagen eine kompakte Tabelle im Querformat heraus, run
 
 ### „Mein Add-on zeigt 1500 Geräte, ich habe aber nur 200."
 
-Du hast vor v2.5.2 mehrfach den HA-Import laufen lassen, während MQTT-Discovery aktiv war. Der Import hat damals die vom Add-on selbst publizierten Geräte zurückgezogen — Inventar-Anzahl verdoppelte sich pro Import. Fix:
+Vor v2.5.2 wurde der HA-Import mehrfach ausgeführt, während MQTT-Discovery aktiv war. Der Import hat damals die vom Add-on selbst publizierten Geräte zurückgezogen — Inventar-Anzahl verdoppelte sich pro Import. Fix:
 
 1. Updaten auf mindestens v2.5.2.
 2. *Einstellungen → Datenbereinigung → Self-Imports aufräumen* (POST `/api/ha/cleanup-self-imports`) räumt die Doppelten in den Papierkorb.
@@ -278,7 +373,7 @@ Bug bis v2.5.3. Ab v2.6.0 fixiert (`type="button"` an den Buttons, sonst submitt
 
 ### „Beim Klick auf ‚In HA anzeigen' öffnet sich der Browser, und ich muss mich neu in HA einloggen."
 
-Du nutzt die HA Companion App auf dem Handy. Bis v2.5.3 war das so. Ab v2.6.0 erkennt das Add-on den Companion am User-Agent und navigiert innerhalb der App-Webview — Rückkehr per System-Back/Geste.
+Das betraf die HA Companion App auf dem Handy bis v2.5.3. Ab v2.6.0 erkennt das Add-on den Companion am User-Agent und navigiert innerhalb der App-Webview — Rückkehr per System-Back/Geste.
 
 ### „PDF-Export bricht das Layout bei einem Gerät mit langen Notizen."
 
@@ -337,4 +432,22 @@ Bug bis v2.5.2 — der Import lief länger als das HA-Ingress-HTTP-Timeout. Ab v
 
 ---
 
-*Stand v3.1.0 · 2026-10-05. Bei Forum-Fragen, die hier nicht beantwortet sind, mach einen Issue auf [github.com/DerRegner-DE/ha-device-inventory](https://github.com/DerRegner-DE/ha-device-inventory) auf — der nächste Releasezyklus pflegt das Handbuch nach.*
+## Datenschutz und Rechtliches
+
+**Wo die Daten liegen:** Alle Gerätedaten, Fotos und Dokumente bleiben in Ihrer Home-Assistant-Installation (Datenverzeichnis des Add-ons) und zusätzlich im Browser jedes Geräts, mit dem Sie die App öffnen (für den Offline-Betrieb). Die App enthält kein Tracking und keine Analyse-Werkzeuge.
+
+**Was das Add-on nach außen schickt:** Nur den Lizenzschlüssel samt Installationskennung an den Zahlungsanbieter Lemon Squeezy — beim Aktivieren und zur gelegentlichen Prüfung. Gerätedaten verlassen Ihre Installation nur, wenn Sie selbst exportieren, einen Diagnose-Bericht absenden oder Geräte per MQTT an Ihren eigenen Broker veröffentlichen.
+
+**Gewährleistung:** Die Software wird ohne Gewähr bereitgestellt; maßgeblich sind die Lizenzbedingungen im GitHub-Repository.
+
+---
+
+## Support und Kontakt
+
+- **Fehler melden oder Funktion wünschen:** [github.com/DerRegner-DE/ha-device-inventory](https://github.com/DerRegner-DE/ha-device-inventory) → *Issues*. Am schnellsten mit dem Diagnose-Bericht aus *Einstellungen → Support & Diagnose*.
+- **Ohne GitHub-Konto:** E-Mail an support@derregner.info.
+- **Austausch mit anderen Nutzern:** Forum der simon42-Community, Thread „Geräteverwaltung".
+
+---
+
+Stand v3.1.0 · 2026-10-05. Fragen, die hier nicht beantwortet sind, gern als Issue auf GitHub oder per E-Mail an support@derregner.info — das Handbuch wird mit jeder Version nachgezogen.

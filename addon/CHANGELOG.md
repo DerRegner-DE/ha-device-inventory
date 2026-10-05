@@ -6,9 +6,9 @@ Feature-Release mit den im Forum zugesagten Uebergabe-Funktionen, neuen Exportmo
 
 **Nach dem Update bitte einmal in dieser Reihenfolge:**
 
-1. *Einstellungen → Aus Home Assistant importieren* — ergaenzt Seriennummer und MAC-Adresse bei vorhandenen Geraeten und loest falsche Router-Zuordnungen (siehe unten). Bestehende Eintraege werden nicht ueberschrieben.
+1. *Einstellungen → Home Assistant Import → HA-Geraete importieren* — ergaenzt Seriennummer und MAC-Adresse bei vorhandenen Geraeten und loest falsche Router-Zuordnungen (siehe unten). Bestehende Eintraege werden nicht ueberschrieben.
 2. *Einstellungen → Moegliche Dubletten* — doppelte Geraete pruefen und zusammenfuehren.
-3. *Einstellungen → Kategorien neu zuordnen* — die Vorschau zeigt diesmal deutlich mehr Aenderungen als frueher, ausserdem wird die Stromversorgung (Batterie/Akku) nachgetragen. Erst ansehen, dann uebernehmen; alles ist ueber Schnappschuss und Geraete-Historie zuruecknehmbar.
+3. *Einstellungen → Geraete neu kategorisieren → Vorschau & gezielt zuordnen* — die Vorschau zeigt diesmal deutlich mehr Aenderungen als frueher, ausserdem wird die Stromversorgung (Batterie/Akku) nachgetragen. Erst ansehen, dann uebernehmen; alles ist ueber Schnappschuss und Geraete-Historie zuruecknehmbar.
 
 ### Neu: „Wandschalter ueberbrueckt?" pro Geraet
 
@@ -46,7 +46,7 @@ Beide Werte kennt Home Assistant oft schon — jetzt kommen sie beim Import mit.
 
 ### Neu: Stromversorgung beim Import
 
-Geraete mit Batterie-Sensor bekommen *Batterie*, wiederaufladbare (Ladezustand, Maehroboter, Saugroboter, Smartphones) *Akku*. Ohne Hinweis bleibt das Feld leer, statt zu raten. Bei vorhandenen Geraeten ueber *Kategorien neu zuordnen*, nur wenn das Feld leer ist.
+Geraete mit Batterie-Sensor bekommen *Batterie*, wiederaufladbare (Ladezustand, Maehroboter, Saugroboter, Smartphones) *Akku*. Ohne Hinweis bleibt das Feld leer, statt zu raten. Bei vorhandenen Geraeten ueber *Geraete neu kategorisieren*, nur wenn das Feld leer ist.
 
 ### Neu: Foto in der Geraeteliste
 
