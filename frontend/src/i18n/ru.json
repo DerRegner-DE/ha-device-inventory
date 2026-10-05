@@ -1,6 +1,5 @@
 {
   "app.title": "Управление устройствами",
-  "app.version": "Управление устройствами v2.0.0",
   "app.api": "API: auto-detected",
   "nav.dashboard": "Панель",
   "nav.devices": "Устройства",

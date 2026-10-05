@@ -56,6 +56,16 @@ export function Settings() {
   const [exportPickerOpen, setExportPickerOpen] = useState(false);
   const [autoCategorize, setAutoCategorize] = useState(true);
   const [autoCategorizeLoaded, setAutoCategorizeLoaded] = useState(false);
+  // v3.1.0: Versionsnummer vom Server statt fest im Sprachtext (stand seit v2.0.0 still auf "v2.0.0").
+  const [appVersion, setAppVersion] = useState("");
+  const [appVersionLoaded, setAppVersionLoaded] = useState(false);
+
+  if (!appVersionLoaded) {
+    setAppVersionLoaded(true);
+    apiGet<{ version?: string }>("/health")
+      .then((r) => setAppVersion(r?.version || ""))
+      .catch(() => {});
+  }
 
   if (!autoCategorizeLoaded) {
     setAutoCategorizeLoaded(true);
@@ -1056,7 +1066,8 @@ export function Settings() {
       </div>
 
       <div class="text-center text-[10px] text-gray-300">
-        {t("app.version")}
+        {t("app.title")}
+        {appVersion && ` v${appVersion}`}
         {isPro && " (Pro)"}
         <br />
         {t("app.api")}

@@ -1,6 +1,5 @@
 {
   "app.title": "Device Management",
-  "app.version": "Device Management v2.0.0",
   "app.api": "API: auto-detected",
   "nav.dashboard": "Dashboard",
   "nav.devices": "Devices",

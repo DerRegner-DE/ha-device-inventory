@@ -1,6 +1,5 @@
 {
   "app.title": "Gestión de Dispositivos",
-  "app.version": "Gestión de Dispositivos v2.0.0",
   "app.api": "API: auto-detected",
   "nav.dashboard": "Panel",
   "nav.devices": "Dispositivos",

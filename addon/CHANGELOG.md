@@ -123,6 +123,8 @@ FRITZ!Box und UPnP melden in Home Assistant jedes Geraet im Netz als an sich hae
 - **Eigene Feldauswahl im Export** ging auf einem anderen Geraet oder nach dem Loeschen der Browserdaten verloren — sie wird jetzt in der App gespeichert.
 - **Endgueltig loeschen** im Papierkorb scheiterte bei einzelnen Geraeten mit Einbauort-Bildern oder Dokumenten. Jetzt verschwindet das Geraet samt Fotos, Einbauort-Bildern und Dokumenten, und die zugehoerigen Dateien werden mit entfernt (vorher blieben sie liegen).
 - **MQTT-Zaehler:** Die Attribute `fotos` und `einbauort_bilder` fehlten nach *Alle Geraete jetzt synchronisieren*. Ausserdem meldet die App ein Geraet jetzt gleich neu an Home Assistant, wenn ein Foto oder Einbauort-Bild hinzukommt oder geloescht wird.
+- **Nach einem Update zeigte die App in der HA-Seitenleiste weiter die alte Oberflaeche**, bis der Browser-Cache ablief. Die Startseite wird jetzt nie mehr zwischengespeichert.
+- **Versionsanzeige** unten in den Einstellungen stand seit 2.0.0 fest auf „v2.0.0". Sie zeigt jetzt die installierte Add-on-Version.
 - **Home-Assistant-Version im Fehlerformular** blieb nach einem HA-Update bis zum Neustart des Add-ons auf dem alten Stand.
 - **PDF:** Im Querformat fehlte ab Seite 2 der Tabellenkopf; Ueberschriften, Zusammenfassung und Seitenzahl folgen jetzt der Add-on-Option `language` (Deutsch bei `de`, sonst Englisch), nicht der Sprachauswahl in der App; die Spalten fuer Ja/Nein sind breiter.
 
