@@ -17,12 +17,13 @@ This manual describes how to set up and use Device Management and answers the mo
 7. [Multi-channel devices (parent-child)](#multi-channel-devices-parent-child)
 8. [Merging duplicate devices](#merging-duplicate-devices)
 9. [Insurance documentation & estate planning — the typical workflows](#insurance-documentation--estate-planning--the-typical-workflows)
-10. [Filters, search and sorting](#filters-search-and-sorting)
-11. [Trash & database snapshots](#trash--database-snapshots)
-12. [Frequently asked questions (FAQ)](#frequently-asked-questions-faq)
-13. [Troubleshooting](#troubleshooting)
-14. [Privacy and legal](#privacy-and-legal)
-15. [Support and contact](#support-and-contact)
+10. [Import Excel](#import-excel)
+11. [Filters, search and sorting](#filters-search-and-sorting)
+12. [Trash & database snapshots](#trash--database-snapshots)
+13. [Frequently asked questions (FAQ)](#frequently-asked-questions-faq)
+14. [Troubleshooting](#troubleshooting)
+15. [Privacy and legal](#privacy-and-legal)
+16. [Support and contact](#support-and-contact)
 
 ---
 
@@ -56,7 +57,7 @@ The app runs as a Home Assistant add-on with its own database. It works on phone
 
 **Update:** Home Assistant shows an available update under *Settings → Apps → Geräteverwaltung* (and in the notifications). Click **Update**. Leaving *Create backup before updating* turned on is recommended, because updates can extend the database. Alternatively, turn on *Auto update*. The add-on's changelog lists what is new. After an update, see the section "After updating" in the quick start.
 
-**Uninstall:** *Settings → Apps → Geräteverwaltung → Uninstall*. Home Assistant then deletes the add-on's data directory, including database, photos and license. Back up first: *Settings → Export Data* (JSON, Excel, PDF) or a Home Assistant backup that includes the add-on.
+**Uninstall:** *Settings → Apps → Geräteverwaltung → Uninstall*. Home Assistant then deletes the add-on's data directory, including database, photos and license. Back up first: *Settings → Export Data* (JSON; Excel and PDF with Pro) or a Home Assistant backup that includes the add-on.
 
 ---
 
@@ -66,15 +67,24 @@ The basic functions are free; a one-time license key unlocks the extended functi
 
 | | Free | Pro |
 |---|:---:|:---:|
-| Devices | up to 50 | unlimited |
+| Record devices by hand, all basic sections of the form | up to 50 | unlimited |
 | Languages | English | German, English, Spanish, French, Russian |
-| Dashboard, search, filters, offline mode, sidebar | ✓ | ✓ |
-| JSON export | ✓ | ✓ |
-| HA import, automatic type detection, recategorizing | — | ✓ |
-| Excel and PDF export with presets | — | ✓ |
-| Camera, QR/barcode scanner, photos and documents | — | ✓ |
-| Bulk editing | — | ✓ |
-| MQTT Discovery (publish devices to HA) | — | ✓ |
+| Dashboard, search, filters, sorting, "Parents only", offline mode, sidebar, dark mode | ✓ | ✓ |
+| Your own categories, JSON export | ✓ | ✓ |
+| Merge duplicate devices, clean up self-imports | ✓ | ✓ |
+| Trash, database snapshots, change history | ✓ | ✓ |
+| Turn off MQTT, "Clean up orphans", "Remove all MQTT entries" | ✓ | ✓ |
+| View existing photos, installation photos, documents and handover details | ✓ | ✓ |
+| HA import, recategorize devices | — | ✓ |
+| PDF and Excel export with presets, order and images in the PDF; import Excel | — | ✓ |
+| Camera, QR/barcode scanner, device photo | — | ✓ |
+| Upload, link and delete documents | — | ✓ |
+| Add and delete installation photos | — | ✓ |
+| Edit handover fields ("Works without Home Assistant?", "Wall switch bridged?", "External link") | — | ✓ |
+| Bulk editing (*Select*) | — | ✓ |
+| Turn on MQTT, "Test MQTT connection", "Sync all devices now" (and with it the sensors in HA and the *Visit* link) | — | ✓ |
+
+Everything you have already recorded stays visible without a license, and you can turn MQTT off and clean it up at any time. So nothing is left behind if Pro is no longer active.
 
 **Buy:** via the link in the README of the GitHub repository; the key arrives by e-mail with the purchase confirmation. One key is valid for up to three installations and does not expire.
 
@@ -87,18 +97,18 @@ If no e-mail arrives after the purchase: check the spam folder, otherwise write 
 ## Quick start in 5 steps
 
 1. **Install the add-on** as described under [Installation, update, uninstallation](#installation-update-uninstallation). After installation, Device Management appears as an entry in the HA sidebar.
-2. **Activate the Pro license** under *Settings → License*. Without a license you can manage up to 50 devices and the interface is in English — everything else (multilingual, Excel, MQTT, camera, barcode, documents) is Pro.
-3. **Import HA devices** under *Settings → Home Assistant Import → Import HA Devices*. With large setups (300+), the import can take a minute; it runs in the background with a progress indicator. It imports name, manufacturer, model, firmware, room and floor, integration, network and — since 3.1.0 — serial number, MAC address and power supply (Battery/Rechargeable), as far as Home Assistant knows them. A repeated import does not create duplicate devices; for existing devices it fills in serial number and MAC only where the fields are empty.
-4. **Optional: enable MQTT Discovery** under *Settings → Home Assistant Integration → Publish devices to HA* — whether this makes sense is explained in the chapter [Home Assistant integration](#home-assistant-integration-mqtt-discovery).
-5. **Complete your first devices**: tap a device in the list, then *Edit*, and enter at least *Purchase Date* and *Warranty Until*, and the purchase price under *Notes*. Add a photo and installation photos, upload receipts as documents — ready for insurance documentation.
+2. **Activate the Pro license** under *Settings → License*. Without a license you can manage up to 50 devices by hand, and the interface is in English. Pro includes, among other things, HA import, more languages, PDF/Excel export, MQTT, camera, scanner, documents, installation photos, handover fields and bulk editing — the full list is under [Free and Pro](#free-and-pro).
+3. **Import HA devices** (Pro) under *Settings → Home Assistant Import → Import HA Devices*. With large setups (300+), the import can take a minute; it runs in the background with a progress indicator. It imports name, manufacturer, model, firmware, room and floor, integration, network and — since 3.1.0 — serial number, MAC address and power supply (Battery/Rechargeable), as far as Home Assistant knows them. A repeated import does not create duplicate devices; for existing devices it fills in serial number and MAC only where the fields are empty.
+4. **Optional: enable MQTT Discovery** (Pro) under *Settings → Home Assistant Integration → Publish devices to HA* — whether this makes sense is explained in the chapter [Home Assistant integration](#home-assistant-integration-mqtt-discovery).
+5. **Complete your first devices**: tap a device in the list, then *Edit*, and enter at least *Purchase Date* and *Warranty Until*, and the purchase price under *Notes*. With Pro, add a photo and installation photos and upload receipts as documents — ready for insurance documentation.
 
 ### After updating to 3.1.0
 
 Once, in this order:
 
-1. *Settings → Home Assistant Import → Import HA Devices* — fills in serial number and MAC for existing devices and removes wrong router assignments (see [Multi-channel devices](#multi-channel-devices-parent-child)).
+1. *Settings → Home Assistant Import → Import HA Devices* (Pro) — fills in serial number and MAC for existing devices and removes wrong router assignments (see [Multi-channel devices](#multi-channel-devices-parent-child)).
 2. *Settings → Possible duplicates* — check duplicate devices and merge them (see [Duplicate devices](#merging-duplicate-devices)).
-3. *Settings → Recategorize devices → Preview & cherry-pick* — after 3.1.0 the preview shows considerably more suggestions than before, because detection sees the device classes from Home Assistant for the first time. The power supply is also filled in. Review the preview first, deselect individual rows, then apply. Everything can be undone via snapshot and device history.
+3. *Settings → Recategorize devices → Preview & cherry-pick* (Pro) — after 3.1.0 the preview shows considerably more suggestions than before, because detection sees the device classes from Home Assistant for the first time. The power supply is also filled in. Review the preview first, deselect individual rows, then apply. Everything can be undone via snapshot and device history.
 
 ---
 
@@ -113,9 +123,9 @@ Add new devices via **Add** in the bottom bar; edit existing ones via the detail
 | Network & Power | Network, Power Supply, IP Address, MAC Address |
 | Details | Serial Number, AIN / Article No., Purchase Date, Warranty Until |
 | Home Assistant | Integration, Entity ID, Device ID |
-| Notes | Function, Notes, "Works without Home Assistant?", "Wall switch bridged?", External link |
+| Notes | Function, Notes, "Works without Home Assistant?", "Wall switch bridged?", External link (editing the last three: Pro) |
 
-When editing, **Installation photos** (with a caption, e.g. "behind the cover, top left") and **Documents** (invoice, manual — as a file or link) appear below. You can attach a device photo at the top of the form via camera or file. Every change is recorded in the *Change history* on the detail page and can be reverted there individually.
+When editing, **Installation photos** (Pro; with a caption, e.g. "behind the cover, top left") and **Documents** (Pro; invoice, manual — as a file or link) appear below. You can take a device photo (Pro) at the top of the form with the camera icon or select it as a file. Without Pro, existing photos, documents and handover details stay visible; the form then shows the note "Editing the handover fields is a Pro feature. Existing entries stay visible." or "Adding or deleting installation photos is a Pro feature." Every change is recorded in the *Change history* on the detail page and can be reverted there individually.
 
 **Integration** is a free-text field: the suggestion list contains the common integrations and all integrations in your own inventory; you can type any other value.
 
@@ -125,7 +135,7 @@ When editing, **Installation photos** (with a caption, e.g. "behind the cover, t
 - *Power Supply:* Power Adapter, 230V Mains, Battery, Rechargeable, USB, PoE, Solar, High Voltage
 - *Device types (32):* Router, Repeater, Powerline, DECT Repeater, Outlet, Light Switch, Light Bulb, Actuator/Relay, Switch/Button, Shutter, Thermostat, Controller/Gateway, Camera, Doorbell, Chime, Lock, Alarm System, Voice Assistant, Smart TV, Streaming, Display/Dashboard, Tablet, Speaker, Appliance, Robot Mower, Irrigation, Fan, Remote Control, Printer, Sensor, Smartphone, Other
 
-Create your own device types under *Settings → Manage categories*; they then appear in all selection lists, in bulk editing and as filter tabs.
+Create your own device types under *Settings → Manage categories*; they then appear in all selection lists, in bulk editing (Pro) and as filter tabs.
 
 ### Camera and scanner
 
@@ -136,6 +146,8 @@ With Pro, you can take photos directly and scan QR codes and barcodes. A MAC add
 ## Home Assistant integration (MQTT Discovery)
 
 By far the most common forum question. This section explains **what** the toggle does, **when** it makes sense and **how** to remove it cleanly again.
+
+Turning it on, *Test MQTT connection* and *Sync all devices now* are Pro. Turning it off and the two clean-up buttons always work, even without a license.
 
 ### What happens when you enable it?
 
@@ -152,7 +164,7 @@ When you turn on *Publish devices to HA*, the add-on publishes **up to 6 MQTT Di
 
 These entities appear in HA under *Settings → Devices & services → MQTT*, with a separate device card for each inventory entry.
 
-**Since 3.1.0**, the sensor `*_type` also carries the maintained details as attributes: location, serial number, power supply, function, notes, "works without HA" and "wall switch bridged" with their notes, external link, and the number of photos and installation photos. Empty values are omitted. In automations, access them e.g. via `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
+**Since 3.1.0**, the sensor `*_type` also carries the maintained details as attributes: location, serial number, power supply, function, notes, "works without HA" and "wall switch bridged" with their notes, external link, and the number of photos and installation photos (attributes `fotos` and `einbauort_bilder`). Empty values are omitted. Both counters are also correct after *Sync all devices now*; if you add or delete a photo or installation photo, HA shows the new number right away. In automations, access them e.g. via `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
 
 **Back to the app:** On the HA device page of each device published this way, there is a **Visit** link. It opens this device directly in Device Management. For devices of other integrations (e.g. the original device page of a Shelly), an add-on cannot set a link — there, the only way is via the MQTT card of the inventory entry.
 
@@ -173,7 +185,7 @@ Why a dedicated user instead of your own account: it has no administrator rights
 
 ### When does this make sense?
 
-- **Warranty reminders**: an HA automation on the binary sensor `*_warranty_active` that notifies you 30 days before expiry.
+- **Warranty reminders**: an HA automation on the sensor `*_warranty_days` that notifies you as soon as the value drops to 30 or below. The binary sensor `*_warranty_active` only switches to `off` on the expiry day, so it is not suitable for an early warning.
 - **Dashboard cards**: "All devices under warranty", "Devices whose warranty expires soon", sorted by `*_warranty_days`.
 - **Inventory statistics** in the HA dashboard, without opening Device Management itself.
 
@@ -193,7 +205,7 @@ By default, the retained MQTT topics **remain** on the broker, even if you turn 
 
 ### Devices remain in HA after I deleted them in the add-on
 
-Up to v2.5.3, a bug skipped the MQTT cleanup when deleting individual devices — the Discovery topics then remained, even though the add-on itself should have sent a "delete this device" signal. From v2.5.3, single-device cleanup works reliably again. For existing leftovers: one click on *Clean up orphans* removes them.
+Up to v2.5.2, a bug skipped the MQTT cleanup when deleting individual devices — the Discovery topics then remained, even though the add-on itself should have sent a "delete this device" signal. From v2.5.3, single-device cleanup works reliably again. For existing leftovers: one click on *Clean up orphans* removes them.
 
 ---
 
@@ -210,7 +222,7 @@ Examples: Shelly 2PM (two outlet channels in one housing), Tuya hubs, USB hubs, 
 
 ### Hiding sub-devices
 
-With multi-channel setups the list grows quickly — three rows for one physical device. In the list, to the right of the sorting, there is the button **"Parents only"**. When active, sub-devices are hidden and the button label shows the number of hidden children. The filter persists for the session.
+With multi-channel setups the list grows quickly — three rows for one physical device. In the list, to the left of the sorting, there is the button **"Parents only"**; it only appears if at least one device is assigned to a main device as a sub-device. When active, sub-devices are hidden and the button label shows the number of hidden children. The filter persists for the session.
 
 **Routers are not main devices (since 3.1.0):** FRITZ!Box and UPnP report *every* device on the network to Home Assistant as attached to them. The import used to turn this into "Part of FRITZ!Box" — doorbell, robot mower and phones then disappeared in the *Parents only* filter. The import no longer takes over such router assignments and removes existing ones on the next run. Real hubs such as the Zigbee coordinator, Bosch Smart Home Controller or HomematicIP Access Point remain main devices of their devices. If a browser that is already open still shows the old assignment: *Settings → Clear Local Cache → Clear cache*.
 
@@ -261,11 +273,14 @@ The preset *Insurance* in the PDF / Excel export automatically selects the field
 - #, Type, Name, Model, Manufacturer
 - Serial No., AIN / Article No.
 - Purchase Date, Warranty Until, Location, Notes
+- External link
+
+The PDF and Excel export, including presets, is Pro.
 
 Workflow:
 
-1. For every valuable device: take a photo, upload the purchase receipt as a document, maintain notes with the purchase price and any insurance note.
-2. Once a year: *Settings → Export Data → Export PDF / Excel... → Presets → Insurance*, then **PDF**. The PDF contains the devices as a compact table. If you also want a detail page per device, select the fields manually instead of choosing the preset (very long notes are cut there at 1000 characters, with a reference to the Excel export).
+1. For every valuable device: take a photo, upload the purchase receipt as a document (both Pro), maintain notes with the purchase price and any insurance note.
+2. Once a year: *Settings → Export Data → Export PDF / Excel... → Presets → Insurance*, then **PDF**. The PDF contains the devices as a compact table. If you also want a detail page per device, choose **All fields** under *Presets* or select the fields manually (very long notes are cut there at 1000 characters, with a reference to the Excel export).
 3. Add Excel if the insurer processes the data further — Excel keeps the full length of the notes in one cell.
 
 ### Estate planning
@@ -287,15 +302,15 @@ Network details (MAC, IP, firmware, integration) have been deliberately excluded
 
 *New in 3.0.0.* The background: at some point someone else stands in front of the installation — relatives, an electrician, a buyer. This person knows neither Home Assistant nor the history of the house.
 
-For this, each device has two fields, at the very bottom of the edit form under *Notes*:
+For this, each device has three fields, at the very bottom of the edit form under *Notes*. You can edit them with Pro; existing entries stay visible without a license.
 
 **"Works without Home Assistant?"** — three options: *Unknown* (default, nothing is output), *Yes, works without HA*, *No, needs HA*. With *Yes* or *No*, a note field for plain text appears below: "switch directly on the wall", "thermostat can be set on the device", "cannot be operated at all without HA".
 
-**"Wall switch bridged?"** (*new in 3.1.0*) — the most important point for removal: if a light switch was bridged for this device, the lamp will no longer work after the device is removed. Three options (*Unknown*, *Yes, switch bridged or decoupled*, *No*) and a note field: which switch, which box — or which setting, because often nothing is wired at all, but the actuator is reconfigured (e.g. Shelly in "detached" mode). Appears on the detail page in the card "Home Assistant dependency", together with "Works without Home Assistant?".
+**"Wall switch bridged?"** (*new in 3.1.0*) — the most important point for removal: if a light switch was bridged for this device, the lamp will no longer work after the device is removed. Three options (*Unknown*, *Yes, switch bridged or decoupled*, *No*) and a note field: which switch, which box — or which setting, because often nothing is wired at all, but the actuator is reconfigured (e.g. Shelly in "detached" mode). Appears on the detail page under the heading "Wall switch". The same box shows "Home Assistant dependency" (the answer from "Works without Home Assistant?") and "External link".
 
 **"External link"** — a pointer to another system: the document in Paperless-ngx, the manufacturer's manual page, an entry in your own wiki. The link is shown on the detail page and opens in a new window. A plain name such as `paperless.local/x` is enough; `https://` is added automatically.
 
-The export preset **"Removal/electrician"** (*Export PDF / Excel... → Presets*) turns this into the sheet you put in the utility room:
+The export preset **"Removal/electrician"** (*Export PDF / Excel... → Presets*, Pro) turns this into the sheet you put in the utility room:
 
 - #, Type, Name, Manufacturer, Model
 - Location, Floor
@@ -320,11 +335,20 @@ The preset **"Emergency folder"** (*new in 3.1.0*) is the folder for the meter c
 | Estate planning | Relatives | Device, serial number, purchase date, warranty, location, works-without-HA, link |
 | Emergency folder | Helper called in by relatives | Device, location, serial number, power, works-without-HA, bridged switches, purchase date, warranty, link |
 
-As a PDF, all presets produce a compact table in landscape format, about ten pages for 300 devices. Detail pages per device are only included if you select the fields manually instead of choosing a preset. Since 3.1.0, the app stores your own field selection on the server — so it also applies on your phone or after clearing the browser data.
+As a PDF, these four presets produce a compact table in landscape format, about ten pages for 300 devices. You get detail pages per device with **All fields** (also under *Presets*) or if you select the fields manually. Since 3.1.0, the app stores your own field selection on the server — so it also applies on your phone or after clearing the browser data.
 
 **Order** (*new in 3.1.0*): In the export dialog, you can choose between *Grouped by category* (previous behaviour) and **Floor › Location › Name**. For the sheet in the fuse box, the second option is the right one: whoever stands in front of it searches by room, not by device name. In Excel it comes as a continuous table without category subheadings, which can be sorted and filtered freely.
 
 **Images in PDF** (*new in 3.1.0*): Under *Images in PDF* you can add **Installation photos** and **Device photos and image documents**. The images appear as an image appendix at the end of the PDF; in the list, the *Images* column shows the reference for each device (B1, B2 …). An image attached to several devices appears only once, with all associated devices. Excel contains no images.
+
+## Import Excel
+
+*New in 3.1.0, Pro.* Under *Settings → Export Data*, below the export buttons, **Import Excel** reads an Excel file from *Export PDF / Excel...* back in.
+
+- The app detects the columns by their heading, not by their position. Every field selection works, grouped by category as well as a continuous table. The *Floor* column is not imported.
+- Photos, installation photos and documents are not part of the file.
+- Without any further option, the devices are added **in addition** to your inventory. If you read your own export back in this way, every device exists twice afterwards.
+- With the checkbox **"Replace existing devices (all to the trash, snapshot first)"**, all existing devices move to the trash before the file is read. After you select the file, you must confirm this with **"Really replace all devices?"**.
 
 ---
 
@@ -334,9 +358,10 @@ As a PDF, all presets produce a compact table in landscape format, about ten pag
 - **Category chips** below the search: built-in categories only if at least 1 device is in them; your own categories (from *Manage categories*) always since 3.1.0, as well as freely typed types. A click toggles between *active* and *off*. An active filter stays visible even if the last device of that category disappears — so that you can remove it again.
 - **Photo preview**: if a device has a photo, the list shows it as a small preview (since 3.1.0).
 - **Donut charts** and **top 10 lists** in the dashboard are clickable — clicking a manufacturer bar sets a manufacturer filter and jumps to the device list.
-- **Filter chips** above the list (e.g. "By Manufacturer: BOSCH ×") show the active filter; the X removes it.
+- **Filter chips** above the list (e.g. "By Manufacturer (Top 10): BOSCH ×") show the active filter; the X removes it.
 - **Sorting**: dropdown on the right. Options: Recently edited (default), Name A→Z/Z→A, Type, Manufacturer, Location, Warranty expiring soon (nearest expiry first). The selection persists for the session.
 - **"Parents only" toggle**: hides children (see chapter Multi-channel).
+- **Bulk editing** (Pro): with **Select** above the list, mark several devices and change their type or integration together, or delete them. Without Pro, the button is greyed out and has the suffix "(Pro)".
 
 ---
 
@@ -345,14 +370,17 @@ As a PDF, all presets produce a compact table in landscape format, about ten pag
 ### Trash
 
 - Deleted devices go to the trash first and can be restored for 30 days under *Settings → Trash*.
+- After 30 days, the app deletes them permanently and automatically. It checks this when the add-on starts and then once a day. Before that, it creates a snapshot ("Before automatic trash cleanup (30 days)"); you can use it to get these devices back as well.
 - Two restore modes: per entry (button in each row) or in bulk ("Restore N" at the top right after selection).
-- *Delete permanently* removes the device including its photos.
+- *Delete permanently* removes the device with its photos, installation photos and documents, including the associated files.
+- **Empty trash** (at the top of the trash) permanently deletes all entries at once. The first click asks "Really delete all {N} permanently?"; only the second click deletes. Before that, the app creates a snapshot ("Before emptying the trash"); the same applies when you permanently delete several selected entries.
 - The button *Move all devices to trash* (Settings, at the very bottom) is meant as a last-resort reset button — it moves the entire inventory to the trash, with a snapshot.
 
 ### Database snapshots
 
-- Before every bulk action (deleting several or all devices, recategorizing, bulk editing, merging, deleting a category, Excel import with replace), the app automatically creates a snapshot of the database.
-- List under *Settings → Database snapshots*. Per entry: reason, age and size.
+- Before every bulk action, the app automatically creates a snapshot of the database: deleting several or all devices, recategorizing, bulk editing, merging, "Apply all suggestions", deleting a category, Excel import with replace, cleaning up self-imports, emptying the trash or permanently deleting several entries, automatic trash cleanup, and before every restore.
+- By hand: *Settings → Database snapshots* → **Create snapshot now**, e.g. before your own clean-up work. It appears in the list as "Created manually".
+- List under *Settings → Database snapshots*. Per entry: the reason in plain text (e.g. "Before merge", "Before deleting category “…”"), age and size.
 - *Restore* overwrites the current DB with the snapshot — an "undo for the last action".
 
 ---
@@ -364,8 +392,8 @@ As a PDF, all presets produce a compact table in landscape format, about ten pag
 Before v2.5.2, the HA import was run several times while MQTT Discovery was active. The import then pulled back the devices published by the add-on itself — the inventory count doubled with each import. Fix:
 
 1. Update to at least v2.5.2.
-2. The server call `POST /api/ha/cleanup-self-imports` moves the duplicates to the trash. There is no button for it in the interface — if you would rather not send the call yourself, open an issue or write to support@derregner.info.
-3. After 30 days they are gone. If you are in a hurry: empty the trash.
+2. Expand *Settings → Possible duplicates*, section "Own MQTT devices from an old import", click **Clean up self-imports**. The button moves these entries to the trash; before that, the app creates a snapshot. Other devices are not touched.
+3. After 30 days, the app deletes them permanently and automatically. If you are in a hurry: *Settings → Trash* → **Empty trash**.
 
 ### "I click 'Upload Document' and end up on the detail page without anything being uploaded."
 
@@ -373,11 +401,11 @@ Bug up to v2.5.3. Fixed from v2.6.0 (`type="button"` on the buttons; otherwise t
 
 ### "When I click 'Show in HA', the browser opens and I have to log in to HA again."
 
-This affected the HA Companion app on phones up to v2.5.3. From v2.6.0, the add-on detects the Companion app by its user agent and navigates within the app's webview — return via system back button/gesture.
+This affected the HA Companion app on phones up to v2.5.3. Since v2.6.3, the add-on detects the Companion app and opens the device directly in the Companion app via the deep link `homeassistant://navigate/…`, without a new login.
 
 ### "PDF export breaks the layout for a device with long notes."
 
-Bug up to v2.5.3 (fpdf2 + custom header + multi_cell page break). From v2.6.0, notes in the detail section are cut at 1000 characters with the note "... — full text in Excel export". Excel keeps the full text in one cell without layout problems.
+Bug up to v2.5.3 (fpdf2 + custom header + multi_cell page break). From v2.6.0, notes in the detail section are cut at 1000 characters with the note "... (N chars total — full text in Excel export)". Excel keeps the full text in one cell without layout problems.
 
 ### "Where is the license key stored? What happens on an add-on update?"
 
@@ -385,7 +413,7 @@ The license is stored in the add-on data folder as `license.json` (managed by HA
 
 ### "Which languages?"
 
-DE, EN, ES, FR, RU. Change it under *Settings → Language*. The Free tier is limited to EN — Pro unlocks all languages.
+DE, EN, ES, FR, RU. Change it under *Settings → Language*. The Free tier is limited to EN and starts directly in English — Pro unlocks all languages.
 
 ---
 
@@ -407,9 +435,12 @@ Everything the app stores is in the add-on's data directory:
 |---|---|
 | Database with all devices | `/data/db/geraeteverwaltung.db` |
 | Photos and installation photos | `/data/photos/` |
+| Documents | `/data/documents/` |
+| Database snapshots | `/data/db/snapshots/` |
+| MQTT switch | `/data/db/mqtt_settings.json` |
 | License key | `/data/db/license.json` |
 
-You do not need to **back up** anything manually: a Home Assistant backup includes the complete add-on data directory. If you also want to keep the device list outside HA, use *Settings → Export Data → JSON Export* or create a snapshot.
+You do not need to **back up** anything manually: a Home Assistant backup includes the complete add-on data directory. If you also want to keep the device list outside HA, use *Settings → Export Data → JSON Export*. Before your own changes, *Settings → Database snapshots → Create snapshot now* helps; however, the snapshot is also stored in the add-on data directory.
 
 Do **not** write to the database while the add-on is running. If you open and edit it via Samba or SSH, you risk a corrupted file — the app keeps it open. To view it, stop the add-on first.
 
@@ -428,13 +459,13 @@ Bug up to v2.5.2 — the import ran longer than the HA Ingress HTTP timeout. Fro
 
 ### Diagnostic report for a GitHub issue
 
-*Settings → Support & Diagnostics* builds a report with add-on version, architecture, Python version, MQTT status (without credentials), device count and the last 200 log lines. Passwords, tokens, IP addresses and e-mails are removed automatically. Send it with one click or copy it to the clipboard.
+*Settings → Support & Diagnostics* builds a report with add-on version, architecture, Python version, MQTT status (without credentials), device count and the last 200 log lines. Passwords, tokens and e-mail addresses are removed automatically; for IP addresses, the last two octets are masked. Send it with one click or copy it to the clipboard.
 
 ---
 
 ## Privacy and legal
 
-**Where the data is stored:** All device data, photos and documents stay in your Home Assistant installation (the add-on's data directory) and additionally in the browser of each device you open the app with (for offline mode). The app contains no tracking and no analytics tools.
+**Where the data is stored:** All device data, photos, installation photos and documents stay in your Home Assistant installation (the add-on's data directory). For offline mode, the browser of each device you open the app with also stores the device data and the device photo. Installation photos and documents are stored only on the server, not in the browser. The app contains no tracking and no analytics tools.
 
 **What the add-on sends externally:** Only the license key together with an installation ID to the payment provider Lemon Squeezy — on activation and for occasional checks. Device data leaves your installation only if you export it yourself, send a diagnostic report or publish devices via MQTT to your own broker.
 

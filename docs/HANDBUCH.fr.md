@@ -17,12 +17,13 @@ Ce manuel décrit l'installation et l'utilisation de la Gestion des Appareils et
 7. [Appareils multicanaux (parent-enfant)](#appareils-multicanaux-parent-enfant)
 8. [Fusionner les appareils en double](#fusionner-les-appareils-en-double)
 9. [Documentation d'assurance & succession — les workflows types](#documentation-dassurance--succession--les-workflows-types)
-10. [Filtres, recherche et tri](#filtres-recherche-et-tri)
-11. [Corbeille & instantanés de la base de données](#corbeille--instantanés-de-la-base-de-données)
-12. [Questions fréquentes (FAQ)](#questions-fréquentes-faq)
-13. [Résolution des problèmes](#résolution-des-problèmes)
-14. [Protection des données et mentions légales](#protection-des-données-et-mentions-légales)
-15. [Support et contact](#support-et-contact)
+10. [Importer Excel](#importer-excel)
+11. [Filtres, recherche et tri](#filtres-recherche-et-tri)
+12. [Corbeille & instantanés de la base de données](#corbeille--instantanés-de-la-base-de-données)
+13. [Questions fréquentes (FAQ)](#questions-fréquentes-faq)
+14. [Résolution des problèmes](#résolution-des-problèmes)
+15. [Protection des données et mentions légales](#protection-des-données-et-mentions-légales)
+16. [Support et contact](#support-et-contact)
 
 ---
 
@@ -56,7 +57,7 @@ L'application fonctionne comme module complémentaire Home Assistant avec sa pro
 
 **Mettre à jour :** Home Assistant signale une mise à jour disponible sous *Paramètres → Applications → Geräteverwaltung* (et dans les notifications). Cliquez sur **Mettre à jour** ; laisser *Créer une sauvegarde avant de mettre à jour* activé est recommandé, car les mises à jour peuvent étendre la base de données. Vous pouvez aussi activer *Mise à jour automatique*. Les nouveautés figurent dans le journal des modifications (Changelog) du module complémentaire. Après une mise à jour, consultez la section « Après la mise à jour » du démarrage rapide.
 
-**Désinstaller :** *Paramètres → Applications → Geräteverwaltung → Désinstaller*. Home Assistant supprime alors le répertoire de données du module complémentaire avec la base de données, les photos et la licence. Sauvegardez avant : *Paramètres → Exporter les Données* (JSON, Excel, PDF) ou une sauvegarde Home Assistant qui inclut le module complémentaire.
+**Désinstaller :** *Paramètres → Applications → Geräteverwaltung → Désinstaller*. Home Assistant supprime alors le répertoire de données du module complémentaire avec la base de données, les photos et la licence. Sauvegardez avant : *Paramètres → Exporter les Données* (JSON ; Excel et PDF avec Pro) ou une sauvegarde Home Assistant qui inclut le module complémentaire.
 
 ---
 
@@ -66,15 +67,24 @@ Les fonctions de base sont gratuites ; les fonctions avancées sont débloquée
 
 | | Free | Pro |
 |---|:---:|:---:|
-| Appareils | jusqu'à 50 | illimités |
+| Enregistrer des appareils à la main, toutes les sections de base du formulaire | jusqu'à 50 | illimités |
 | Langues | anglais | allemand, anglais, espagnol, français, russe |
-| Tableau de bord, recherche, filtres, mode hors ligne, barre latérale | ✓ | ✓ |
-| Export JSON | ✓ | ✓ |
-| Import HA, détection automatique du type, recatégorisation | — | ✓ |
-| Export Excel et PDF avec modèles | — | ✓ |
-| Caméra, scanner QR/codes-barres, photos et documents | — | ✓ |
-| Édition en masse | — | ✓ |
-| MQTT-Discovery (publier les appareils dans HA) | — | ✓ |
+| Tableau de bord, recherche, filtres, tri, « Parents uniquement », mode hors ligne, barre latérale, mode sombre | ✓ | ✓ |
+| Catégories personnalisées, export JSON | ✓ | ✓ |
+| Fusionner les appareils en double, nettoyer les auto-imports | ✓ | ✓ |
+| Corbeille, instantanés de la base de données, historique des modifications | ✓ | ✓ |
+| Désactiver MQTT, « Nettoyer les entrées orphelines », « Supprimer toutes les entrées MQTT » | ✓ | ✓ |
+| Consulter les photos, photos d'installation, documents et informations de remise existants | ✓ | ✓ |
+| Import HA, recatégoriser les appareils | — | ✓ |
+| Export PDF et Excel avec modèles, ordre et images dans le PDF ; importer Excel | — | ✓ |
+| Caméra, scanner QR/codes-barres, photo de l'appareil | — | ✓ |
+| Téléverser, lier et supprimer des documents | — | ✓ |
+| Ajouter et supprimer des photos d'installation | — | ✓ |
+| Modifier les champs de remise (« Fonctionne sans Home Assistant ? », « Interrupteur mural ponté ? », « Lien externe ») | — | ✓ |
+| Édition en masse (*Sélectionner*) | — | ✓ |
+| Activer MQTT, « Tester la connexion MQTT », « Synchroniser tous les appareils maintenant » (et donc les capteurs dans HA et le lien *Visiter*) | — | ✓ |
+
+Ce qui est déjà saisi reste visible sans licence, et MQTT peut être désactivé et nettoyé à tout moment. Ainsi, aucun résidu ne subsiste si Pro n'est plus actif.
 
 **Acheter :** via le lien dans le README du dépôt GitHub ; la clé arrive par e-mail avec la confirmation d'achat. Une clé est valable pour trois installations au maximum et n'expire pas.
 
@@ -87,18 +97,18 @@ Si vous ne recevez pas d'e-mail après l'achat : vérifiez le dossier spam, sin
 ## Démarrage rapide en 5 étapes
 
 1. **Installer le module complémentaire** comme décrit dans [Installation, mise à jour, désinstallation](#installation-mise-à-jour-désinstallation). Après l'installation, la Gestion des Appareils apparaît comme entrée dans la barre latérale de HA.
-2. **Activer la licence Pro** sous *Paramètres → Licence*. Sans licence, vous pouvez gérer jusqu'à 50 appareils, l'interface est alors en anglais — tout le reste (multilingue, Excel, MQTT, caméra, codes-barres, documents) est Pro.
-3. **Importer les appareils HA** sous *Paramètres → Import Home Assistant → Importer appareils HA*. Pour les grandes installations (300+), l'import peut durer une minute ; il s'exécute en arrière-plan avec un indicateur de progression. Sont repris : nom, fabricant, modèle, firmware, pièce et étage, intégration, réseau et — depuis 3.1.0 — numéro de série, adresse MAC et alimentation (pile/batterie), dans la mesure où Home Assistant les connaît. Un nouvel import ne crée pas de doublons et, pour les appareils existants, ne complète le numéro de série et la MAC que dans les champs vides.
-4. **Facultatif : activer MQTT-Discovery** sous *Paramètres → Intégration Home Assistant → Publier les appareils dans HA* — le chapitre [Intégration Home Assistant](#intégration-home-assistant-mqtt-discovery) explique si c'est utile.
-5. **Compléter les premiers appareils** : touchez un appareil dans la liste, puis *Modifier*, et saisissez au moins *Date d'Achat* et *Garantie jusqu'au*, et le prix d'achat sous *Remarques*. Ajoutez une photo et des photos d'installation, téléversez les justificatifs comme documents — prêt pour la documentation d'assurance.
+2. **Activer la licence Pro** sous *Paramètres → Licence*. Sans licence, vous pouvez gérer à la main jusqu'à 50 appareils, l'interface est alors en anglais. Sont Pro, entre autres, l'import HA, les autres langues, l'export PDF/Excel, MQTT, la caméra, le scanner, les documents, les photos d'installation, les champs de remise et l'édition en masse — la liste complète figure sous [Free et Pro](#free-et-pro).
+3. **Importer les appareils HA** (Pro) sous *Paramètres → Import Home Assistant → Importer appareils HA*. Pour les grandes installations (300+), l'import peut durer une minute ; il s'exécute en arrière-plan avec un indicateur de progression. Sont repris : nom, fabricant, modèle, firmware, pièce et étage, intégration, réseau et — depuis 3.1.0 — numéro de série, adresse MAC et alimentation (pile/batterie), dans la mesure où Home Assistant les connaît. Un nouvel import ne crée pas de doublons et, pour les appareils existants, ne complète le numéro de série et la MAC que dans les champs vides.
+4. **Facultatif : activer MQTT-Discovery** (Pro) sous *Paramètres → Intégration Home Assistant → Publier les appareils dans HA* — le chapitre [Intégration Home Assistant](#intégration-home-assistant-mqtt-discovery) explique si c'est utile.
+5. **Compléter les premiers appareils** : touchez un appareil dans la liste, puis *Modifier*, et saisissez au moins *Date d'Achat* et *Garantie jusqu'au*, et le prix d'achat sous *Remarques*. Avec Pro, ajoutez une photo et des photos d'installation et téléversez les justificatifs comme documents — prêt pour la documentation d'assurance.
 
 ### Après la mise à jour vers 3.1.0
 
 Une seule fois, dans cet ordre :
 
-1. *Paramètres → Import Home Assistant → Importer appareils HA* — complète le numéro de série et la MAC des appareils existants et supprime les rattachements erronés à un routeur (voir [Appareils multicanaux](#appareils-multicanaux-parent-enfant)).
+1. *Paramètres → Import Home Assistant → Importer appareils HA* (Pro) — complète le numéro de série et la MAC des appareils existants et supprime les rattachements erronés à un routeur (voir [Appareils multicanaux](#appareils-multicanaux-parent-enfant)).
 2. *Paramètres → Doublons possibles* — vérifier et fusionner les appareils en double (voir [Appareils en double](#fusionner-les-appareils-en-double)).
-3. *Paramètres → Recatégoriser les appareils → Aperçu et sélection* — depuis 3.1.0, l'aperçu affiche nettement plus de propositions qu'avant, car la détection voit pour la première fois les classes d'appareils de Home Assistant. L'alimentation est également complétée. Consultez d'abord l'aperçu, décochez certaines lignes, puis appliquez. Tout peut être annulé via les instantanés et l'historique de l'appareil.
+3. *Paramètres → Recatégoriser les appareils → Aperçu et sélection* (Pro) — depuis 3.1.0, l'aperçu affiche nettement plus de propositions qu'avant, car la détection voit pour la première fois les classes d'appareils de Home Assistant. L'alimentation est également complétée. Consultez d'abord l'aperçu, décochez certaines lignes, puis appliquez. Tout peut être annulé via les instantanés et l'historique de l'appareil.
 
 ---
 
@@ -113,9 +123,9 @@ Ajoutez de nouveaux appareils via **Ajouter** dans la barre inférieure, modifie
 | Réseau & Alimentation | Réseau, Alimentation, Adresse IP, Adresse MAC |
 | Détails | Numéro de Série, AIN / N° Article, Date d'Achat, Garantie jusqu'au |
 | Home Assistant | Intégration, Entity ID, Device ID |
-| Notes | Fonction, Remarques, « Fonctionne sans Home Assistant ? », « Interrupteur mural ponté ? », Lien externe |
+| Notes | Fonction, Remarques, « Fonctionne sans Home Assistant ? », « Interrupteur mural ponté ? », Lien externe (modification des trois derniers : Pro) |
 
-En mode modification, les sections **Photos d'installation** (avec légende, p. ex. « derrière le cache en haut à gauche ») et **Documents** (facture, notice — sous forme de fichier ou de lien) s'ajoutent en dessous. Une photo de l'appareil peut être jointe en haut du formulaire par caméra ou par fichier. Chaque modification est enregistrée dans l'*Historique des modifications* de la page de détail et peut y être annulée individuellement.
+En mode modification, les sections **Photos d'installation** (Pro ; avec légende, p. ex. « derrière le cache en haut à gauche ») et **Documents** (Pro ; facture, notice — sous forme de fichier ou de lien) s'ajoutent en dessous. Une photo de l'appareil (Pro) peut être prise en haut du formulaire via l'icône de caméra ou sélectionnée comme fichier. Sans Pro, les photos, documents et informations de remise existants restent visibles ; le formulaire affiche alors la mention « La modification des champs de remise est une fonction Pro. Les données existantes restent visibles. » ou « Ajouter ou supprimer des photos d’installation est une fonction Pro. » Chaque modification est enregistrée dans l'*Historique des modifications* de la page de détail et peut y être annulée individuellement.
 
 **Intégration** est un champ libre : la liste de suggestions contient les intégrations courantes et toutes celles présentes dans votre inventaire ; vous pouvez saisir toute autre valeur.
 
@@ -125,7 +135,7 @@ En mode modification, les sections **Photos d'installation** (avec légende, p. 
 - *Alimentation :* Adaptateur, 230V, Pile, Batterie, USB, PoE, Solaire, Haute Tension
 - *Types d'appareils (32) :* Routeur, Répéteur, CPL, Répéteur DECT, Prise, Interrupteur, Ampoule, Actionneur/Relais, Interrupteur/Bouton, Volet roulant, Thermostat, Contrôleur/Passerelle, Caméra, Sonnette, Carillon, Serrure, Système d'Alarme, Assistant Vocal, Smart TV, Streaming, Écran/Dashboard, Tablette, Enceinte, Électroménager, Robot Tondeuse, Arrosage, Ventilateur, Télécommande, Imprimante, Capteur, Smartphone, Autre
 
-Vous créez vos propres types d'appareils sous *Paramètres → Gérer les catégories* ; ils apparaissent ensuite dans toutes les listes de sélection, dans l'édition en masse et comme onglets de filtre.
+Vous créez vos propres types d'appareils sous *Paramètres → Gérer les catégories* ; ils apparaissent ensuite dans toutes les listes de sélection, dans l'édition en masse (Pro) et comme onglets de filtre.
 
 ### Caméra et scanner
 
@@ -136,6 +146,8 @@ Avec Pro, vous pouvez prendre des photos directement et scanner des codes QR/cod
 ## Intégration Home Assistant (MQTT-Discovery)
 
 De loin la question la plus fréquente du forum. Nous expliquons **ce que** fait l'interrupteur, **quand** il est utile et **comment** s'en débarrasser proprement.
+
+L'activation, *Tester la connexion MQTT* et *Synchroniser tous les appareils maintenant* sont Pro. La désactivation et les deux boutons de nettoyage fonctionnent toujours, même sans licence.
 
 ### Que se passe-t-il à l'activation ?
 
@@ -152,7 +164,7 @@ Lorsque vous activez *Publier les appareils dans HA*, le module complémentaire 
 
 Ces entités apparaissent dans HA sous *Paramètres → Appareils et services → MQTT*, avec une fiche d'appareil par entrée de l'inventaire.
 
-**Depuis 3.1.0**, le capteur `*_type` porte en plus les informations saisies comme attributs : emplacement, numéro de série, alimentation, fonction, remarques, « Fonctionne sans HA » et « Interrupteur mural ponté » avec leurs remarques, lien externe ainsi que le nombre de photos et de photos d'installation. Les valeurs vides sont omises. Accessible dans les automatisations p. ex. via `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
+**Depuis 3.1.0**, le capteur `*_type` porte en plus les informations saisies comme attributs : emplacement, numéro de série, alimentation, fonction, remarques, « Fonctionne sans HA » et « Interrupteur mural ponté » avec leurs remarques, lien externe ainsi que le nombre de photos et de photos d'installation (attributs `fotos` et `einbauort_bilder`). Les valeurs vides sont omises. Les deux compteurs sont exacts même après *Synchroniser tous les appareils maintenant* ; si vous ajoutez ou supprimez une photo ou une photo d'installation, le nouveau nombre apparaît aussitôt dans HA. Accessible dans les automatisations p. ex. via `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
 
 **Retour dans l'application :** Sur la page d'appareil HA de chaque appareil ainsi publié figure le lien **Visiter**. Il ouvre directement cet appareil dans la Gestion des Appareils. Pour les appareils d'autres intégrations (p. ex. la page d'appareil d'origine d'un Shelly), un module complémentaire ne peut pas placer de lien — l'accès passe alors uniquement par la fiche MQTT de l'entrée d'inventaire.
 
@@ -173,7 +185,7 @@ Pourquoi un utilisateur dédié plutôt que votre propre compte : il n'a pas de
 
 ### Quand est-ce utile ?
 
-- **Rappels de garantie** : une automatisation HA sur le capteur binaire `*_warranty_active` qui notifie 30 jours avant l'expiration.
+- **Rappels de garantie** : une automatisation HA sur le capteur `*_warranty_days` qui notifie dès que la valeur descend à 30 ou moins. Le capteur binaire `*_warranty_active` ne passe à `off` que le jour de l'expiration et ne convient donc pas pour un avertissement préalable.
 - **Cartes de tableau de bord** : « Tous les appareils sous garantie », « Appareils dont la garantie expire bientôt », triés par `*_warranty_days`.
 - **Statistiques d'inventaire** dans le tableau de bord HA, sans ouvrir la Gestion des Appareils.
 
@@ -193,7 +205,7 @@ Par défaut, les topics MQTT retained **restent** sur le broker, même si vous d
 
 ### Les appareils restent dans HA après leur suppression dans le module complémentaire
 
-Jusqu'à v2.5.3, un bug ignorait le nettoyage MQTT lors de la suppression d'appareils individuels — les topics Discovery restaient alors, alors que le module complémentaire aurait dû envoyer lui-même un signal « supprimer cet appareil ». Depuis v2.5.3, le nettoyage d'un appareil individuel fonctionne de nouveau de manière fiable. Pour l'existant : un seul clic sur *Nettoyer les entrées orphelines* supprime les restes.
+Jusqu'à v2.5.2, un bug ignorait le nettoyage MQTT lors de la suppression d'appareils individuels — les topics Discovery restaient alors, alors que le module complémentaire aurait dû envoyer lui-même un signal « supprimer cet appareil ». Depuis v2.5.3, le nettoyage d'un appareil individuel fonctionne de nouveau de manière fiable. Pour l'existant : un seul clic sur *Nettoyer les entrées orphelines* supprime les restes.
 
 ---
 
@@ -210,7 +222,7 @@ Exemples : Shelly 2PM (deux canaux de prise dans un même boîtier), hubs Tuya,
 
 ### Masquer les sous-appareils
 
-Avec les configurations multicanaux, la liste s'allonge vite — trois lignes pour un seul appareil physique. Dans la liste, à droite du tri, se trouve le bouton **« Parents uniquement »**. Actif : les sous-appareils sont masqués, le libellé du bouton indique le nombre d'enfants masqués. Le filtre est conservé pendant la session.
+Avec les configurations multicanaux, la liste s'allonge vite — trois lignes pour un seul appareil physique. Dans la liste, à gauche du tri, se trouve le bouton **« Parents uniquement »** ; il n'apparaît que si au moins un appareil est rattaché comme sous-appareil à un appareil principal. Actif : les sous-appareils sont masqués, le libellé du bouton indique le nombre d'enfants masqués. Le filtre est conservé pendant la session.
 
 **Les routeurs ne sont pas des appareils principaux (depuis 3.1.0) :** dans Home Assistant, FRITZ!Box et UPnP déclarent *chaque* appareil du réseau comme rattaché à eux. Auparavant, l'import en faisait « Fait partie de FRITZ!Box » — la sonnette, le robot tondeuse et les smartphones disparaissaient alors dans le filtre *Parents uniquement*. L'import ne reprend plus ces rattachements à un routeur et supprime ceux existants lors de la prochaine exécution. Les véritables centrales comme le coordinateur Zigbee, le Bosch Smart Home Controller ou le HomematicIP Access Point restent l'appareil principal de leurs appareils. Si un navigateur déjà ouvert affiche encore l'ancien rattachement : *Paramètres → Vider le cache local → Vider le cache*.
 
@@ -261,11 +273,14 @@ Le modèle *Assurance* de l'export PDF/Excel sélectionne automatiquement les ch
 - N°, Type, Désignation, Modèle, Fabricant
 - N° de série, AIN / N° d'article
 - Date d'achat, Garantie jusqu'au, Emplacement, Remarques
+- Lien externe
+
+L'export PDF et Excel, modèles compris, est Pro.
 
 Workflow :
 
-1. Pour chaque appareil de valeur : prenez une photo, téléversez le justificatif d'achat comme document, renseignez les remarques avec le prix d'achat et, le cas échéant, une note pour l'assurance.
-2. Une fois par an : *Paramètres → Exporter les Données → Exporter PDF / Excel... → Modèles → Assurance*, puis **PDF**. Le PDF contient les appareils sous forme de tableau compact ; si vous souhaitez en plus une page de détail par appareil, composez les champs à la main au lieu de choisir le modèle (les remarques très longues y sont tronquées à 1000 caractères, avec un renvoi vers l'export Excel).
+1. Pour chaque appareil de valeur : prenez une photo, téléversez le justificatif d'achat comme document (les deux Pro), renseignez les remarques avec le prix d'achat et, le cas échéant, une note pour l'assurance.
+2. Une fois par an : *Paramètres → Exporter les Données → Exporter PDF / Excel... → Modèles → Assurance*, puis **PDF**. Le PDF contient les appareils sous forme de tableau compact ; si vous souhaitez en plus une page de détail par appareil, choisissez **Tous les champs** sous *Modèles* ou composez les champs à la main (les remarques très longues y sont tronquées à 1000 caractères, avec un renvoi vers l'export Excel).
 3. Excel en complément, si l'assureur retraite les données — Excel conserve la longueur complète des remarques dans une cellule.
 
 ### Succession
@@ -287,15 +302,15 @@ Les détails réseau (MAC, IP, firmware, intégration) n'y figurent volontaireme
 
 *Nouveau dans 3.0.0.* Le cas de figure : un jour, quelqu'un d'autre se retrouve devant l'installation — des proches, un électricien, un acheteur. Cette personne ne connaît ni Home Assistant ni l'historique de la maison.
 
-Pour cela, chaque appareil dispose de deux champs, tout en bas du formulaire de modification, sous *Notes* :
+Pour cela, chaque appareil dispose de trois champs, tout en bas du formulaire de modification, sous *Notes*. Leur modification nécessite Pro ; les informations existantes restent visibles même sans licence.
 
 **« Fonctionne sans Home Assistant ? »** — trois possibilités : *Inconnu* (par défaut, rien n'est exporté), *Oui, fonctionne sans HA*, *Non, nécessite HA*. Avec *Oui* ou *Non*, un champ de remarque apparaît en dessous pour une explication en clair : « interrupteur directement au mur », « thermostat réglable sur l'appareil », « impossible à utiliser sans HA ».
 
-**« Interrupteur mural ponté ? »** (*nouveau dans 3.1.0*) — le point le plus important pour le démontage : si un interrupteur a été ponté pour cet appareil, la lampe ne fonctionne plus après le démontage. Trois possibilités (*Inconnu*, *Oui, interrupteur ponté ou découplé*, *Non*) et un champ de remarque : quel interrupteur, quelle boîte — ou quel réglage, car souvent rien n'est câblé différemment, c'est l'actionneur qui a été reconfiguré (p. ex. Shelly en mode « detached »). Apparaît sur la page de détail dans la fiche « Dépendance à Home Assistant », avec « Fonctionne sans Home Assistant ? ».
+**« Interrupteur mural ponté ? »** (*nouveau dans 3.1.0*) — le point le plus important pour le démontage : si un interrupteur a été ponté pour cet appareil, la lampe ne fonctionne plus après le démontage. Trois possibilités (*Inconnu*, *Oui, interrupteur ponté ou découplé*, *Non*) et un champ de remarque : quel interrupteur, quelle boîte — ou quel réglage, car souvent rien n'est câblé différemment, c'est l'actionneur qui a été reconfiguré (p. ex. Shelly en mode « detached »). Apparaît sur la page de détail sous le titre « Interrupteur mural ». Le même encadré contient « Dépendance à Home Assistant » (l'information issue de « Fonctionne sans Home Assistant ? ») et « Lien externe ».
 
 **« Lien externe »** — un renvoi vers un autre système : le document dans Paperless-ngx, la page du manuel du fabricant, une entrée dans votre wiki. Le lien figure sur la page de détail et s'ouvre dans une nouvelle fenêtre. Un simple nom comme `paperless.local/x` suffit, `https://` est ajouté automatiquement.
 
-Le modèle d'export **« Démontage/électricien »** (*Exporter PDF / Excel... → Modèles*) en fait la feuille à déposer dans le local technique :
+Le modèle d'export **« Démontage/électricien »** (*Exporter PDF / Excel... → Modèles*, Pro) en fait la feuille à déposer dans le local technique :
 
 - N°, Type, Désignation, Fabricant, Modèle
 - Emplacement, Étage
@@ -320,11 +335,20 @@ Le modèle **« Dossier d’urgence »** (*nouveau dans 3.1.0*) est le dossier
 | Succession | Proches | Appareil, numéro de série, date d'achat, garantie, emplacement, fonctionne-sans-HA, lien |
 | Dossier d’urgence | Personne appelée par les proches | Appareil, emplacement, numéro de série, alimentation, fonctionne-sans-HA, interrupteurs pontés, date d'achat, garantie, lien |
 
-En PDF, tous les modèles produisent un tableau compact au format paysage, environ dix pages pour 300 appareils. Les pages de détail par appareil n'existent que si vous composez les champs à la main au lieu de choisir un modèle. Depuis 3.1.0, l'application mémorise votre sélection de champs sur le serveur — elle s'applique donc aussi sur le smartphone ou après l'effacement des données du navigateur.
+En PDF, ces quatre modèles produisent un tableau compact au format paysage, environ dix pages pour 300 appareils. Les pages de détail par appareil existent avec **Tous les champs** (également sous *Modèles*) ou si vous composez les champs à la main. Depuis 3.1.0, l'application mémorise votre sélection de champs sur le serveur — elle s'applique donc aussi sur le smartphone ou après l'effacement des données du navigateur.
 
 **Ordre** (*nouveau dans 3.1.0*) : dans la boîte de dialogue d'export, vous pouvez choisir entre *Groupé par catégorie* (comportement précédent) et **Étage › Emplacement › Nom**. Pour la feuille du tableau électrique, la deuxième variante est la bonne : la personne devant le tableau cherche par pièce, pas par nom d'appareil. En Excel, elle produit un tableau continu sans lignes intermédiaires de catégorie, que vous pouvez trier et filtrer librement.
 
 **Images dans le PDF** (*nouveau dans 3.1.0*) : sous *Images dans le PDF*, vous pouvez ajouter **Photos d’installation** et **Photos de l’appareil et documents image**. Les images figurent en annexe à la fin du PDF ; dans la liste, la colonne *Images* indique la référence pour chaque appareil (B1, B2 …). Une image rattachée à plusieurs appareils n'apparaît qu'une fois, avec tous les appareils concernés. Excel ne contient pas d'images.
+
+## Importer Excel
+
+*Nouveau dans 3.1.0, Pro.* Sous *Paramètres → Exporter les Données*, en dessous des boutons d'export, **Importer Excel** relit un fichier Excel issu de *Exporter PDF / Excel...*.
+
+- L'application reconnaît les colonnes à leur en-tête, et non à leur position. Toute sélection de champs fonctionne, groupée par catégorie comme en tableau continu. La colonne *Étage* n'est pas reprise.
+- Les photos, photos d'installation et documents ne font pas partie du fichier.
+- Sans autre sélection, les appareils sont ajoutés **en plus** de l'inventaire existant. Si vous réimportez ainsi votre propre export, chaque appareil existe ensuite en double.
+- Avec la case **« Remplacer les appareils existants (tous à la corbeille, instantané préalable) »**, tous les appareils existants passent à la corbeille avant la lecture du fichier. Après la sélection du fichier, vous devez le confirmer avec **« Vraiment remplacer tous les appareils ? »**.
 
 ---
 
@@ -334,9 +358,10 @@ En PDF, tous les modèles produisent un tableau compact au format paysage, envir
 - **Puces de catégorie** sous la recherche : les catégories intégrées n'apparaissent que si elles contiennent au moins 1 appareil ; les catégories personnalisées (issues de *Gérer les catégories*) apparaissent toujours depuis 3.1.0, de même que les types saisis librement. Un clic bascule entre *actif* et *inactif*. Un filtre actif reste visible même si le dernier appareil de cette catégorie disparaît — pour que vous puissiez le retirer.
 - **Aperçu photo** : si un appareil a une photo, la liste l'affiche sous forme de petite vignette (depuis 3.1.0).
 - Les **graphiques en anneau** et les **listes Top 10** du tableau de bord sont cliquables — un clic sur une barre de fabricant définit un filtre par fabricant et ouvre la liste des appareils.
-- Les **puces de filtre** au-dessus de la liste (p. ex. « Par Fabricant : BOSCH × ») indiquent le filtre actif, le X le supprime.
+- Les **puces de filtre** au-dessus de la liste (p. ex. « Par Fabricant (Top 10) : BOSCH × ») indiquent le filtre actif, le X le supprime.
 - **Tri** : liste déroulante à droite. Options : Modifiés récemment (par défaut), Nom A→Z/Z→A, Type, Fabricant, Emplacement, Garantie bientôt expirée (expiration la plus proche en premier). Le choix est conservé pendant la session.
 - **Bouton « Parents uniquement »** : masque les enfants (voir le chapitre sur les appareils multicanaux).
+- **Édition en masse** (Pro) : avec **Sélectionner** au-dessus de la liste, marquez plusieurs appareils pour modifier ensemble leur type ou leur intégration, ou pour les supprimer. Sans Pro, le bouton est grisé et porte la mention « (Pro) ».
 
 ---
 
@@ -345,14 +370,17 @@ En PDF, tous les modèles produisent un tableau compact au format paysage, envir
 ### Corbeille
 
 - Les appareils supprimés sont d'abord placés dans la corbeille : restaurables pendant 30 jours dans *Paramètres → Corbeille*.
+- Après 30 jours, l'application les supprime automatiquement de façon définitive. Elle le vérifie au démarrage du module complémentaire, puis une fois par jour. Auparavant, elle crée un instantané (« Avant le vidage automatique de la corbeille (30 jours) ») ; il permet de récupérer ces appareils eux aussi.
 - Deux modes de restauration : par entrée (bouton sur chaque ligne) ou en masse (« Restaurer N » en haut à droite après sélection).
-- *Supprimer définitivement* supprime l'appareil avec ses photos.
+- *Supprimer définitivement* supprime l'appareil avec ses photos, photos d'installation et documents, y compris les fichiers correspondants.
+- **Vider la corbeille** (en haut de la corbeille) supprime définitivement toutes les entrées en une fois. Le premier clic demande « Vraiment supprimer définitivement les {N} ? », seul le second supprime. Auparavant, l'application crée un instantané (« Avant de vider la corbeille ») ; il en va de même lorsque vous supprimez définitivement plusieurs entrées sélectionnées.
 - Le bouton *Tout mettre à la corbeille* (Paramètres, tout en bas) est conçu comme bouton de réinitialisation de dernier recours — il déplace tout l'inventaire dans la corbeille, avec instantané.
 
 ### Instantanés de la base de données
 
-- Avant chaque action en masse (suppression de plusieurs ou de tous les appareils, recatégorisation, édition en masse, fusion, suppression de catégorie, import Excel avec remplacement), l'application crée automatiquement un instantané de la base de données.
-- Liste sous *Paramètres → Instantanés de la base de données*. Pour chaque entrée : motif, ancienneté et taille.
+- Avant chaque action en masse, l'application crée automatiquement un instantané de la base de données : suppression de plusieurs ou de tous les appareils, recatégorisation, édition en masse, fusion, « Appliquer toutes les suggestions », suppression de catégorie, import Excel avec remplacement, nettoyage des auto-imports, vidage de la corbeille ou suppression définitive de plusieurs entrées, vidage automatique de la corbeille et avant chaque restauration.
+- Manuellement : *Paramètres → Instantanés de la base de données* → **Créer un instantané maintenant**, p. ex. avant vos propres travaux de nettoyage. Il apparaît dans la liste comme « Créé manuellement ».
+- Liste sous *Paramètres → Instantanés de la base de données*. Pour chaque entrée : motif en clair (p. ex. « Avant fusion », « Avant suppression de la catégorie « … » »), ancienneté et taille.
 - *Restaurer* remplace la base de données actuelle par l'instantané — une « annulation de la dernière action ».
 
 ---
@@ -364,8 +392,8 @@ En PDF, tous les modèles produisent un tableau compact au format paysage, envir
 Avant v2.5.2, l'import HA était exécuté plusieurs fois alors que MQTT-Discovery était actif. L'import réimportait alors les appareils publiés par le module complémentaire lui-même — le nombre d'appareils de l'inventaire doublait à chaque import. Correction :
 
 1. Mettez à jour vers v2.5.2 au minimum.
-2. L'appel serveur `POST /api/ha/cleanup-self-imports` déplace les doublons dans la corbeille. Aucun bouton ne le propose dans l'interface ; si vous préférez ne pas envoyer l'appel vous-même, ouvrez une issue ou écrivez à support@derregner.info.
-3. Après 30 jours, ils sont supprimés. Si vous êtes pressé : videz la corbeille.
+2. Dépliez *Paramètres → Doublons possibles*, section « Propres appareils MQTT d’un ancien import », **Nettoyer les auto-imports**. Le bouton déplace ces entrées dans la corbeille ; auparavant, l'application crée un instantané. Les autres appareils ne sont pas touchés.
+3. Après 30 jours, l'application les supprime automatiquement de façon définitive. Si vous êtes pressé : *Paramètres → Corbeille* → **Vider la corbeille**.
 
 ### « Je clique sur ‹ Téléverser un document › et j'arrive sur la page de détail sans que rien ne soit téléversé. »
 
@@ -373,11 +401,11 @@ Bug jusqu'à v2.5.3. Corrigé depuis v2.6.0 (`type="button"` sur les boutons, si
 
 ### « Quand je clique sur ‹ Afficher dans HA ›, le navigateur s'ouvre et je dois me reconnecter à HA. »
 
-Cela concernait l'application HA Companion sur smartphone jusqu'à v2.5.3. Depuis v2.6.0, le module complémentaire reconnaît le Companion à son user-agent et navigue dans la webview de l'application — retour via le bouton ou le geste Retour du système.
+Cela concernait l'application HA Companion sur smartphone jusqu'à v2.5.3. Depuis v2.6.3, le module complémentaire reconnaît le Companion et ouvre l'appareil directement dans l'application Companion via le lien profond `homeassistant://navigate/…`, sans nouvelle connexion.
 
 ### « L'export PDF casse la mise en page pour un appareil avec de longues notes. »
 
-Bug jusqu'à v2.5.3 (fpdf2 + en-tête personnalisé + saut de page multi_cell). Depuis v2.6.0, les notes de la section de détail sont tronquées à 1000 caractères avec la mention « ... — full text in Excel export ». Excel conserve le texte complet dans une cellule sans problème de mise en page.
+Bug jusqu'à v2.5.3 (fpdf2 + en-tête personnalisé + saut de page multi_cell). Depuis v2.6.0, les notes de la section de détail sont tronquées à 1000 caractères avec la mention « ... (N chars total — full text in Excel export) ». Excel conserve le texte complet dans une cellule sans problème de mise en page.
 
 ### « Où la clé de licence est-elle stockée ? Que se passe-t-il lors d'une mise à jour du module complémentaire ? »
 
@@ -385,7 +413,7 @@ La licence est enregistrée dans le dossier de données du module complémentair
 
 ### « Quelles langues ? »
 
-DE, EN, ES, FR, RU. Changement sous *Paramètres → Langue*. La version Free est limitée à EN — Pro débloque toutes les langues.
+DE, EN, ES, FR, RU. Changement sous *Paramètres → Langue*. La version Free est limitée à EN et démarre directement en anglais — Pro débloque toutes les langues.
 
 ---
 
@@ -407,9 +435,12 @@ Tout ce que l'application enregistre se trouve dans le répertoire de données d
 |---|---|
 | Base de données avec tous les appareils | `/data/db/geraeteverwaltung.db` |
 | Photos et photos d'installation | `/data/photos/` |
+| Documents | `/data/documents/` |
+| Instantanés de la base de données | `/data/db/snapshots/` |
+| Réglage MQTT (activé/désactivé) | `/data/db/mqtt_settings.json` |
 | Clé de licence | `/data/db/license.json` |
 
-**Sauvegarder** ne demande aucune action manuelle : une sauvegarde Home Assistant inclut l'intégralité du répertoire de données du module complémentaire. Si vous souhaitez aussi conserver la liste des appareils en dehors de HA, utilisez *Paramètres → Exporter les Données → Export JSON* ou créez un instantané.
+**Sauvegarder** ne demande aucune action manuelle : une sauvegarde Home Assistant inclut l'intégralité du répertoire de données du module complémentaire. Si vous souhaitez aussi conserver la liste des appareils en dehors de HA, utilisez *Paramètres → Exporter les Données → Export JSON*. Avant vos propres interventions, *Paramètres → Instantanés de la base de données → Créer un instantané maintenant* est utile ; l'instantané se trouve toutefois lui aussi dans le répertoire de données du module complémentaire.
 
 **N'écrivez pas** dans la base de données pendant que le module complémentaire fonctionne. L'ouvrir et la modifier via Samba ou SSH risque d'endommager le fichier — l'application le garde ouvert. Pour la consulter, arrêtez d'abord le module complémentaire.
 
@@ -428,13 +459,13 @@ Bug jusqu'à v2.5.2 — l'import durait plus longtemps que le délai d'attente H
 
 ### Rapport de diagnostic pour une issue GitHub
 
-*Paramètres → Support et diagnostic* génère un rapport avec la version du module complémentaire, l'architecture, la version Python, l'état MQTT (sans identifiants), le nombre d'appareils et les 200 dernières lignes du journal. Les mots de passe, jetons, adresses IP et e-mails sont supprimés automatiquement. Transmission ou copie dans le presse-papiers d'un clic.
+*Paramètres → Support et diagnostic* génère un rapport avec la version du module complémentaire, l'architecture, la version Python, l'état MQTT (sans identifiants), le nombre d'appareils et les 200 dernières lignes du journal. Les mots de passe, jetons et adresses e-mail sont supprimés automatiquement ; pour les adresses IP, les deux derniers octets sont masqués. Transmission ou copie dans le presse-papiers d'un clic.
 
 ---
 
 ## Protection des données et mentions légales
 
-**Où se trouvent les données :** toutes les données des appareils, photos et documents restent dans votre installation Home Assistant (répertoire de données du module complémentaire) et en plus dans le navigateur de chaque appareil avec lequel vous ouvrez l'application (pour le mode hors ligne). L'application ne contient ni suivi ni outils d'analyse.
+**Où se trouvent les données :** toutes les données des appareils, photos, photos d'installation et documents restent dans votre installation Home Assistant (répertoire de données du module complémentaire). Pour le mode hors ligne, le navigateur de chaque appareil avec lequel vous ouvrez l'application enregistre en plus les données des appareils et la photo de l'appareil. Les photos d'installation et les documents se trouvent uniquement sur le serveur, pas dans le navigateur. L'application ne contient ni suivi ni outils d'analyse.
 
 **Ce que le module complémentaire envoie à l'extérieur :** uniquement la clé de licence avec l'identifiant d'installation au prestataire de paiement Lemon Squeezy — lors de l'activation et pour la vérification occasionnelle. Les données des appareils ne quittent votre installation que si vous exportez vous-même, envoyez un rapport de diagnostic ou publiez des appareils via MQTT sur votre propre broker.
 

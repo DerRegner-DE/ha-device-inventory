@@ -17,12 +17,13 @@ Este manual describe la instalación y el uso de la Gestión de Dispositivos y r
 7. [Dispositivos multicanal (Parent-Child)](#dispositivos-multicanal-parent-child)
 8. [Fusionar dispositivos duplicados](#fusionar-dispositivos-duplicados)
 9. [Seguro & herencia — los flujos de trabajo típicos](#seguro--herencia--los-flujos-de-trabajo-típicos)
-10. [Filtro, búsqueda y orden](#filtro-búsqueda-y-orden)
-11. [Papelera & instantáneas de la base de datos](#papelera--instantáneas-de-la-base-de-datos)
-12. [Preguntas frecuentes (FAQ)](#preguntas-frecuentes-faq)
-13. [Solución de problemas](#solución-de-problemas)
-14. [Protección de datos y aspectos legales](#protección-de-datos-y-aspectos-legales)
-15. [Soporte y contacto](#soporte-y-contacto)
+10. [Importar Excel](#importar-excel)
+11. [Filtro, búsqueda y orden](#filtro-búsqueda-y-orden)
+12. [Papelera & instantáneas de la base de datos](#papelera--instantáneas-de-la-base-de-datos)
+13. [Preguntas frecuentes (FAQ)](#preguntas-frecuentes-faq)
+14. [Solución de problemas](#solución-de-problemas)
+15. [Protección de datos y aspectos legales](#protección-de-datos-y-aspectos-legales)
+16. [Soporte y contacto](#soporte-y-contacto)
 
 ---
 
@@ -56,7 +57,7 @@ La app funciona como complemento de Home Assistant con base de datos propia, se 
 
 **Actualizar:** Home Assistant muestra una actualización disponible en *Configuración → Aplicaciones → Geräteverwaltung* (y en las notificaciones). Haga clic en **Actualizar**; se recomienda dejar activado *Crea una copia de seguridad antes de actualizar*, porque las actualizaciones pueden ampliar la base de datos. Como alternativa, active *Actualización automática*. Las novedades figuran en el registro de cambios (Changelog) del complemento. Tras una actualización, conviene revisar el apartado «Tras la actualización» del inicio rápido.
 
-**Desinstalar:** *Configuración → Aplicaciones → Geräteverwaltung → Desinstalar*. Home Assistant borra entonces el directorio de datos del complemento con la base de datos, las fotos y la licencia. Haga antes una copia: *Ajustes → Exportar Datos* (JSON, Excel, PDF) o una copia de seguridad de Home Assistant que incluya el complemento.
+**Desinstalar:** *Configuración → Aplicaciones → Geräteverwaltung → Desinstalar*. Home Assistant borra entonces el directorio de datos del complemento con la base de datos, las fotos y la licencia. Haga antes una copia: *Ajustes → Exportar Datos* (JSON; Excel y PDF con Pro) o una copia de seguridad de Home Assistant que incluya el complemento.
 
 ---
 
@@ -66,15 +67,24 @@ Las funciones básicas son gratuitas; las funciones avanzadas se desbloquean con
 
 | | Free | Pro |
 |---|:---:|:---:|
-| Dispositivos | hasta 50 | ilimitados |
+| Registrar dispositivos a mano, todas las secciones básicas del formulario | hasta 50 | ilimitados |
 | Idiomas | Inglés | Alemán, inglés, español, francés, ruso |
-| Panel, búsqueda, filtros, modo sin conexión, barra lateral | ✓ | ✓ |
-| Exportación JSON | ✓ | ✓ |
-| Importación de HA, detección automática de tipo, recategorización | — | ✓ |
-| Exportación a Excel y PDF con plantillas | — | ✓ |
-| Cámara, escáner QR/código de barras, fotos y documentos | — | ✓ |
-| Edición en lote | — | ✓ |
-| MQTT-Discovery (publicar dispositivos en HA) | — | ✓ |
+| Panel, búsqueda, filtros, orden, «Solo principales», modo sin conexión, barra lateral, modo oscuro | ✓ | ✓ |
+| Categorías propias, exportación JSON | ✓ | ✓ |
+| Fusionar dispositivos duplicados, limpiar autoimportaciones | ✓ | ✓ |
+| Papelera, instantáneas de la base de datos, historial de cambios | ✓ | ✓ |
+| Desactivar MQTT, «Limpiar entradas huérfanas», «Eliminar todas las entradas MQTT» | ✓ | ✓ |
+| Ver las fotos, fotos de instalación, documentos y datos de traspaso existentes | ✓ | ✓ |
+| Importación de HA, recategorizar dispositivos | — | ✓ |
+| Exportación a PDF y Excel con plantillas, orden e imágenes en el PDF; importar Excel | — | ✓ |
+| Cámara, escáner QR/código de barras, foto del dispositivo | — | ✓ |
+| Subir, enlazar y borrar documentos | — | ✓ |
+| Añadir y borrar fotos de instalación | — | ✓ |
+| Editar los campos de traspaso («¿Funciona sin Home Assistant?», «¿Interruptor de pared puenteado?», «Enlace externo») | — | ✓ |
+| Edición en lote (*Seleccionar*) | — | ✓ |
+| Activar MQTT, «Probar conexión MQTT», «Sincronizar todos los dispositivos ahora» (y con ello los sensores en HA y el enlace *Visitar*) | — | ✓ |
+
+Lo que ya está registrado sigue visible sin licencia, y MQTT se puede desactivar y limpiar en cualquier momento. Así no quedan restos si Pro deja de estar activo.
 
 **Comprar:** mediante el enlace del README del repositorio de GitHub; la clave llega por correo electrónico con la confirmación de compra. Una clave vale para hasta tres instalaciones y no caduca.
 
@@ -87,18 +97,18 @@ Si tras la compra no llega ningún correo: revise la carpeta de spam; si no, esc
 ## Inicio rápido en 5 pasos
 
 1. **Instale el complemento** como se describe en [Instalación, actualización, desinstalación](#instalación-actualización-desinstalación). Tras la instalación, la Gestión de Dispositivos aparece como entrada en la barra lateral de HA.
-2. **Active la licencia Pro** en *Ajustes → Licencia*. Sin licencia se pueden gestionar hasta 50 dispositivos y la interfaz está en inglés; todo lo demás (varios idiomas, Excel, MQTT, cámara, código de barras, documentos) es Pro.
-3. **Importe los dispositivos de HA** en *Ajustes → Importar Home Assistant → Importar dispositivos HA*. En instalaciones grandes (300+) la importación puede tardar un minuto; se ejecuta en segundo plano con indicador de progreso. Se importan nombre, fabricante, modelo, firmware, habitación y planta, integración, red y, desde la 3.1.0, número de serie, dirección MAC y alimentación (batería/recargable), siempre que Home Assistant los conozca. Una nueva importación no duplica dispositivos y, en los dispositivos existentes, solo completa el número de serie y la MAC en campos vacíos.
-4. **Opcional: active MQTT-Discovery** en *Ajustes → Integración Home Assistant → Publicar dispositivos en HA*. Si tiene sentido o no, se explica en el capítulo [Integración con Home Assistant](#integración-con-home-assistant-mqtt-discovery).
-5. **Complete los primeros dispositivos**: toque un dispositivo de la lista, luego *Editar*, e introduzca como mínimo *Fecha de Compra* y *Garantía hasta*, y el precio de compra en *Notas*. Añada una foto y fotos de instalación, suba los comprobantes como documentos: listo para la documentación del seguro.
+2. **Active la licencia Pro** en *Ajustes → Licencia*. Sin licencia se pueden gestionar a mano hasta 50 dispositivos y la interfaz está en inglés. Son Pro, entre otras cosas, la importación de HA, los demás idiomas, la exportación a PDF/Excel, MQTT, la cámara, el escáner, los documentos, las fotos de instalación, los campos de traspaso y la edición en lote; la lista completa figura en [Free y Pro](#free-y-pro).
+3. **Importe los dispositivos de HA** (Pro) en *Ajustes → Importar Home Assistant → Importar dispositivos HA*. En instalaciones grandes (300+) la importación puede tardar un minuto; se ejecuta en segundo plano con indicador de progreso. Se importan nombre, fabricante, modelo, firmware, habitación y planta, integración, red y, desde la 3.1.0, número de serie, dirección MAC y alimentación (batería/recargable), siempre que Home Assistant los conozca. Una nueva importación no duplica dispositivos y, en los dispositivos existentes, solo completa el número de serie y la MAC en campos vacíos.
+4. **Opcional: active MQTT-Discovery** (Pro) en *Ajustes → Integración Home Assistant → Publicar dispositivos en HA*. Si tiene sentido o no, se explica en el capítulo [Integración con Home Assistant](#integración-con-home-assistant-mqtt-discovery).
+5. **Complete los primeros dispositivos**: toque un dispositivo de la lista, luego *Editar*, e introduzca como mínimo *Fecha de Compra* y *Garantía hasta*, y el precio de compra en *Notas*. Con Pro, añada una foto y fotos de instalación y suba los comprobantes como documentos: listo para la documentación del seguro.
 
 ### Tras la actualización a 3.1.0
 
 Una vez, en este orden:
 
-1. *Ajustes → Importar Home Assistant → Importar dispositivos HA*: completa el número de serie y la MAC en los dispositivos existentes y deshace asignaciones erróneas a routers (consulte [Dispositivos multicanal](#dispositivos-multicanal-parent-child)).
+1. *Ajustes → Importar Home Assistant → Importar dispositivos HA* (Pro): completa el número de serie y la MAC en los dispositivos existentes y deshace asignaciones erróneas a routers (consulte [Dispositivos multicanal](#dispositivos-multicanal-parent-child)).
 2. *Ajustes → Posibles duplicados*: revise y fusione los dispositivos duplicados (consulte [Dispositivos duplicados](#fusionar-dispositivos-duplicados)).
-3. *Ajustes → Recategorizar dispositivos → Vista previa y selección*: tras la 3.1.0 la vista previa muestra bastantes más propuestas que antes, porque la detección ve por primera vez las clases de dispositivo de Home Assistant. Además se completa la alimentación. Revise primero la vista previa, desmarque filas concretas y luego aplique. Todo se puede deshacer mediante la instantánea y el historial del dispositivo.
+3. *Ajustes → Recategorizar dispositivos → Vista previa y selección* (Pro): tras la 3.1.0 la vista previa muestra bastantes más propuestas que antes, porque la detección ve por primera vez las clases de dispositivo de Home Assistant. Además se completa la alimentación. Revise primero la vista previa, desmarque filas concretas y luego aplique. Todo se puede deshacer mediante la instantánea y el historial del dispositivo.
 
 ---
 
@@ -113,9 +123,9 @@ Los dispositivos nuevos se crean con **Añadir** en la barra inferior; los exist
 | Red y Energía | Red, Alimentación, Dirección IP, Dirección MAC |
 | Detalles | Número de Serie, AIN / Nº Artículo, Fecha de Compra, Garantía hasta |
 | Home Assistant | Integración, Entity ID, Device ID |
-| Notas | Función, Notas, «¿Funciona sin Home Assistant?», «¿Interruptor de pared puenteado?», Enlace externo |
+| Notas | Función, Notas, «¿Funciona sin Home Assistant?», «¿Interruptor de pared puenteado?», Enlace externo (editar los tres últimos: Pro) |
 
-Al editar se añaden debajo **Fotos de instalación** (con descripción, p. ej. «detrás de la cubierta, arriba a la izquierda») y **Documentos** (factura, manual: como archivo o enlace). En la parte superior del formulario se puede adjuntar una foto del dispositivo con la cámara o desde un archivo. Cada cambio queda en el *Historial de cambios* de la página de detalle y se puede revertir allí de forma individual.
+Al editar se añaden debajo **Fotos de instalación** (Pro; con descripción, p. ej. «detrás de la cubierta, arriba a la izquierda») y **Documentos** (Pro; factura, manual: como archivo o enlace). En la parte superior del formulario se puede tomar una foto del dispositivo (Pro) con el icono de la cámara o elegirla desde un archivo. Sin Pro siguen visibles las imágenes, documentos y datos de traspaso existentes; el formulario muestra entonces el aviso «Editar los campos de traspaso es una función Pro. Los datos existentes siguen visibles.» o «Añadir o borrar fotos de instalación es una función Pro.». Cada cambio queda en el *Historial de cambios* de la página de detalle y se puede revertir allí de forma individual.
 
 **Integración** es un campo libre: la lista de sugerencias contiene las integraciones habituales y todas las que aparecen en su inventario; se puede escribir cualquier otro valor.
 
@@ -125,7 +135,7 @@ Al editar se añaden debajo **Fotos de instalación** (con descripción, p. ej. 
 - *Alimentación:* Adaptador, 230V, Batería, Recargable, USB, PoE, Solar, Alta Tensión
 - *Tipos de dispositivo (32):* Router, Repetidor, Powerline, Repetidor DECT, Enchufe, Interruptor, Bombilla, Actuador/Relé, Interruptor/Pulsador, Persiana, Termostato, Controlador/Gateway, Cámara, Timbre, Campana, Cerradura, Sistema de Alarma, Asistente de Voz, Smart TV, Streaming, Pantalla/Dashboard, Tablet, Altavoz, Electrodoméstico, Robot Cortacésped, Riego, Ventilador, Mando a Distancia, Impresora, Sensor, Smartphone, Otros
 
-Los tipos de dispositivo propios se crean en *Ajustes → Gestionar categorías*; después aparecen en todas las listas de selección, en la edición en lote y como pestañas de filtro.
+Los tipos de dispositivo propios se crean en *Ajustes → Gestionar categorías*; después aparecen en todas las listas de selección, en la edición en lote (Pro) y como pestañas de filtro.
 
 ### Cámara y escáner
 
@@ -136,6 +146,8 @@ Con Pro se pueden tomar fotos directamente y escanear códigos QR y de barras. U
 ## Integración con Home Assistant (MQTT-Discovery)
 
 Es, con diferencia, la pregunta más frecuente del foro. Explicamos **qué** hace el interruptor, **cuándo** tiene sentido y **cómo** deshacerse de él de forma limpia.
+
+Activar, *Probar conexión MQTT* y *Sincronizar todos los dispositivos ahora* son Pro. Desactivar y los dos botones de limpieza funcionan siempre, también sin licencia.
 
 ### ¿Qué ocurre al activarlo?
 
@@ -152,7 +164,7 @@ Si activa *Publicar dispositivos en HA*, el complemento publica **hasta 6 entrad
 
 Estas entidades aparecen en HA en *Configuración → Dispositivos y servicios → MQTT*, con una tarjeta de dispositivo propia por cada entrada del inventario.
 
-**Desde la 3.1.0**, el sensor `*_type` lleva además los datos registrados como atributos: ubicación, número de serie, alimentación, función, notas, «Funciona sin HA» e «Interruptor de pared puenteado» con sus notas, enlace externo y el número de fotos y fotos de instalación. Los valores vacíos se omiten. En automatizaciones se accede, p. ej., con `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
+**Desde la 3.1.0**, el sensor `*_type` lleva además los datos registrados como atributos: ubicación, número de serie, alimentación, función, notas, «Funciona sin HA» e «Interruptor de pared puenteado» con sus notas, enlace externo y el número de fotos y fotos de instalación (atributos `fotos` y `einbauort_bilder`). Los valores vacíos se omiten. Los dos contadores también son correctos después de *Sincronizar todos los dispositivos ahora*; si añade o borra una foto o una foto de instalación, el nuevo número aparece en HA justo después. En automatizaciones se accede, p. ej., con `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
 
 **Volver a la app:** en la página de dispositivo de HA de cada dispositivo publicado así aparece el enlace **Visitar**. Abre directamente ese dispositivo en la Gestión de Dispositivos. Para dispositivos de otras integraciones (p. ej. la página de dispositivo original de un Shelly) un complemento no puede añadir un enlace; ahí solo se llega a través de la tarjeta MQTT de la entrada del inventario.
 
@@ -173,7 +185,7 @@ Por qué un usuario propio en lugar de su cuenta: no tiene derechos de administr
 
 ### ¿Cuándo tiene sentido?
 
-- **Recordatorios de garantía**: una automatización de HA sobre el sensor binario `*_warranty_active` que avise 30 días antes del vencimiento.
+- **Recordatorios de garantía**: una automatización de HA sobre el sensor `*_warranty_days` que avise en cuanto el valor baje a 30 o menos. El sensor binario `*_warranty_active` no cambia a `off` hasta el día del vencimiento y por eso no sirve para un aviso previo.
 - **Tarjetas de dashboard**: «Todos los dispositivos en garantía», «Dispositivos cuya garantía vence pronto», ordenados por `*_warranty_days`.
 - **Estadísticas del inventario** en el dashboard de HA, sin tener que abrir la Gestión de Dispositivos.
 
@@ -193,7 +205,7 @@ Por defecto, los topics MQTT retenidos **permanecen** en el broker aunque desact
 
 ### Los dispositivos siguen en HA después de borrarlos en el complemento
 
-Hasta la v2.5.3 había un error que omitía la limpieza MQTT al borrar dispositivos individuales: los topics Discovery quedaban, aunque el propio complemento debería haber enviado una señal de «borrar este dispositivo». Desde la v2.5.3 la limpieza de dispositivos individuales vuelve a funcionar de forma fiable. Para los restos existentes: un único clic en *Limpiar entradas huérfanas* los elimina.
+Hasta la v2.5.2 había un error que omitía la limpieza MQTT al borrar dispositivos individuales: los topics Discovery quedaban, aunque el propio complemento debería haber enviado una señal de «borrar este dispositivo». Desde la v2.5.3 la limpieza de dispositivos individuales vuelve a funcionar de forma fiable. Para los restos existentes: un único clic en *Limpiar entradas huérfanas* los elimina.
 
 ---
 
@@ -210,7 +222,7 @@ Ejemplos: Shelly 2PM (dos canales de enchufe en una carcasa), hubs Tuya, hubs US
 
 ### Ocultar subdispositivos
 
-En configuraciones multicanal la lista crece rápido: tres filas para un único dispositivo físico. En la lista, a la derecha de la ordenación, está el botón **«Solo principales»**. Activo: los subdispositivos quedan ocultos y la etiqueta del botón muestra el número de hijos ocultos. El filtro se mantiene durante la sesión.
+En configuraciones multicanal la lista crece rápido: tres filas para un único dispositivo físico. En la lista, a la izquierda de la ordenación, está el botón **«Solo principales»**; solo aparece si al menos un dispositivo está asignado como subdispositivo a un dispositivo principal. Activo: los subdispositivos quedan ocultos y la etiqueta del botón muestra el número de hijos ocultos. El filtro se mantiene durante la sesión.
 
 **Los routers no son dispositivo principal (desde la 3.1.0):** FRITZ!Box y UPnP comunican en Home Assistant que *todos* los dispositivos de la red dependen de ellos. Antes la importación lo convertía en «Parte de FRITZ!Box»: timbre, robot cortacésped y móviles desaparecían entonces con el filtro *Solo principales*. La importación ya no adopta estas asignaciones a routers y deshace las existentes en la siguiente ejecución. Las centrales reales, como el coordinador Zigbee, el Bosch Smart Home Controller o el HomematicIP Access Point, siguen siendo dispositivo principal de sus dispositivos. Si un navegador ya abierto sigue mostrando la asignación antigua: *Ajustes → Limpiar caché local → Limpiar caché*.
 
@@ -261,11 +273,14 @@ La plantilla *Seguro* de la exportación a PDF / Excel selecciona automáticamen
 - Nº, Tipo, Nombre, Modelo, Fabricante
 - Nº de serie, AIN / Nº de artículo
 - Fecha de compra, Garantía hasta, Ubicación, Notas
+- Enlace externo
+
+La exportación a PDF y Excel con plantillas es Pro.
 
 Flujo de trabajo:
 
-1. En cada dispositivo de valor: tome una foto, suba el comprobante de compra como documento y anote en Notas el precio de compra y, si procede, una nota para el seguro.
-2. Una vez al año: *Ajustes → Exportar Datos → Exportar PDF / Excel... → Plantillas → Seguro*, después **PDF**. El PDF contiene los dispositivos como tabla compacta; quien quiera además una página de detalle por dispositivo compone los campos a mano en lugar de elegir la plantilla (allí las notas muy largas se acortan a 1000 caracteres, con una referencia a la exportación a Excel).
+1. En cada dispositivo de valor: tome una foto, suba el comprobante de compra como documento (ambas cosas Pro) y anote en Notas el precio de compra y, si procede, una nota para el seguro.
+2. Una vez al año: *Ajustes → Exportar Datos → Exportar PDF / Excel... → Plantillas → Seguro*, después **PDF**. El PDF contiene los dispositivos como tabla compacta; quien quiera además una página de detalle por dispositivo elige en *Plantillas* **Todos los campos** o compone los campos a mano (allí las notas muy largas se acortan a 1000 caracteres, con una referencia a la exportación a Excel).
 3. Además Excel, si la aseguradora procesa los datos: Excel recoge las notas completas en una celda.
 
 ### Herencia
@@ -287,15 +302,15 @@ Los detalles de red (MAC, IP, firmware, integración) se excluyen a propósito d
 
 *Nuevo en 3.0.0.* El caso de fondo: algún día otra persona estará frente a la instalación: familiares, un electricista, un comprador. Esa persona no conoce Home Assistant ni la historia de la casa.
 
-Para ello hay dos campos por dispositivo, al final del formulario de edición, en *Notas*:
+Para ello hay tres campos por dispositivo, al final del formulario de edición, en *Notas*. Se editan con Pro; los datos existentes siguen visibles también sin licencia.
 
 **«¿Funciona sin Home Assistant?»** — tres opciones: *Desconocido* (valor por defecto, no se muestra nada), *Sí, funciona sin HA*, *No, necesita HA*. Con *Sí* o *No* aparece debajo un campo de nota para el texto en claro: «interruptor directo en la pared», «el termostato se ajusta en el aparato», «sin HA no se puede manejar».
 
-**«¿Interruptor de pared puenteado?»** (*nuevo en 3.1.0*) — el punto más importante para el desmontaje: si para este dispositivo se puenteó un interruptor de luz, la lámpara deja de funcionar tras retirarlo. Tres opciones (*Desconocido*, *Sí, interruptor puenteado o desacoplado*, *No*) y un campo de nota: qué interruptor, qué caja, o qué ajuste, porque a menudo no hay nada conectado de otra forma, sino que el actuador está reconfigurado (p. ej. Shelly en modo «detached»). Aparece en la página de detalle en la tarjeta «Dependencia de Home Assistant», junto con «¿Funciona sin Home Assistant?».
+**«¿Interruptor de pared puenteado?»** (*nuevo en 3.1.0*) — el punto más importante para el desmontaje: si para este dispositivo se puenteó un interruptor de luz, la lámpara deja de funcionar tras retirarlo. Tres opciones (*Desconocido*, *Sí, interruptor puenteado o desacoplado*, *No*) y un campo de nota: qué interruptor, qué caja, o qué ajuste, porque a menudo no hay nada conectado de otra forma, sino que el actuador está reconfigurado (p. ej. Shelly en modo «detached»). Aparece en la página de detalle bajo el título «Interruptor de pared». En el mismo recuadro figuran «Dependencia de Home Assistant» (el dato de «¿Funciona sin Home Assistant?») y «Enlace externo».
 
 **«Enlace externo»** — una referencia a otro sistema: el documento en Paperless-ngx, la página del manual del fabricante, una entrada en su propio wiki. El enlace aparece en la página de detalle y se abre en una ventana nueva. Basta con un nombre como `paperless.local/x`; `https://` se añade automáticamente.
 
-La plantilla de exportación **«Desmontaje/electricista»** (*Exportar PDF / Excel... → Plantillas*) genera la hoja que se deja en el cuarto de la acometida:
+La plantilla de exportación **«Desmontaje/electricista»** (*Exportar PDF / Excel... → Plantillas*, Pro) genera la hoja que se deja en el cuarto de la acometida:
 
 - Nº, Tipo, Nombre, Fabricante, Modelo
 - Ubicación, Planta
@@ -320,11 +335,20 @@ La plantilla **«Carpeta de emergencia»** (*nuevo en 3.1.0*) es la carpeta para
 | Herencia | Familiares | Dispositivo, número de serie, fecha de compra, garantía, ubicación, funciona-sin-HA, enlace |
 | Carpeta de emergencia | Ayudante al que llaman los familiares | Dispositivo, ubicación, número de serie, alimentación, funciona-sin-HA, interruptores puenteados, fecha de compra, garantía, enlace |
 
-En PDF, todas las plantillas generan una tabla compacta en formato apaisado, unas diez páginas para 300 dispositivos. Las páginas de detalle por dispositivo solo aparecen si compone los campos a mano en lugar de elegir una plantilla. Desde la 3.1.0 la app guarda su selección de campos en el servidor, por lo que también vale en el móvil o tras borrar los datos del navegador.
+En PDF, estas cuatro plantillas generan una tabla compacta en formato apaisado, unas diez páginas para 300 dispositivos. Las páginas de detalle por dispositivo aparecen con **Todos los campos** (también en *Plantillas*) o si compone los campos a mano. Desde la 3.1.0 la app guarda su selección de campos en el servidor, por lo que también vale en el móvil o tras borrar los datos del navegador.
 
 **Orden** (*nuevo en 3.1.0*): en el diálogo de exportación se puede elegir entre *Agrupado por categoría* (comportamiento anterior) y **Planta › Ubicación › Nombre**. Para la hoja del cuadro eléctrico, la segunda opción es la correcta: quien está delante busca por habitación, no por nombre de dispositivo. En Excel sale como tabla continua sin filas intermedias de categoría, que se puede ordenar y filtrar libremente.
 
 **Imágenes en el PDF** (*nuevo en 3.1.0*): en *Imágenes en el PDF* se pueden añadir **Fotos de instalación** y **Fotos del dispositivo y documentos de imagen**. Las imágenes aparecen como anexo al final del PDF; en la lista, la columna *Imágenes* muestra para cada dispositivo la referencia (B1, B2 …). Una imagen asociada a varios dispositivos aparece una sola vez, con todos los dispositivos correspondientes. Excel no contiene imágenes.
+
+## Importar Excel
+
+*Nuevo en 3.1.0, Pro.* En *Ajustes → Exportar Datos*, debajo de los botones de exportación, **Importar Excel** vuelve a leer un archivo Excel de *Exportar PDF / Excel...*.
+
+- La app reconoce las columnas por su encabezado, no por su posición. Funciona cualquier selección de campos, tanto agrupada por categoría como en tabla continua. La columna *Planta* no se importa.
+- Las fotos, fotos de instalación y documentos no forman parte del archivo.
+- Sin más selección, los dispositivos se añaden **además** del inventario existente. Quien vuelva a leer así su propia exportación tendrá después cada dispositivo por duplicado.
+- Con la casilla **«Reemplazar los dispositivos existentes (todos a la papelera, con instantánea previa)»**, todos los dispositivos anteriores van a la papelera antes de leer el archivo. Tras elegir el archivo hay que confirmarlo con **«¿Reemplazar realmente todos los dispositivos?»**.
 
 ---
 
@@ -334,9 +358,10 @@ En PDF, todas las plantillas generan una tabla compacta en formato apaisado, una
 - **Chips de categoría** debajo de la búsqueda: las categorías integradas solo aparecen si contienen al menos 1 dispositivo; las categorías propias (de *Gestionar categorías*) aparecen siempre desde la 3.1.0, igual que los tipos escritos a mano. Un clic alterna entre *activo* y *desactivado*. Un filtro activo sigue visible aunque desaparezca el último dispositivo de esa categoría, para poder quitarlo.
 - **Vista previa de foto**: si un dispositivo tiene foto, la lista la muestra como miniatura (desde la 3.1.0).
 - Los **gráficos de anillo** y las **listas Top 10** del panel se pueden pulsar: un clic en la barra de un fabricante aplica un filtro por fabricante y salta a la lista de dispositivos.
-- Los **chips de filtro** sobre la lista (p. ej. «Por fabricante: BOSCH ×») muestran el filtro activo; la X lo quita.
+- Los **chips de filtro** sobre la lista (p. ej. «Por Fabricante (Top 10): BOSCH ×») muestran el filtro activo; la X lo quita.
 - **Orden**: desplegable a la derecha. Opciones: Editados recientemente (por defecto), Nombre A→Z/Z→A, Tipo, Fabricante, Ubicación, Garantía pronto a vencer (vencimiento más próximo primero). La selección se mantiene durante la sesión.
 - **Interruptor «Solo principales»**: oculta los hijos (consulte el capítulo Multicanal).
+- **Edición en lote** (Pro): con **Seleccionar** sobre la lista, marque varios dispositivos y cambie juntos el tipo o la integración, o bórrelos. Sin Pro, el botón aparece atenuado y lleva el añadido «(Pro)».
 
 ---
 
@@ -345,14 +370,17 @@ En PDF, todas las plantillas generan una tabla compacta en formato apaisado, una
 ### Papelera
 
 - Los dispositivos borrados van primero a la papelera y se pueden restaurar durante 30 días en *Ajustes → Papelera*.
+- Pasados 30 días, la app los elimina permanentemente de forma automática. Lo comprueba al iniciarse el complemento y después una vez al día. Antes crea una instantánea («Antes del vaciado automático de la papelera (30 días)»), con la que también esto se puede recuperar.
 - Dos modos de restauración: por entrada (botón en cada fila) o en lote («Restaurar N» arriba a la derecha tras seleccionar).
-- *Eliminar permanentemente* borra el dispositivo junto con sus fotos.
+- *Eliminar permanentemente* borra el dispositivo junto con sus fotos, fotos de instalación y documentos, incluidos los archivos correspondientes.
+- **Vaciar papelera** (arriba en la papelera) elimina permanentemente todas las entradas de una vez. El primer clic pregunta «¿Borrar definitivamente los {N}?»; solo el segundo borra. Antes la app crea una instantánea («Antes de vaciar la papelera»); lo mismo ocurre si elimina permanentemente varias entradas seleccionadas.
 - El botón *Mover todo a la papelera* (Ajustes, al final) está pensado como último recurso de reinicio: mueve todo el inventario a la papelera con instantánea.
 
 ### Instantáneas de la base de datos
 
-- Antes de cada acción masiva (borrar varios o todos los dispositivos, recategorizar, edición en lote, fusionar, borrar una categoría, importación de Excel con reemplazo) la app crea automáticamente una instantánea de la base de datos.
-- Lista en *Ajustes → Instantáneas de la base de datos*. Por entrada: motivo, antigüedad y tamaño.
+- Antes de cada acción masiva la app crea automáticamente una instantánea de la base de datos: borrar varios o todos los dispositivos, recategorizar, edición en lote, fusionar, «Aplicar todas las sugerencias», borrar una categoría, importación de Excel con reemplazo, limpiar autoimportaciones, vaciar la papelera o eliminar permanentemente varias entradas, vaciado automático de la papelera y antes de cada restauración.
+- A mano: *Ajustes → Instantáneas de la base de datos* → **Crear instantánea ahora**, p. ej. antes de sus propias tareas de limpieza. Aparece en la lista como «Creada a mano».
+- Lista en *Ajustes → Instantáneas de la base de datos*. Por entrada: motivo en texto claro (p. ej. «Antes de fusionar», «Antes de borrar la categoría «…»»), antigüedad y tamaño.
 - *Restaurar* sobrescribe la base de datos actual con la instantánea: un «deshacer para la última acción».
 
 ---
@@ -364,8 +392,8 @@ En PDF, todas las plantillas generan una tabla compacta en formato apaisado, una
 Antes de la v2.5.2, la importación de HA se ejecutaba varias veces mientras MQTT-Discovery estaba activo. La importación recogía entonces los dispositivos publicados por el propio complemento: el número de dispositivos del inventario se duplicaba con cada importación. Solución:
 
 1. Actualice como mínimo a la v2.5.2.
-2. La llamada al servidor `POST /api/ha/cleanup-self-imports` mueve los duplicados a la papelera. No hay ningún botón para ello en la interfaz; si prefiere no enviar la llamada usted mismo, abra un issue o escriba a support@derregner.info.
-3. Tras 30 días desaparecen. Si tiene prisa: vacíe la papelera.
+2. Despliegue *Ajustes → Posibles duplicados*, apartado «Dispositivos MQTT propios de una importación antigua», **Limpiar autoimportaciones**. El botón mueve esas entradas a la papelera; antes la app crea una instantánea. Los demás dispositivos no se tocan.
+3. Pasados 30 días, la app los elimina permanentemente de forma automática. Si tiene prisa: *Ajustes → Papelera* → **Vaciar papelera**.
 
 ### «Hago clic en ‹Subir documento› y acabo en la página de detalle sin que se haya subido nada.»
 
@@ -373,11 +401,11 @@ Error hasta la v2.5.3. Corregido desde la v2.6.0 (`type="button"` en los botones
 
 ### «Al hacer clic en ‹Ver en HA› se abre el navegador y tengo que volver a iniciar sesión en HA.»
 
-Afectaba a la app HA Companion en el móvil hasta la v2.5.3. Desde la v2.6.0 el complemento reconoce la Companion por el User-Agent y navega dentro del webview de la app; se vuelve con el botón Atrás del sistema o un gesto.
+Afectaba a la app HA Companion en el móvil hasta la v2.5.3. Desde la v2.6.3 el complemento reconoce la Companion y abre el dispositivo mediante el enlace profundo `homeassistant://navigate/…` directamente en la app Companion, sin volver a iniciar sesión.
 
 ### «La exportación a PDF rompe el diseño en un dispositivo con notas largas.»
 
-Error hasta la v2.5.3 (fpdf2 + cabecera personalizada + salto de página de multi_cell). Desde la v2.6.0 las notas de la sección de detalle se cortan a 1000 caracteres con la indicación «... — full text in Excel export». Excel recoge el texto completo en una celda sin problemas de diseño.
+Error hasta la v2.5.3 (fpdf2 + cabecera personalizada + salto de página de multi_cell). Desde la v2.6.0 las notas de la sección de detalle se cortan a 1000 caracteres con la indicación «... (N chars total — full text in Excel export)». Excel recoge el texto completo en una celda sin problemas de diseño.
 
 ### «¿Dónde se guarda la clave de licencia? ¿Qué ocurre al actualizar el complemento?»
 
@@ -385,7 +413,7 @@ La licencia se guarda en la carpeta de datos del complemento como `license.json`
 
 ### «¿Qué idiomas?»
 
-DE, EN, ES, FR, RU. Se cambia en *Ajustes → Idioma*. La versión Free está limitada a EN; Pro desbloquea todos los idiomas.
+DE, EN, ES, FR, RU. Se cambia en *Ajustes → Idioma*. La versión Free está limitada a EN y arranca directamente en inglés; Pro desbloquea todos los idiomas.
 
 ---
 
@@ -407,9 +435,12 @@ Todo lo que guarda la app está en el directorio de datos del complemento:
 |---|---|
 | Base de datos con todos los dispositivos | `/data/db/geraeteverwaltung.db` |
 | Fotos y fotos de instalación | `/data/photos/` |
+| Documentos | `/data/documents/` |
+| Instantáneas de la base de datos | `/data/db/snapshots/` |
+| Interruptor MQTT | `/data/db/mqtt_settings.json` |
 | Clave de licencia | `/data/db/license.json` |
 
-**Copia de seguridad:** no tiene que hacer nada a mano. Una copia de seguridad de Home Assistant incluye completo el directorio de datos del complemento. Si además quiere tener la lista de dispositivos fuera de HA, use *Ajustes → Exportar Datos → Exportar JSON* o cree una instantánea.
+**Copia de seguridad:** no tiene que hacer nada a mano. Una copia de seguridad de Home Assistant incluye completo el directorio de datos del complemento. Si además quiere tener la lista de dispositivos fuera de HA, use *Ajustes → Exportar Datos → Exportar JSON*. Antes de intervenciones propias ayuda *Ajustes → Instantáneas de la base de datos → Crear instantánea ahora*; no obstante, la instantánea también se guarda en el directorio de datos del complemento.
 
 **No** escriba en la base de datos mientras el complemento está en marcha. Quien la abre y edita mediante Samba o SSH se arriesga a dañar el archivo: la app lo mantiene abierto. Para consultarla, detenga antes el complemento.
 
@@ -428,13 +459,13 @@ Error hasta la v2.5.2: la importación duraba más que el tiempo de espera HTTP 
 
 ### Informe de diagnóstico para un issue de GitHub
 
-*Ajustes → Soporte y diagnóstico* genera un informe con la versión del complemento, la arquitectura, la versión de Python, el estado MQTT (sin credenciales), el número de dispositivos y las últimas 200 líneas del registro. Las contraseñas, tokens, direcciones IP y correos se eliminan automáticamente. Se envía con un clic o se copia al portapapeles.
+*Ajustes → Soporte y diagnóstico* genera un informe con la versión del complemento, la arquitectura, la versión de Python, el estado MQTT (sin credenciales), el número de dispositivos y las últimas 200 líneas del registro. Las contraseñas, tokens y direcciones de correo se eliminan automáticamente; en las direcciones IP se enmascaran los dos últimos octetos. Se envía con un clic o se copia al portapapeles.
 
 ---
 
 ## Protección de datos y aspectos legales
 
-**Dónde están los datos:** todos los datos de dispositivos, fotos y documentos permanecen en su instalación de Home Assistant (directorio de datos del complemento) y, además, en el navegador de cada dispositivo con el que abra la app (para el modo sin conexión). La app no contiene seguimiento ni herramientas de análisis.
+**Dónde están los datos:** todos los datos de dispositivos, fotos, fotos de instalación y documentos permanecen en su instalación de Home Assistant (directorio de datos del complemento). Para el modo sin conexión, el navegador de cada dispositivo con el que abra la app guarda además los datos de dispositivos y la foto del dispositivo. Las fotos de instalación y los documentos solo están en el servidor, no en el navegador. La app no contiene seguimiento ni herramientas de análisis.
 
 **Qué envía el complemento al exterior:** solo la clave de licencia junto con el identificador de instalación al proveedor de pagos Lemon Squeezy, al activarla y para la comprobación ocasional. Los datos de dispositivos solo salen de su instalación si usted mismo exporta, envía un informe de diagnóstico o publica dispositivos por MQTT en su propio broker.
 
