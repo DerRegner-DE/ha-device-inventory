@@ -82,7 +82,6 @@ async def _initial_ha_sync() -> None:
         logger.warning("Initial HA sync failed (will retry on demand): %s", e)
 
 
-@asynccontextmanager
 async def _trash_retention_loop() -> None:
     from app.routers.devices import purge_expired_trash
 
@@ -96,6 +95,7 @@ async def _trash_retention_loop() -> None:
         await asyncio.sleep(24 * 3600)
 
 
+@asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing database at %s", settings.DB_PATH)
