@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 import { db } from "../db/schema";
 import { syncPendingQueue, getPendingCount, apiPost, apiGet, syncFromServer } from "../api/client";
 import { t, setLanguage, getLanguage, getAvailableLanguages } from "../i18n";
@@ -145,6 +145,51 @@ export function Settings() {
       setWipeResult(t("settings.wipeFailed"));
     }
     setWiping(false);
+  };
+
+  // v3.1.0: Excel-Import (Pro). Ersetzen verschiebt alle Geraete in den
+  // Papierkorb (Server legt vorher einen Schnappschuss an) -- daher zweistufig.
+  const [xlsxReplace, setXlsxReplace] = useState(false);
+  const [xlsxConfirm, setXlsxConfirm] = useState(false);
+  const [xlsxFile, setXlsxFile] = useState<File | null>(null);
+  const [xlsxImporting, setXlsxImporting] = useState(false);
+  const [xlsxResult, setXlsxResult] = useState<string | null>(null);
+  const xlsxRef = useRef<HTMLInputElement>(null);
+  const runXlsxImport = async (file?: File) => {
+    const f = file || xlsxFile;
+    if (!f) return;
+    setXlsxConfirm(false);
+    setXlsxImporting(true);
+    setXlsxResult(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      const res = await fetch(`${getApiBase()}/import/xlsx?replace=${xlsxReplace ? "true" : "false"}`, {
+        method: "POST", body: fd, signal: AbortSignal.timeout(120000),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && typeof body.imported === "number") {
+        setXlsxResult(t("settings.xlsxImportDone", { count: body.imported }));
+        await syncFromServer();
+      } else {
+        setXlsxResult(`${t("settings.xlsxImportFailed")}${body.detail ? `: ${body.detail}` : ""}`);
+      }
+    } catch {
+      setXlsxResult(t("settings.xlsxImportFailed"));
+    }
+    setXlsxFile(null);
+    if (xlsxRef.current) xlsxRef.current.value = "";
+    setXlsxImporting(false);
+  };
+  const handleXlsxImport = (e: Event) => {
+    const f = (e.target as HTMLInputElement).files?.[0];
+    if (!f || !hasExcel) return;
+    if (xlsxReplace) {
+      setXlsxFile(f);
+      setXlsxConfirm(true);
+      return;
+    }
+    runXlsxImport(f);
   };
 
   // v3.1.0: Self-Import-Bereinigung bekommt einen Knopf; bisher gab es sie nur
@@ -892,6 +937,49 @@ export function Settings() {
               {t("settings.pdfXlsxExportButton")}
               {!hasExcel && " (Pro)"}
             </button>
+          </div>
+          {/* v3.1.0: Excel-Import in der Oberflaeche (vorher nur API). Liest den
+              eigenen Excel-Export wieder ein; Ersetzen nur mit Bestaetigung. */}
+          <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+            <h4 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.xlsxImport")}</h4>
+            <p class="text-xs text-gray-400 mb-2">{t("settings.xlsxImportDesc")}</p>
+            <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 mb-2">
+              <input
+                type="checkbox"
+                checked={xlsxReplace}
+                disabled={!hasExcel || xlsxImporting}
+                onChange={(e) => { setXlsxReplace((e.target as HTMLInputElement).checked); setXlsxConfirm(false); }}
+              />
+              {t("settings.xlsxImportReplace")}
+            </label>
+            <input
+              ref={xlsxRef}
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              disabled={!hasExcel || xlsxImporting}
+              onChange={handleXlsxImport}
+              class="w-full text-xs text-gray-600 dark:text-gray-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-[#1F4E79] file:text-white file:text-sm file:font-medium file:cursor-pointer disabled:opacity-50"
+            />
+            {!hasExcel && <p class="text-xs text-gray-400 mt-1">Pro</p>}
+            {xlsxConfirm && (
+              <div class="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => runXlsxImport()}
+                  class="flex-1 py-2 rounded-xl bg-red-500 text-white text-xs font-medium hover:bg-red-600"
+                >
+                  {t("settings.xlsxImportReplaceConfirm")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setXlsxConfirm(false); setXlsxFile(null); if (xlsxRef.current) xlsxRef.current.value = ""; }}
+                  class="px-3 py-2 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
+            )}
+            {xlsxResult && <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{xlsxResult}</p>}
           </div>
         </div>
 

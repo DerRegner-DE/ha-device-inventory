@@ -591,5 +591,11 @@
   "snapshots.createFailed": "Schnappschuss konnte nicht angelegt werden.",
   "snapshots.op.trash_expired": "Vor automatischem Leeren des Papierkorbs (30 Tage)",
   "form.handoverPro": "Übergabe-Felder bearbeiten ist eine Pro-Funktion. Vorhandene Angaben bleiben sichtbar.",
-  "attachments.proOnly": "Einbauort-Bilder hinzufügen oder löschen ist eine Pro-Funktion."
+  "attachments.proOnly": "Einbauort-Bilder hinzufügen oder löschen ist eine Pro-Funktion.",
+  "settings.xlsxImport": "Excel importieren",
+  "settings.xlsxImportDesc": "Liest eine Excel-Datei aus „PDF / Excel exportieren...“ wieder ein. Die Spalten werden über ihre Überschrift erkannt; Fotos, Einbauort-Bilder und Dokumente sind nicht Teil der Datei.",
+  "settings.xlsxImportReplace": "Vorhandene Geräte ersetzen (alle in den Papierkorb, vorher Schnappschuss)",
+  "settings.xlsxImportReplaceConfirm": "Wirklich alle Geräte ersetzen?",
+  "settings.xlsxImportDone": "{count} Geräte importiert.",
+  "settings.xlsxImportFailed": "Import fehlgeschlagen"
 }

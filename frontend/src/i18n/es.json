@@ -591,5 +591,11 @@
   "snapshots.createFailed": "No se pudo crear la instantánea.",
   "snapshots.op.trash_expired": "Antes del vaciado automático de la papelera (30 días)",
   "form.handoverPro": "Editar los campos de traspaso es una función Pro. Los datos existentes siguen visibles.",
-  "attachments.proOnly": "Añadir o borrar fotos de instalación es una función Pro."
+  "attachments.proOnly": "Añadir o borrar fotos de instalación es una función Pro.",
+  "settings.xlsxImport": "Importar Excel",
+  "settings.xlsxImportDesc": "Vuelve a leer un archivo Excel de «Exportar PDF / Excel...». Las columnas se reconocen por su encabezado; las fotos, fotos de instalación y documentos no forman parte del archivo.",
+  "settings.xlsxImportReplace": "Reemplazar los dispositivos existentes (todos a la papelera, con instantánea previa)",
+  "settings.xlsxImportReplaceConfirm": "¿Reemplazar realmente todos los dispositivos?",
+  "settings.xlsxImportDone": "{count} dispositivos importados.",
+  "settings.xlsxImportFailed": "La importación ha fallado"
 }

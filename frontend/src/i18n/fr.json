@@ -591,5 +591,11 @@
   "snapshots.createFailed": "Impossible de créer l’instantané.",
   "snapshots.op.trash_expired": "Avant le vidage automatique de la corbeille (30 jours)",
   "form.handoverPro": "La modification des champs de remise est une fonction Pro. Les données existantes restent visibles.",
-  "attachments.proOnly": "Ajouter ou supprimer des photos d’installation est une fonction Pro."
+  "attachments.proOnly": "Ajouter ou supprimer des photos d’installation est une fonction Pro.",
+  "settings.xlsxImport": "Importer Excel",
+  "settings.xlsxImportDesc": "Relit un fichier Excel issu de « Exporter PDF / Excel... ». Les colonnes sont reconnues par leur en-tête ; les photos, photos d’installation et documents ne font pas partie du fichier.",
+  "settings.xlsxImportReplace": "Remplacer les appareils existants (tous à la corbeille, instantané préalable)",
+  "settings.xlsxImportReplaceConfirm": "Vraiment remplacer tous les appareils ?",
+  "settings.xlsxImportDone": "{count} appareils importés.",
+  "settings.xlsxImportFailed": "Échec de l’import"
 }

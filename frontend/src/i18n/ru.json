@@ -591,5 +591,11 @@
   "snapshots.createFailed": "Не удалось создать снимок.",
   "snapshots.op.trash_expired": "Перед автоматической очисткой корзины (30 дней)",
   "form.handoverPro": "Редактирование полей передачи — функция Pro. Существующие данные остаются видимыми.",
-  "attachments.proOnly": "Добавление и удаление фото места установки — функция Pro."
+  "attachments.proOnly": "Добавление и удаление фото места установки — функция Pro.",
+  "settings.xlsxImport": "Импорт Excel",
+  "settings.xlsxImportDesc": "Снова загружает файл Excel из «Экспорт PDF / Excel...». Столбцы распознаются по заголовку; фото, фото места установки и документы в файл не входят.",
+  "settings.xlsxImportReplace": "Заменить существующие устройства (все в корзину, перед этим снимок)",
+  "settings.xlsxImportReplaceConfirm": "Действительно заменить все устройства?",
+  "settings.xlsxImportDone": "Импортировано устройств: {count}.",
+  "settings.xlsxImportFailed": "Импорт не удался"
 }

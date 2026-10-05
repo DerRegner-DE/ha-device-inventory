@@ -591,5 +591,11 @@
   "snapshots.createFailed": "Snapshot could not be created.",
   "snapshots.op.trash_expired": "Before automatic trash cleanup (30 days)",
   "form.handoverPro": "Editing the handover fields is a Pro feature. Existing entries stay visible.",
-  "attachments.proOnly": "Adding or deleting installation photos is a Pro feature."
+  "attachments.proOnly": "Adding or deleting installation photos is a Pro feature.",
+  "settings.xlsxImport": "Import Excel",
+  "settings.xlsxImportDesc": "Reads an Excel file from “Export PDF / Excel...” back in. Columns are matched by their heading; photos, installation photos and documents are not part of the file.",
+  "settings.xlsxImportReplace": "Replace existing devices (all to the trash, snapshot first)",
+  "settings.xlsxImportReplaceConfirm": "Really replace all devices?",
+  "settings.xlsxImportDone": "{count} devices imported.",
+  "settings.xlsxImportFailed": "Import failed"
 }
