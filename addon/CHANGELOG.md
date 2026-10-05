@@ -60,9 +60,18 @@ Die per MQTT gemeldete Entity *Device type* traegt jetzt die gepflegten Angaben 
 
 *Integration* ist ein freies Feld mit Vorschlagsliste — die bisherige Auswahl kannte nur 36 Integrationen und zeigte bei allen anderen (z. B. Bosch Smart Home, FRITZ!Box, UPnP) ein leeres Feld. *Firmware* steht jetzt bei den Grunddaten, *Integration* im Bereich Home Assistant.
 
-### Geaendert: MQTT-Zugangsdaten
+### Geaendert: MQTT-Zugangsdaten — eigener HA-Benutzer fuer Mosquitto
 
-Das Add-on darf die MQTT-Zugangsdaten jetzt beim Supervisor erfragen. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Sonst wie bisher *mqtt_user* und *mqtt_password* in der Add-on-Konfiguration fuellen — ein eigener Home-Assistant-Benutzer genuegt, das Mosquitto-Add-on akzeptiert HA-Benutzer.
+**Wofuer:** Damit die Geraeteverwaltung ihre Geraete in Home Assistant veroeffentlichen kann (*Geraete in HA veroeffentlichen*, Garantie-Sensoren, *Besuchen*-Link), muss sie sich am MQTT-Broker anmelden. Das Mosquitto-Add-on laesst nur angemeldete Teilnehmer zu — ohne Zugangsdaten meldet *MQTT-Verbindung testen* „Not authorized". Ohne MQTT funktioniert die App ansonsten voll; betroffen ist nur das Veroeffentlichen.
+
+Das Add-on fragt die Zugangsdaten jetzt zuerst beim Supervisor an. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Sonst braucht es einen Benutzer — am einfachsten ein eigener Home-Assistant-Benutzer, denn das Mosquitto-Add-on akzeptiert jeden HA-Benutzer:
+
+1. Home Assistant: *Einstellungen → Personen*, Reiter *Benutzer* (fehlt er: unten links auf den eigenen Namen, *Erweiterter Modus* einschalten).
+2. *Benutzer hinzufuegen*: Name und Benutzername z. B. `geraeteverwaltung`, ein Passwort festlegen. *Kann sich nur aus dem lokalen Netzwerk anmelden* einschalten, *Administrator* aus lassen. *Erstellen*.
+3. *Einstellungen → Add-ons → Geraeteverwaltung → Konfiguration*: Benutzername bei *mqtt_user*, Passwort bei *mqtt_password*. *Speichern*, Add-on neu starten.
+4. In der Geraeteverwaltung *MQTT-Verbindung testen* — jetzt kommt „OK".
+
+Warum ein eigener Benutzer statt des eigenen Kontos: Er hat keine Administratorrechte, meldet sich nur im Heimnetz an, und sein Passwort steht in der Add-on-Konfiguration statt Ihres eigenen. Wird er nicht mehr gebraucht, laesst er sich loeschen, ohne etwas anderes zu beruehren.
 
 ### Behoben: Auto-Kategorisierung
 

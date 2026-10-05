@@ -63,6 +63,8 @@ Diese Entities tauchen in HA unter *Einstellungen → Geräte & Dienste → MQTT
 
 ### Zugangsdaten für den MQTT-Broker
 
+**Wofür:** Zum Veröffentlichen muss sich die Geräteverwaltung am MQTT-Broker anmelden; das Mosquitto-Add-on lässt nur angemeldete Teilnehmer zu. Ohne MQTT funktioniert die App ansonsten voll — betroffen sind nur die Sensoren in HA und der *Besuchen*-Link.
+
 Das Add-on fragt die Zugangsdaten zuerst beim Supervisor an. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Meldet der Test unter *Einstellungen → Home Assistant Integration → MQTT-Verbindung testen* dagegen **„Not authorized"** (Code 135), braucht das Add-on einen Benutzer. Am einfachsten ein eigener Home-Assistant-Benutzer — das Mosquitto-Add-on akzeptiert jeden HA-Benutzer:
 
 1. In Home Assistant links unten **Einstellungen** → **Personen** → oben den Reiter **Benutzer** öffnen. Fehlt der Reiter: unten links auf den eigenen Namen klicken und **Erweiterter Modus** einschalten.
@@ -71,6 +73,8 @@ Das Add-on fragt die Zugangsdaten zuerst beim Supervisor an. Stellt das Mosquitt
 4. **Einstellungen** → **Add-ons** (in neueren Versionen **Apps**) → **Geräteverwaltung** → Reiter **Konfiguration**.
 5. Bei **mqtt_user** den Benutzernamen, bei **mqtt_password** das Passwort eintragen. **Speichern**, das Add-on neu starten.
 6. In der Geräteverwaltung *MQTT-Verbindung testen* — jetzt sollte „OK" kommen.
+
+Warum ein eigener Benutzer statt des eigenen Kontos: Er hat keine Administratorrechte, meldet sich nur im Heimnetz an, und in der Add-on-Konfiguration steht sein Passwort statt Ihres eigenen. Wird er nicht mehr gebraucht, lässt er sich löschen, ohne etwas anderes zu berühren.
 
 ### Wann ist das sinnvoll?
 
