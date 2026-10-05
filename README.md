@@ -30,6 +30,8 @@
 
 ## What's new
 
+**v3.1** (October 2026) — Duplicates and a smarter import. Since HA 2026.8, Home Assistant often creates several entries for one device — a Shelly via its own integration and again via the FRITZ!Box. The import now merges these twins automatically, *Settings → Possible duplicates* lists the ones already imported, and *Merge with another device …* on the detail page handles the rest by hand. The auto-categorisation was reworked from the ground up: HA device classes never actually reached it before, so smoke detectors, plugs and TVs are now recognised properly, and routers (FRITZ!Box/UPnP) are no longer treated as parent devices. A new per-device field *Wall switch bridged?* and a new export template **Emergency folder** cover the fuse-box binder; exports can be sorted by floor › location › name and carry images in the PDF. The import now brings serial number, MAC address and power source along, and the device list shows a photo thumbnail. Devices published via MQTT get a *Visit* link on their HA device page that opens them directly in the app (needs MQTT; for the Mosquitto broker, create a dedicated HA user — see the manual).
+
 **v3.0** (September 2026) — Handover documentation. Three new per-device fields answer the question "what happens to this house when someone else takes over": *Does it work without Home Assistant?* (yes / no / unknown), a free-text note on how to operate it without HA, and an external link into another system — the invoice in Paperless-ngx, the manufacturer's manual page. A new export template **Decommissioning / Electrician** produces the list you hand to a tradesperson: location, wiring, power source, works-without-HA — deliberately without serial numbers or purchase data. All three export templates were re-cut to carry only what their reader actually needs.
 
 **v2.6** (May 2026) — Built-in user manual, MQTT-Discovery cleanup buttons (orphan + full purge), smarter Companion-app deep-link, "Parents only" filter to collapse multi-channel device families, dynamic category chips, consistent bulk-action bar, and an "Apply to children" toggle that propagates manufacturer/warranty/power-source from a parent device to its sub-channels.
@@ -103,6 +105,10 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 | "Works without Home Assistant?" per device | -- | **Yes** |
 | External link per device (invoice, manual) | -- | **Yes** |
 | Export template Decommissioning / Electrician | -- | **Yes** |
+| Merge duplicate devices (duplicates list, manual) | Yes | Yes |
+| "Wall switch bridged?" per device | -- | **Yes** |
+| Export template Emergency folder, sort by floor/location, images in PDF | -- | **Yes** |
+| "Visit" link from the HA device page back into the app (via MQTT) | -- | **Yes** |
 
 ### Installation
 
@@ -134,7 +140,7 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 ### Quick Start
 
 1. **Add your first device** -- Tap the **+** button
-2. **Choose a type** -- Select from 22 categories (Router, Camera, Thermostat, etc.)
+2. **Choose a type** -- Select from 32 categories (Router, Camera, Thermostat, etc.)
 3. **Fill in the basics** -- Name, model, manufacturer, serial number
 4. **Set the location** -- Pick a floor and area from your Home Assistant setup
 5. **Add network details** -- IP address, MAC address, integration, network type
@@ -146,12 +152,12 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 
 Instead of entering devices manually, use the **HA Import** feature:
 
-1. Go to **Settings** > **Import from Home Assistant**
-2. Click **Start Import**
+1. Go to **Settings** > **Home Assistant Import**
+2. Click **Import HA Devices**
 3. The app imports your entire HA device registry -- manufacturers, models, and integrations are mapped automatically
 4. Review and enrich the imported devices with serial numbers, photos, and warranty dates
 
-The import is safe to run repeatedly -- existing devices are detected and skipped automatically.
+The import is safe to run repeatedly -- existing devices are detected and skipped automatically. A re-import fills serial number and MAC address into empty fields of existing devices and merges duplicate twins into one device.
 
 ### Pro License
 
@@ -173,26 +179,28 @@ The import is safe to run repeatedly -- existing devices are detected and skippe
 
 ### Supported Device Types
 
-The app includes 22 predefined device categories with dedicated icons:
+The app includes 32 predefined device categories with dedicated icons:
 
 | | | | |
 |--|--|--|--|
-| Router | Repeater | Powerline Adapter | DECT Repeater |
-| Smart Plug / Outlet | Light Switch | Light Bulb | Shutter / Blind |
-| Thermostat | Controller / Gateway | Camera | Doorbell |
-| Chime | Voice Assistant | Streaming Device | Tablet |
-| Speaker | Robot Mower | Printer | Sensor |
-| Smartphone | Other | | |
+| Router | Repeater | Powerline | DECT Repeater |
+| Outlet | Light Switch | Light Bulb | Actuator/Relay |
+| Switch/Button | Shutter | Thermostat | Controller/Gateway |
+| Camera | Doorbell | Chime | Lock |
+| Alarm System | Voice Assistant | Smart TV | Streaming |
+| Display/Dashboard | Tablet | Speaker | Appliance |
+| Robot Mower | Irrigation | Fan | Remote Control |
+| Printer | Sensor | Smartphone | Other |
 
 Each device can also track:
-- **Network type:** Wi-Fi, LAN, Zigbee, Bluetooth, DECT, Powerline, HomeMatic RF, USB
+- **Network type:** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
 - **Power source:** Adapter, Mains (230V), Battery, Rechargeable, USB, PoE, Solar, High Voltage
 - **Integration:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT, and more
 
 ### Technical Requirements
 
 - **Home Assistant** 2024.1 or newer
-- **Architecture:** amd64
+- **Architecture:** amd64, aarch64 (e.g. Raspberry Pi 4/5), armv7
 - **Browser:** Any modern browser (Chrome, Firefox, Safari, Edge)
 - **Storage:** ~50 MB for the add-on + your device photos
 - **HTTPS required** for Camera and QR Scanner (works automatically with Nabu Casa; for local access, SSL certificate or `localhost` required)
@@ -232,7 +240,7 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 | Dashboard mit Diagrammen | Ja | Ja |
 | Dark Mode | Ja | Ja |
 | JSON-Export | Ja | Ja |
-| 22 Gerätekategorien | Ja | Ja |
+| 32 integrierte Gerätekategorien + eigene Kategorien | Ja | Ja |
 | Netzwerk- und Stromquellenerfassung | Ja | Ja |
 | Sprachen | Englisch | **DE, EN, ES, FR, RU** |
 | HA-Import per Klick | -- | **Ja** |
@@ -248,6 +256,10 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 | „Funktioniert ohne Home Assistant?" pro Gerät | -- | **Ja** |
 | Externer Link pro Gerät (Rechnung, Handbuch) | -- | **Ja** |
 | Export-Vorlage Rückbau/Elektriker | -- | **Ja** |
+| Doppelte Geräte zusammenführen (Liste „Mögliche Dubletten", von Hand) | Ja | Ja |
+| „Wandschalter überbrückt?" pro Gerät | -- | **Ja** |
+| Export-Vorlage Notfallmappe, Sortierung nach Etage/Standort, Bilder im PDF | -- | **Ja** |
+| „Besuchen"-Link von der HA-Geräteseite zurück in die App (über MQTT) | -- | **Ja** |
 
 ### Installation
 
@@ -279,7 +291,7 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 ### Schnellstart
 
 1. **Erstes Gerät hinzufügen** -- Auf **+** tippen
-2. **Typ wählen** -- Aus 22 Kategorien auswählen (Router, Kamera, Thermostat, ...)
+2. **Typ wählen** -- Aus 32 Kategorien auswählen (Router, Kamera, Thermostat, ...)
 3. **Basisdaten eingeben** -- Name, Modell, Hersteller, Seriennummer
 4. **Standort festlegen** -- Etage und Bereich aus der Home-Assistant-Konfiguration wählen
 5. **Netzwerkdaten erfassen** -- IP-Adresse, MAC-Adresse, Integration, Netzwerktyp
@@ -291,12 +303,12 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 
 Statt Geräte manuell einzugeben, die **HA-Import**-Funktion nutzen:
 
-1. **Einstellungen** > **Import aus Home Assistant**
-2. **Import starten** klicken
+1. **Einstellungen** > **Home Assistant Import**
+2. **HA-Geräte importieren** klicken
 3. Die App importiert das gesamte HA-Geräteregister -- Hersteller, Modelle und Integrationen werden automatisch zugeordnet
 4. Importierte Geräte mit Seriennummern, Fotos und Garantiedaten anreichern
 
-Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automatisch erkannt und übersprungen.
+Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automatisch erkannt und übersprungen. Ein erneuter Import trägt Seriennummer und MAC-Adresse in leere Felder vorhandener Geräte nach und führt doppelte Zwillinge zu einem Gerät zusammen.
 
 ### Pro-Lizenz
 
@@ -318,26 +330,28 @@ Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automat
 
 ### Unterstützte Gerätetypen
 
-Die App enthält 22 vordefinierte Gerätekategorien mit eigenen Icons:
+Die App enthält 32 vordefinierte Gerätekategorien mit eigenen Icons:
 
 | | | | |
 |--|--|--|--|
-| Router | Repeater | Powerline-Adapter | DECT-Repeater |
-| Smarte Steckdose | Lichtschalter | Leuchtmittel | Rollladen / Jalousie |
-| Thermostat | Controller / Gateway | Kamera | Türklingel |
-| Türklingelton | Sprachassistent | Streaming-Gerät | Tablet |
-| Lautsprecher | Mähroboter | Drucker | Sensor |
-| Smartphone | Sonstiges | | |
+| Router | Repeater | Powerline | DECT Repeater |
+| Steckdose | Lichtschalter | Leuchtmittel | Aktor/Relais |
+| Schalter/Taster | Rollladen | Thermostat | Controller/Gateway |
+| Kamera | Türklingel | Gong | Schloss |
+| Alarmanlage | Sprachassistent | Smart TV | Streaming |
+| Display/Dashboard | Tablet | Lautsprecher | Haushaltsgerät |
+| Mähroboter | Bewässerung | Ventilator | Fernbedienung |
+| Drucker | Sensor | Smartphone | Sonstiges |
 
 Jedes Gerät kann zusätzlich erfassen:
-- **Netzwerktyp:** WLAN, LAN, Zigbee, Bluetooth, DECT, Powerline, HomeMatic RF, USB
+- **Netzwerktyp:** WLAN, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
 - **Stromquelle:** Netzteil, Festnetz (230V), Batterie, Akku, USB, PoE, Solar, Hochspannung
 - **Integration:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT und weitere
 
 ### Technische Voraussetzungen
 
 - **Home Assistant** 2024.1 oder neuer
-- **Architektur:** amd64
+- **Architektur:** amd64, aarch64 (z. B. Raspberry Pi 4/5), armv7
 - **Browser:** Jeder moderne Browser (Chrome, Firefox, Safari, Edge)
 - **Speicher:** ~50 MB für das Add-on + Gerätefotos
 - **HTTPS erforderlich** für Kamera und QR-Scanner (funktioniert automatisch mit Nabu Casa; für lokalen Zugriff: SSL-Zertifikat oder `localhost`)
@@ -376,7 +390,7 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 | Tableau de bord avec graphiques | Oui | Oui |
 | Mode sombre | Oui | Oui |
 | Export JSON | Oui | Oui |
-| 22 catégories d'appareils | Oui | Oui |
+| 32 catégories d'appareils intégrées + catégories personnalisées | Oui | Oui |
 | Suivi réseau et alimentation | Oui | Oui |
 | Langues | Anglais | **DE, EN, ES, FR, RU** |
 | Import HA en un clic | -- | **Oui** |
@@ -392,6 +406,10 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 | « Fonctionne sans Home Assistant ? » par appareil | -- | **Oui** |
 | Lien externe par appareil (facture, manuel) | -- | **Oui** |
 | Modèle d'export Démontage / Électricien | -- | **Oui** |
+| Fusion des appareils en double (liste des doublons, manuelle) | Oui | Oui |
+| « Interrupteur mural ponté ? » par appareil | -- | **Oui** |
+| Modèle d'export Dossier d'urgence, tri par étage/emplacement, images dans le PDF | -- | **Oui** |
+| Lien depuis la page appareil de HA vers l'application (via MQTT) | -- | **Oui** |
 
 ### Installation
 
@@ -423,7 +441,7 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 ### Démarrage rapide
 
 1. **Ajouter le premier appareil** -- Appuyer sur **+**
-2. **Choisir un type** -- Parmi 22 catégories (Routeur, Caméra, Thermostat, etc.)
+2. **Choisir un type** -- Parmi 32 catégories (Routeur, Caméra, Thermostat, etc.)
 3. **Remplir les informations** -- Nom, modèle, fabricant, numéro de série
 4. **Définir l'emplacement** -- Choisir un étage et une zone depuis Home Assistant
 5. **Ajouter les détails réseau** -- Adresse IP, adresse MAC, intégration, type réseau
@@ -435,12 +453,12 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 
 Au lieu de saisir les appareils manuellement, utiliser la fonction **Import HA** :
 
-1. Aller dans **Paramètres** > **Import depuis Home Assistant**
-2. Cliquer sur **Démarrer l'import**
+1. Aller dans **Paramètres** > **Import Home Assistant**
+2. Cliquer sur **Importer appareils HA**
 3. L'application importe tout votre registre d'appareils HA -- fabricants, modèles et intégrations sont mappés automatiquement
 4. Enrichir les appareils importés avec numéros de série, photos et dates de garantie
 
-L'import peut être exécuté plusieurs fois -- les doublons sont détectés et ignorés automatiquement.
+L'import peut être exécuté plusieurs fois -- les doublons sont détectés et ignorés automatiquement. Un nouvel import complète le numéro de série et l'adresse MAC dans les champs vides des appareils existants et fusionne les jumeaux en un seul appareil.
 
 ### Licence Pro
 
@@ -462,26 +480,28 @@ L'import peut être exécuté plusieurs fois -- les doublons sont détectés et 
 
 ### Types d'appareils pris en charge
 
-L'application comprend 22 catégories prédéfinies avec des icônes dédiées :
+L'application comprend 32 catégories prédéfinies avec des icônes dédiées :
 
 | | | | |
 |--|--|--|--|
-| Routeur | Répéteur | Adaptateur CPL | Répéteur DECT |
-| Prise intelligente | Interrupteur | Ampoule | Volet / Store |
-| Thermostat | Contrôleur / Passerelle | Caméra | Sonnette |
-| Carillon | Assistant vocal | Lecteur multimédia | Tablette |
-| Enceinte | Robot tondeuse | Imprimante | Capteur |
-| Smartphone | Autre | | |
+| Routeur | Répéteur | CPL | Répéteur DECT |
+| Prise | Interrupteur | Ampoule | Actionneur/Relais |
+| Interrupteur/Bouton | Volet roulant | Thermostat | Contrôleur/Passerelle |
+| Caméra | Sonnette | Carillon | Serrure |
+| Système d'Alarme | Assistant Vocal | Smart TV | Streaming |
+| Écran/Dashboard | Tablette | Enceinte | Électroménager |
+| Robot Tondeuse | Arrosage | Ventilateur | Télécommande |
+| Imprimante | Capteur | Smartphone | Autre |
 
 Chaque appareil peut également suivre :
-- **Type réseau :** Wi-Fi, LAN, Zigbee, Bluetooth, DECT, CPL, HomeMatic RF, USB
+- **Type réseau :** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, CPL, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
 - **Alimentation :** Adaptateur, Secteur (230V), Pile, Batterie, USB, PoE, Solaire, Haute tension
 - **Intégration :** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT et plus
 
 ### Prérequis techniques
 
 - **Home Assistant** 2024.1 ou version ultérieure
-- **Architecture :** amd64
+- **Architecture :** amd64, aarch64 (p. ex. Raspberry Pi 4/5), armv7
 - **Navigateur :** Tout navigateur moderne (Chrome, Firefox, Safari, Edge)
 - **Stockage :** ~50 Mo pour le module + photos des appareils
 - **HTTPS requis** pour la caméra et le scanner QR (automatique avec Nabu Casa ; en local : certificat SSL ou `localhost`)
@@ -520,7 +540,7 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 | Panel con gráficos | Sí | Sí |
 | Modo oscuro | Sí | Sí |
 | Exportación JSON | Sí | Sí |
-| 22 categorías de dispositivos | Sí | Sí |
+| 32 categorías de dispositivos integradas + categorías personalizadas | Sí | Sí |
 | Seguimiento de red y fuente de alimentación | Sí | Sí |
 | Idiomas | Inglés | **DE, EN, ES, FR, RU** |
 | Importación HA con un clic | -- | **Sí** |
@@ -536,6 +556,10 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 | «¿Funciona sin Home Assistant?» por dispositivo | -- | **Sí** |
 | Enlace externo por dispositivo (factura, manual) | -- | **Sí** |
 | Plantilla de exportación Desmontaje / Electricista | -- | **Sí** |
+| Fusionar dispositivos duplicados (lista de duplicados, manual) | Sí | Sí |
+| «¿Interruptor de pared puenteado?» por dispositivo | -- | **Sí** |
+| Plantilla de exportación Carpeta de emergencia, orden por planta/ubicación, imágenes en el PDF | -- | **Sí** |
+| Enlace desde la página del dispositivo en HA de vuelta a la app (vía MQTT) | -- | **Sí** |
 
 ### Instalación
 
@@ -567,7 +591,7 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 ### Inicio rápido
 
 1. **Añadir el primer dispositivo** -- Pulsar **+**
-2. **Elegir tipo** -- Entre 22 categorías (Router, Cámara, Termostato, etc.)
+2. **Elegir tipo** -- Entre 32 categorías (Router, Cámara, Termostato, etc.)
 3. **Rellenar datos básicos** -- Nombre, modelo, fabricante, número de serie
 4. **Establecer ubicación** -- Seleccionar planta y zona desde Home Assistant
 5. **Añadir datos de red** -- Dirección IP, MAC, integración, tipo de red
@@ -579,12 +603,12 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 
 En lugar de introducir dispositivos manualmente, usar la función **Importar de HA**:
 
-1. Ir a **Ajustes** > **Importar desde Home Assistant**
-2. Clicar **Iniciar importación**
+1. Ir a **Ajustes** > **Importar Home Assistant**
+2. Clicar **Importar dispositivos HA**
 3. La app importa todo tu registro de dispositivos HA -- fabricantes, modelos e integraciones se mapean automáticamente
 4. Enriquecer los dispositivos importados con números de serie, fotos y fechas de garantía
 
-La importación se puede ejecutar varias veces -- los duplicados se detectan y omiten automáticamente.
+La importación se puede ejecutar varias veces -- los duplicados se detectan y omiten automáticamente. Una nueva importación completa el número de serie y la dirección MAC en los campos vacíos de los dispositivos existentes y fusiona los gemelos en un solo dispositivo.
 
 ### Licencia Pro
 
@@ -606,26 +630,28 @@ La importación se puede ejecutar varias veces -- los duplicados se detectan y o
 
 ### Tipos de dispositivos
 
-La app incluye 22 categorías predefinidas con iconos dedicados:
+La app incluye 32 categorías predefinidas con iconos dedicados:
 
 | | | | |
 |--|--|--|--|
-| Router | Repetidor | Adaptador PLC | Repetidor DECT |
-| Enchufe inteligente | Interruptor | Bombilla | Persiana / Toldo |
-| Termostato | Controlador / Pasarela | Cámara | Timbre |
-| Campanilla | Asistente de voz | Dispositivo de streaming | Tableta |
-| Altavoz | Robot cortacésped | Impresora | Sensor |
-| Smartphone | Otro | | |
+| Router | Repetidor | Powerline | Repetidor DECT |
+| Enchufe | Interruptor | Bombilla | Actuador/Relé |
+| Interruptor/Pulsador | Persiana | Termostato | Controlador/Gateway |
+| Cámara | Timbre | Campana | Cerradura |
+| Sistema de Alarma | Asistente de Voz | Smart TV | Streaming |
+| Pantalla/Dashboard | Tablet | Altavoz | Electrodoméstico |
+| Robot Cortacésped | Riego | Ventilador | Mando a Distancia |
+| Impresora | Sensor | Smartphone | Otros |
 
 Cada dispositivo también puede registrar:
-- **Tipo de red:** Wi-Fi, LAN, Zigbee, Bluetooth, DECT, PLC, HomeMatic RF, USB
+- **Tipo de red:** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, PLC, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
 - **Fuente de alimentación:** Adaptador, Red (230V), Pila, Batería, USB, PoE, Solar, Alta tensión
 - **Integración:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT y más
 
 ### Requisitos técnicos
 
 - **Home Assistant** 2024.1 o posterior
-- **Arquitectura:** amd64
+- **Arquitectura:** amd64, aarch64 (p. ej. Raspberry Pi 4/5), armv7
 - **Navegador:** Cualquier navegador moderno (Chrome, Firefox, Safari, Edge)
 - **Almacenamiento:** ~50 MB para el complemento + fotos de dispositivos
 - **HTTPS requerido** para cámara y escáner QR (automático con Nabu Casa; en local: certificado SSL o `localhost`)
@@ -664,7 +690,7 @@ Cada dispositivo también puede registrar:
 | Панель управления с графиками | Да | Да |
 | Тёмная тема | Да | Да |
 | Экспорт JSON | Да | Да |
-| 22 категории устройств | Да | Да |
+| 32 встроенные категории устройств + собственные категории | Да | Да |
 | Отслеживание сети и питания | Да | Да |
 | Языки | Английский | **DE, EN, ES, FR, RU** |
 | Импорт HA одним кликом | -- | **Да** |
@@ -680,6 +706,10 @@ Cada dispositivo también puede registrar:
 | «Работает ли без Home Assistant?» для каждого устройства | -- | **Да** |
 | Внешняя ссылка для устройства (счёт, руководство) | -- | **Да** |
 | Шаблон экспорта Демонтаж / Электрик | -- | **Да** |
+| Объединение дублей устройств (список дубликатов, вручную) | Да | Да |
+| «Настенный выключатель перемкнут?» для каждого устройства | -- | **Да** |
+| Шаблон экспорта Аварийная папка, сортировка по этажу/месту, изображения в PDF | -- | **Да** |
+| Ссылка со страницы устройства в HA обратно в приложение (через MQTT) | -- | **Да** |
 
 ### Установка
 
@@ -711,7 +741,7 @@ Cada dispositivo también puede registrar:
 ### Быстрый старт
 
 1. **Добавить первое устройство** -- Нажать **+**
-2. **Выбрать тип** -- Из 22 категорий (Роутер, Камера, Термостат и др.)
+2. **Выбрать тип** -- Из 32 категорий (Роутер, Камера, Термостат и др.)
 3. **Заполнить основные данные** -- Название, модель, производитель, серийный номер
 4. **Указать расположение** -- Выбрать этаж и зону из Home Assistant
 5. **Добавить сетевые данные** -- IP-адрес, MAC-адрес, интеграция, тип сети
@@ -723,12 +753,12 @@ Cada dispositivo también puede registrar:
 
 Вместо ручного ввода устройств использовать функцию **Импорт из HA**:
 
-1. Перейти в **Настройки** > **Импорт из Home Assistant**
-2. Нажать **Начать импорт**
+1. Перейти в **Настройки** > **Импорт Home Assistant**
+2. Нажать **Импортировать устройства HA**
 3. Приложение импортирует весь реестр устройств HA -- производители, модели и интеграции сопоставляются автоматически
 4. Дополнить импортированные устройства серийными номерами, фотографиями и датами гарантии
 
-Импорт можно запускать несколько раз -- дубли определяются и пропускаются автоматически.
+Импорт можно запускать несколько раз -- дубли определяются и пропускаются автоматически. Повторный импорт дописывает серийный номер и MAC-адрес в пустые поля существующих устройств и объединяет дубли-близнецы в одно устройство.
 
 ### Лицензия Pro
 
@@ -750,26 +780,28 @@ Cada dispositivo también puede registrar:
 
 ### Поддерживаемые типы устройств
 
-Приложение включает 22 предустановленные категории с собственными иконками:
+Приложение включает 32 предустановленные категории с собственными иконками:
 
 | | | | |
 |--|--|--|--|
-| Роутер | Репитер | Адаптер Powerline | Репитер DECT |
-| Умная розетка | Выключатель | Лампочка | Рольставни / Жалюзи |
-| Термостат | Контроллер / Шлюз | Камера | Дверной звонок |
-| Звонок | Голосовой ассистент | Стриминговое устройство | Планшет |
-| Колонка | Робот-газонокосилка | Принтер | Датчик |
-| Смартфон | Прочее | | |
+| Роутер | Репитер | Powerline | DECT репитер |
+| Розетка | Выключатель | Лампочка | Актуатор/Реле |
+| Переключатель/Кнопка | Роллеты | Термостат | Контроллер/Шлюз |
+| Камера | Дверной звонок | Гонг | Замок |
+| Сигнализация | Голосовой ассистент | Smart TV | Стриминг |
+| Дисплей/Панель | Планшет | Колонка | Бытовая техника |
+| Робот-газонокосилка | Полив | Вентилятор | Пульт управления |
+| Принтер | Датчик | Смартфон | Прочее |
 
 Каждое устройство может дополнительно отслеживать:
-- **Тип сети:** Wi-Fi, LAN, Zigbee, Bluetooth, DECT, Powerline, HomeMatic RF, USB
+- **Тип сети:** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
 - **Источник питания:** Адаптер, Сеть (230В), Батарея, Аккумулятор, USB, PoE, Солнечная энергия, Высокое напряжение
 - **Интеграция:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT и другие
 
 ### Технические требования
 
 - **Home Assistant** 2024.1 или новее
-- **Архитектура:** amd64
+- **Архитектура:** amd64, aarch64 (например, Raspberry Pi 4/5), armv7
 - **Браузер:** Любой современный браузер (Chrome, Firefox, Safari, Edge)
 - **Хранилище:** ~50 МБ для дополнения + фотографии устройств
 - **Требуется HTTPS** для камеры и сканера QR (автоматически с Nabu Casa; локально: SSL-сертификат или `localhost`)

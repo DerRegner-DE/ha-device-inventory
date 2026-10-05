@@ -364,7 +364,7 @@ Als PDF kommt bei allen Vorlagen eine kompakte Tabelle im Querformat heraus, run
 Vor v2.5.2 wurde der HA-Import mehrfach ausgeführt, während MQTT-Discovery aktiv war. Der Import hat damals die vom Add-on selbst publizierten Geräte zurückgezogen — Inventar-Anzahl verdoppelte sich pro Import. Fix:
 
 1. Updaten auf mindestens v2.5.2.
-2. *Einstellungen → Datenbereinigung → Self-Imports aufräumen* (POST `/api/ha/cleanup-self-imports`) räumt die Doppelten in den Papierkorb.
+2. Der Server-Aufruf `POST /api/ha/cleanup-self-imports` räumt die Doppelten in den Papierkorb. Einen Knopf dafür gibt es in der Oberfläche nicht — wer den Aufruf nicht selbst absetzen will, meldet sich per Issue oder an support@derregner.info.
 3. Nach 30 Tagen sind sie weg. Wer's eilig hat: Papierkorb leeren.
 
 ### „Ich klicke ‚Dokument hochladen' und lande auf der Detailseite, ohne dass etwas hochgeladen wurde."

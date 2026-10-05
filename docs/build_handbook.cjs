@@ -98,10 +98,10 @@ function parse(md) {
   const nextNonEmpty = (k) => { while (k < lines.length && !lines[k].trim()) k++; return k; };
   while (i < lines.length) {
     let l = lines[i];
-    if (/^# /.test(l) || /^(Stand|As of|Fecha|État|Дата|Version):/.test(l)) { i++; continue; }
+    if (/^# /.test(l) || (i < 6 && /^\*?[^:]{2,16}\s?:\s*\*?v?\d/.test(l))) { i++; continue; }
     if (/^## /.test(l)) {
       // Das Markdown-Inhaltsverzeichnis ersetzt im Word das echte Verzeichnis.
-      skipping = /^## (Inhalt|Contents|Índice|Sommaire|Содержание)\s*$/.test(l);
+      skipping = /^## (Inhalt|Inhaltsverzeichnis|Contents|Table of Contents|Índice|Contenido|Tabla de contenidos?|Sommaire|Table des matières|Содержание|Оглавление)\s*$/i.test(l);
       // Erstes Kapitel ohne Seitenumbruch, damit eine kurze Einleitung nicht allein auf einer Seite steht.
       if (!skipping) { out.push(new Paragraph({ heading: HeadingLevel.HEADING_1, pageBreakBefore: chapters > 0, children: [new TextRun({ text: l.slice(3).trim(), font: FONT })] })); chapters++; }
       i++; continue;
