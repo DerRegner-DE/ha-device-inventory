@@ -168,7 +168,8 @@ async function build(lang, cfg) {
   if (!fs.existsSync(src)) { console.log(`- ${lang}: ${cfg.file} fehlt, uebersprungen`); return; }
   const md = fs.readFileSync(src, 'utf8');
   const title = (md.match(/^# (.+?)(?:\s+—.*)?$/m) || [, 'Geräteverwaltung'])[1].trim();
-  const stand = (md.match(/^(?:Stand|As of|Fecha|État|Дата):\s*(.+)$/m) || [, ''])[1].trim();
+  // Versionszeile unter dem Titel, in jeder Sprache anders beschriftet ("Stand:", "Version :", "Версия:" ...).
+  const stand = ((md.split('\n').slice(0, 6).join('\n').match(/^\*?[^:\n]{2,16}\s?:\s*(\*?v?\d.*)$/m)) || [, ''])[1].replace(/\*/g, '').trim();
   const page = { size: { width: 11906, height: 16838 }, margin: { top: 1440, right: 1300, bottom: 1300, left: 1300 } };
 
   const doc = new Document({
@@ -197,7 +198,7 @@ async function build(lang, cfg) {
           new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 400, after: 160 }, children: [new TextRun({ text: title, font: FONT, size: 56, bold: true, color: DARK })] }),
           new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 120 }, children: [new TextRun({ text: cfg.sub, font: FONT, size: 28, color: MID })] }),
           new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `${cfg.ver} ${VERSION}  |  Home Assistant Add-on`, font: FONT, size: 22, color: MID })] }),
-          stand ? new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `${cfg.date}: ${stand}`, font: FONT, size: 18, color: LIGHT })] }) : new Paragraph({ children: [] }),
+          stand ? new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `${cfg.date}${lang === 'fr' ? ' :' : ':'} ${stand}`, font: FONT, size: 18, color: LIGHT })] }) : new Paragraph({ children: [] }),
           ...Array.from({ length: 10 }, () => new Paragraph({ children: [] })),
           new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: '© 2026 DerRegner', font: FONT, size: 16, color: LIGHT })] }),
         ],

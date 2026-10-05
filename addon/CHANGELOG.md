@@ -66,9 +66,9 @@ Die per MQTT gemeldete Entity *Device type* traegt jetzt die gepflegten Angaben 
 
 Das Add-on fragt die Zugangsdaten jetzt zuerst beim Supervisor an. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Sonst braucht es einen Benutzer — am einfachsten ein eigener Home-Assistant-Benutzer, denn das Mosquitto-Add-on akzeptiert jeden HA-Benutzer:
 
-1. Home Assistant: *Einstellungen → Personen*, Reiter *Benutzer* (fehlt er: unten links auf den eigenen Namen, *Erweiterter Modus* einschalten).
-2. *Benutzer hinzufuegen*: Name und Benutzername z. B. `geraeteverwaltung`, ein Passwort festlegen. *Kann sich nur aus dem lokalen Netzwerk anmelden* einschalten, *Administrator* aus lassen. *Erstellen*.
-3. *Einstellungen → Add-ons → Geraeteverwaltung → Konfiguration*: Benutzername bei *mqtt_user*, Passwort bei *mqtt_password*. *Speichern*, Add-on neu starten.
+1. Home Assistant: *Einstellungen → Personen*, Reiter *Benutzer* (in aelteren HA-Versionen erst nach Einschalten von *Erweiterter Modus* im eigenen Profil sichtbar).
+2. *Benutzer hinzufuegen*: *Anzeigename* und *Benutzername* z. B. `geraeteverwaltung`, *Passwort* festlegen. *Nur lokal* einschalten, *Administrator* aus lassen. *Erstellen*.
+3. *Einstellungen → Apps (frueher Add-ons) → Geraeteverwaltung → Konfiguration*: Benutzername bei *mqtt_user*, Passwort bei *mqtt_password*. *Speichern*, dann auf dem Reiter *Info* *Neu starten*.
 4. In der Geraeteverwaltung *MQTT-Verbindung testen* — jetzt kommt „OK".
 
 Warum ein eigener Benutzer statt des eigenen Kontos: Er hat keine Administratorrechte, meldet sich nur im Heimnetz an, und sein Passwort steht in der Add-on-Konfiguration statt Ihres eigenen. Wird er nicht mehr gebraucht, laesst er sich loeschen, ohne etwas anderes zu beruehren.

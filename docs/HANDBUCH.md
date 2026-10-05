@@ -44,19 +44,19 @@ Die App läuft als Home-Assistant-Add-on mit eigener Datenbank, ist auf Handy, T
 
 ## Installation, Update, Deinstallation
 
-**Voraussetzungen:** Home Assistant OS oder Supervised (Add-ons müssen verfügbar sein), Architektur amd64, aarch64 (z. B. Raspberry Pi 4/5) oder armv7, ein aktueller Browser. Kamera und Barcode-Scanner brauchen eine verschlüsselte Verbindung (HTTPS), siehe [Kamera und Scanner](#kamera-und-scanner).
+**Voraussetzungen:** Home Assistant OS oder Supervised (der Menüpunkt *Apps*, früher *Add-ons*, muss vorhanden sein), Architektur amd64, aarch64 (z. B. Raspberry Pi 4/5) oder armv7, ein aktueller Browser. Kamera und Barcode-Scanner brauchen eine verschlüsselte Verbindung (HTTPS), siehe [Kamera und Scanner](#kamera-und-scanner).
 
 **Installieren:**
 
-1. In Home Assistant **Einstellungen → Add-ons** (in neueren Versionen **Apps**) → **Add-on Store**.
+1. In Home Assistant **Einstellungen → Apps** (in älteren Versionen **Add-ons**) → unten rechts **App installieren**. Es öffnet sich der **App-Store**.
 2. Oben rechts das Drei-Punkte-Menü → **Repositories**.
 3. `https://github.com/DerRegner-DE/ha-device-inventory` einfügen, **Hinzufügen**, Dialog schließen.
 4. Im Store nach **Geraeteverwaltung** suchen (ggf. Seite neu laden) → **Installieren**.
 5. **Starten**, **In Seitenleiste anzeigen** einschalten, **Benutzeroberfläche öffnen**.
 
-**Aktualisieren:** Ein verfügbares Update zeigt Home Assistant unter *Einstellungen → Add-ons → Geräteverwaltung* (und bei den Benachrichtigungen) an. **Aktualisieren** klicken; *Backup der letzten Version behalten* ist empfehlenswert, weil Updates die Datenbank erweitern können. Alternativ *Automatische Updates* einschalten. Was neu ist, steht im Änderungsprotokoll (Changelog) des Add-ons. Nach einem Update lohnt ein Blick in den Abschnitt „Nach dem Update" des Schnellstarts.
+**Aktualisieren:** Ein verfügbares Update zeigt Home Assistant unter *Einstellungen → Apps → Geräteverwaltung* (und bei den Benachrichtigungen) an. **Aktualisieren** klicken; *Vor dem Update ein Backup erstellen* eingeschaltet lassen ist empfehlenswert, weil Updates die Datenbank erweitern können. Alternativ *Automatische Updates* einschalten. Was neu ist, steht im Änderungsprotokoll (Changelog) des Add-ons. Nach einem Update lohnt ein Blick in den Abschnitt „Nach dem Update" des Schnellstarts.
 
-**Deinstallieren:** *Einstellungen → Add-ons → Geräteverwaltung → Deinstallieren*. Dabei löscht Home Assistant das Datenverzeichnis des Add-ons mit Datenbank, Fotos und Lizenz. Vorher sichern: *Einstellungen → Daten exportieren* (JSON, Excel, PDF) oder ein Home-Assistant-Backup, das das Add-on einschließt.
+**Deinstallieren:** *Einstellungen → Apps → Geräteverwaltung → Deinstallieren*. Dabei löscht Home Assistant das Datenverzeichnis des Add-ons mit Datenbank, Fotos und Lizenz. Vorher sichern: *Einstellungen → Daten exportieren* (JSON, Excel, PDF) oder ein Home-Assistant-Backup, das das Add-on einschließt.
 
 ---
 
@@ -86,11 +86,11 @@ Kommt nach dem Kauf keine E-Mail an: Spam-Ordner prüfen, sonst an support@derre
 
 ## Schnellstart in 5 Schritten
 
-1. **Add-on installieren** über die Home-Assistant-Add-on-Store-URL (siehe README im GitHub-Repo). Nach der Installation erscheint die Geräteverwaltung als Eintrag in der HA-Sidebar.
+1. **Add-on installieren** wie unter [Installation, Update, Deinstallation](#installation-update-deinstallation) beschrieben. Nach der Installation erscheint die Geräteverwaltung als Eintrag in der HA-Seitenleiste.
 2. **Pro-Lizenz aktivieren** unter *Einstellungen → Lizenz*. Ohne Lizenz lassen sich bis zu 50 Geräte verwalten, die Oberfläche ist dann englisch — alles andere (mehrsprachig, Excel, MQTT, Kamera, Barcode, Dokumente) ist Pro.
 3. **HA-Geräte importieren** unter *Einstellungen → Home Assistant Import → HA-Geräte importieren*. Der Import kann bei großen Setups (300+) eine Minute dauern; er läuft im Hintergrund mit einer Fortschrittsanzeige. Übernommen werden Name, Hersteller, Modell, Firmware, Raum und Etage, Integration, Netzwerk und — seit 3.1.0 — Seriennummer, MAC-Adresse und Stromversorgung (Batterie/Akku), soweit Home Assistant sie kennt. Ein erneuter Import legt keine Geräte doppelt an und trägt bei vorhandenen Geräten Seriennummer und MAC nur in leere Felder nach.
 4. **Optional: MQTT-Discovery aktivieren** unter *Einstellungen → Home Assistant Integration → Geräte in HA veröffentlichen* — ob das sinnvoll ist, steht im Kapitel [Home Assistant Integration](#home-assistant-integration-mqtt-discovery).
-5. **Erste Geräte ergänzen**: Ein Gerät in der Liste antippen, dann *Bearbeiten*, und mindestens Anschaffungsdatum, Garantie-Ende und Kaufpreis eintragen. Foto und Einbauort-Bilder ergänzen, Belege als Dokumente hochladen — fertig für Versicherungs-Doku.
+5. **Erste Geräte ergänzen**: Ein Gerät in der Liste antippen, dann *Bearbeiten*, und mindestens *Anschaffungsdatum* und *Garantie bis* eintragen, den Kaufpreis unter *Anmerkungen*. Foto und Einbauort-Bilder ergänzen, Belege als Dokumente hochladen — fertig für Versicherungs-Doku.
 
 ### Nach dem Update auf 3.1.0
 
@@ -162,11 +162,11 @@ Diese Entities tauchen in HA unter *Einstellungen → Geräte & Dienste → MQTT
 
 Das Add-on fragt die Zugangsdaten zuerst beim Supervisor an. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Meldet der Test unter *Einstellungen → Home Assistant Integration → MQTT-Verbindung testen* dagegen **„Not authorized"** (Code 135), braucht das Add-on einen Benutzer. Am einfachsten ein eigener Home-Assistant-Benutzer — das Mosquitto-Add-on akzeptiert jeden HA-Benutzer:
 
-1. In Home Assistant links unten **Einstellungen** → **Personen** → oben den Reiter **Benutzer** öffnen. Fehlt der Reiter: unten links auf den eigenen Namen klicken und **Erweiterter Modus** einschalten.
-2. Rechts unten **Benutzer hinzufügen**. Anzeigename und Benutzername z. B. `geraeteverwaltung`, ein Passwort festlegen.
-3. **„Kann sich nur aus dem lokalen Netzwerk anmelden"** einschalten, **„Administrator"** aus lassen. **Erstellen**.
-4. **Einstellungen** → **Add-ons** (in neueren Versionen **Apps**) → **Geräteverwaltung** → Reiter **Konfiguration**.
-5. Bei **mqtt_user** den Benutzernamen, bei **mqtt_password** das Passwort eintragen. **Speichern**, das Add-on neu starten.
+1. In Home Assistant links unten **Einstellungen** → **Personen** → oben den Reiter **Benutzer** öffnen (sichtbar für Administratoren; in älteren HA-Versionen erst nach Einschalten von **Erweiterter Modus** im eigenen Profil).
+2. Rechts unten **Benutzer hinzufügen**. **Anzeigename** und **Benutzername** z. B. `geraeteverwaltung`, **Passwort** festlegen.
+3. **Nur lokal** einschalten, **Administrator** aus lassen. **Erstellen**.
+4. **Einstellungen** → **Apps** (in älteren Versionen **Add-ons**) → **Geräteverwaltung** → Reiter **Konfiguration**.
+5. Bei **mqtt_user** den Benutzernamen, bei **mqtt_password** das Passwort eintragen. **Speichern**, dann oben auf dem Reiter **Info** **Neu starten**.
 6. In der Geräteverwaltung *MQTT-Verbindung testen* — jetzt sollte „OK" kommen.
 
 Warum ein eigener Benutzer statt des eigenen Kontos: Er hat keine Administratorrechte, meldet sich nur im Heimnetz an, und in der Add-on-Konfiguration steht sein Passwort statt Ihres eigenen. Wird er nicht mehr gebraucht, lässt er sich löschen, ohne etwas anderes zu berühren.
@@ -185,7 +185,7 @@ Eine häufig gestellte Frage: *"Wie lösche ich die ganzen MQTT-Topics wieder, w
 
 Standardmäßig **bleiben** die retained MQTT-Topics auf dem Broker liegen, auch wenn Sie den Schalter ausschalten. Das ist eine MQTT-Discovery-Eigenheit (HA löscht keine retained Messages, die ein anderer Producer geschrieben hat). Drei Wege zum sauberen Aufräumen:
 
-1. **(Empfohlen) Verwaiste Einträge aufräumen**: Im Settings-Block *Home Assistant Integration* gibt es seit v2.6.0 den Button **„Verwaiste Einträge aufräumen"**. Der Button entfernt alle retained Topics für Inventar-Geräte, die Sie in der Geräteverwaltung schon gelöscht haben. Aktive Geräte bleiben unberührt. Sicher als Routine-Aktion.
+1. **(Empfohlen) Verwaiste Einträge aufräumen**: Im Bereich *Home Assistant Integration* der Einstellungen gibt es seit v2.6.0 den Button **„Verwaiste Einträge aufräumen"**. Der Button entfernt alle retained Topics für Inventar-Geräte, die Sie in der Geräteverwaltung schon gelöscht haben. Aktive Geräte bleiben unberührt. Sicher als Routine-Aktion.
 
 2. **Alle MQTT-Einträge entfernen**: Daneben der Button **„Alle MQTT-Einträge entfernen"** (rot). Mit Bestätigung. Räumt **jede** vom Add-on publizierte Discovery-Message weg, auch für Geräte die noch im Inventar sind. Sinnvoller letzter Schritt vor dem dauerhaften Deaktivieren von MQTT-Discovery.
 
@@ -256,7 +256,7 @@ Was beim Zusammenführen passiert:
 
 ### Versicherung
 
-Das Preset *Versicherung* im PDF/Excel-Export wählt automatisch die Felder, die ein Versicherer typischerweise will:
+Die Vorlage *Versicherung* im PDF-/Excel-Export wählt automatisch die Felder, die ein Versicherer typischerweise will:
 
 - Nr, Typ, Bezeichnung, Modell, Hersteller
 - Seriennummer, AIN-Artikelnr
@@ -265,12 +265,12 @@ Das Preset *Versicherung* im PDF/Excel-Export wählt automatisch die Felder, die
 Workflow:
 
 1. Bei jedem wertigen Gerät: Foto aufnehmen, Kaufbeleg als Dokument hochladen, Anmerkungen mit Kaufpreis und ggf. Versicherungs-Notiz pflegen.
-2. Einmal jährlich: *Einstellungen → PDF / Excel exportieren → Preset Versicherung*. Das PDF enthält die Tabelle und (sehr lange Notes werden bei 1000 Zeichen gekappt mit Hinweis auf den Excel-Export) eine Detail-Sektion pro Gerät.
+2. Einmal jährlich: *Einstellungen → Daten exportieren → PDF / Excel exportieren... → Vorlagen → Versicherung*, dann **PDF**. Das PDF enthält die Geräte als kompakte Tabelle; wer zusätzlich eine Detailseite pro Gerät will, stellt die Felder von Hand zusammen statt die Vorlage zu wählen (sehr lange Anmerkungen werden dort bei 1000 Zeichen gekürzt, mit Hinweis auf den Excel-Export).
 3. Excel zusätzlich, wenn der Versicherer die Daten weiterverarbeitet — Excel führt die volle Anmerkungen-Länge in einer Zelle.
 
 ### Nachlass
 
-Das Preset *Nachlass* richtet sich an Angehörige — was ist es, wo steht es, gibt es noch Garantie, wo liegen die Unterlagen, läuft es ohne HA weiter:
+Die Vorlage *Nachlass* richtet sich an Angehörige — was ist es, wo steht es, gibt es noch Garantie, wo liegen die Unterlagen, läuft es ohne HA weiter:
 
 - Nr, Typ, Bezeichnung, Hersteller, Modell, Seriennummer, AIN-Artikelnr
 - Anschaffungsdatum, Garantie-bis
@@ -291,11 +291,11 @@ Dafür gibt es zwei Felder pro Gerät, ganz unten im Bearbeiten-Formular unter *
 
 **„Funktioniert ohne Home Assistant?"** — drei Möglichkeiten: *Unbekannt* (Voreinstellung, nichts wird ausgegeben), *Ja, läuft auch ohne HA*, *Nein, braucht HA*. Bei *Ja* oder *Nein* erscheint darunter ein Hinweisfeld für den Klartext: „Schalter direkt an der Wand", „Thermostat lässt sich am Gerät stellen", „ohne HA gar nicht bedienbar".
 
-**„Wandschalter überbrückt?"** (*neu in 3.1.0*) — für den Rückbau der wichtigste Punkt: Wurde für dieses Gerät ein Lichtschalter überbrückt, geht die Lampe nach dem Ausbau sonst nicht mehr. Drei Möglichkeiten (*Unbekannt*, *Ja, Schalter überbrückt bzw. entkoppelt*, *Nein*) und ein Hinweisfeld: welcher Schalter, welche Dose — oder welche Einstellung, denn oft ist gar nichts geklemmt, sondern der Aktor umgestellt (z. B. Shelly im Modus „detached"). Erscheint auf der Detailseite in derselben Karte wie „Funktioniert ohne HA".
+**„Wandschalter überbrückt?"** (*neu in 3.1.0*) — für den Rückbau der wichtigste Punkt: Wurde für dieses Gerät ein Lichtschalter überbrückt, geht die Lampe nach dem Ausbau sonst nicht mehr. Drei Möglichkeiten (*Unbekannt*, *Ja, Schalter überbrückt bzw. entkoppelt*, *Nein*) und ein Hinweisfeld: welcher Schalter, welche Dose — oder welche Einstellung, denn oft ist gar nichts geklemmt, sondern der Aktor umgestellt (z. B. Shelly im Modus „detached"). Erscheint auf der Detailseite in der Karte „Abhängigkeit von Home Assistant", zusammen mit „Funktioniert ohne Home Assistant?".
 
 **„Externer Link"** — ein Verweis in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Eintrag im eigenen Wiki. Der Link steht auf der Detailseite und öffnet sich in einem neuen Fenster. Ein bloßer Name wie `paperless.local/x` reicht, `https://` wird automatisch ergänzt.
 
-Das Export-Preset **„Rückbau/Elektriker"** (Export → Preset auswählen) macht daraus das Blatt, das man in den Hausanschlussraum legt:
+Die Export-Vorlage **„Rückbau/Elektriker"** (*PDF / Excel exportieren... → Vorlagen*) macht daraus das Blatt, das man in den Hausanschlussraum legt:
 
 - Nr, Typ, Bezeichnung, Hersteller, Modell
 - Standort, Etage
@@ -309,7 +309,7 @@ Bewusst **ohne** Seriennummern, Kaufdaten und Garantie: Das ist die Liste, die o
 
 Die Spalte *Integration* ist seit 3.0.0 nicht mehr dabei — `fritz` oder `bosch_shc` sind Home-Assistant-Interna und sagen einem Handwerker nichts.
 
-Das Preset **„Notfallmappe"** (*neu in 3.1.0*) ist die Mappe für den Zählerschrank — für den Elektriker, Nachbarn oder Makler, den Angehörige im Notfall holen: Gerät, Etage und Standort, Hersteller, Modell, Seriennummer, Stromversorgung, läuft-ohne-HA, überbrückte Schalter, Kaufdatum, Garantie, Link zur Anleitung, Funktion und Anmerkungen. Ohne Netzwerkdetails. Kennwörter gehören nicht hinein — die App speichert grundsätzlich keine; ein Hinweis im Anmerkungsfeld, wo die Zugangsdaten liegen (Passwortmanager, Ordner), genügt.
+Die Vorlage **„Notfallmappe"** (*neu in 3.1.0*) ist die Mappe für den Zählerschrank — für den Elektriker, Nachbarn oder Makler, den Angehörige im Notfall holen: Gerät, Etage und Standort, Hersteller, Modell, Seriennummer, Stromversorgung, läuft-ohne-HA, überbrückte Schalter, Kaufdatum, Garantie, Link zur Anleitung, Funktion und Anmerkungen. Ohne Netzwerkdetails. Kennwörter gehören nicht hinein — die App speichert grundsätzlich keine; ein Hinweis im Anmerkungsfeld, wo die Zugangsdaten liegen (Passwortmanager, Ordner), genügt.
 
 **Alle Vorlagen im Vergleich:**
 
@@ -344,15 +344,15 @@ Als PDF kommt bei allen Vorlagen eine kompakte Tabelle im Querformat heraus, run
 
 ### Papierkorb
 
-- Geräte werden beim Löschen *soft-deleted*: 30 Tage wiederherstellbar im *Einstellungen → Papierkorb*.
+- Gelöschte Geräte kommen zuerst in den Papierkorb und lassen sich 30 Tage lang unter *Einstellungen → Papierkorb* wiederherstellen.
 - Zwei Wiederherstell-Modi: pro Eintrag (per-Zeile-Button) oder Bulk („N wiederherstellen" oben rechts nach Auswahl).
 - *Endgültig löschen* entfernt das Gerät inkl. zugehöriger Fotos.
-- Der Knopf *Alle Geräte in Papierkorb* (Settings, ganz unten) ist als Letzter-Reset-Knopf gedacht — schiebt das gesamte Inventar in den Papierkorb mit Snapshot.
+- Der Knopf *Alle Geräte in Papierkorb* (Einstellungen, ganz unten) ist als Letzter-Reset-Knopf gedacht — schiebt das gesamte Inventar in den Papierkorb mit Snapshot.
 
 ### Datenbank-Schnappschüsse
 
-- Vor jeder Bulk-Aktion (bulk-delete-all, recategorize, bulk-update) wird automatisch ein Snapshot der SQLite-Datenbank erstellt.
-- Liste unter *Einstellungen → Datenbank-Schnappschüsse*. Pro Eintrag: Filename, Operation, Datum, Größe.
+- Vor jeder Massenaktion (mehrere oder alle Geräte löschen, neu kategorisieren, Sammelbearbeitung, Zusammenführen, Kategorie löschen, Excel-Import mit Ersetzen) legt die App automatisch einen Schnappschuss der Datenbank an.
+- Liste unter *Einstellungen → Datenbank-Schnappschüsse*. Pro Eintrag: Anlass, Alter und Größe.
 - *Wiederherstellen* überschreibt die aktuelle DB mit dem Snapshot — ein „Undo für die letzte Aktion".
 
 ---
@@ -385,7 +385,7 @@ Lizenz wird im Add-on-Daten-Ordner als `license.json` gespeichert (von HA gemana
 
 ### „Welche Sprachen?"
 
-DE, EN, ES, FR, RU. Umstellung im Settings-View. Free-Tier ist auf EN beschränkt — Pro schaltet alle Sprachen frei.
+DE, EN, ES, FR, RU. Umstellung unter *Einstellungen → Sprache*. Free-Tier ist auf EN beschränkt — Pro schaltet alle Sprachen frei.
 
 ---
 

@@ -115,7 +115,7 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 #### 1. Add the repository
 
 1. Open Home Assistant
-2. Go to **Settings** > **Add-ons** > **Add-on Store**
+2. Go to **Settings** > **Apps** (**Add-ons** in older versions) > **Install app** (bottom right) — the **App store** opens
 3. Click the three-dot menu (top right) > **Repositories**
 4. Add this URL:
    ```
@@ -125,9 +125,9 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 
 #### 2. Install the add-on
 
-1. Search for **Geraeteverwaltung** in the add-on store (refresh if needed)
+1. Search for **Geraeteverwaltung** in the App store (refresh if needed)
 2. Click **Install**
-3. Start the add-on
+3. Click **Start**
 4. Enable **Show in sidebar** (recommended)
 5. Click **Open Web UI**
 
@@ -266,7 +266,7 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 #### 1. Repository hinzufügen
 
 1. Home Assistant öffnen
-2. **Einstellungen** > **Add-ons** > **Add-on Store**
+2. **Einstellungen** > **Apps** (in älteren Versionen **Add-ons**) > unten rechts **App installieren** — es öffnet sich der **App-Store**
 3. Drei-Punkte-Menü (oben rechts) > **Repositories**
 4. Diese URL einfügen:
    ```
@@ -276,11 +276,11 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 
 #### 2. Add-on installieren
 
-1. Im Add-on Store nach **Geraeteverwaltung** suchen (ggf. Seite neu laden)
+1. Im App-Store nach **Geraeteverwaltung** suchen (ggf. Seite neu laden)
 2. **Installieren** klicken
-3. Add-on starten
+3. **Starten** klicken
 4. **In Seitenleiste anzeigen** aktivieren (empfohlen)
-5. **Web-Oberfläche öffnen** klicken
+5. **Benutzeroberfläche öffnen** klicken
 
 #### 3. Pro aktivieren (optional)
 
@@ -416,7 +416,7 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 #### 1. Ajouter le dépôt
 
 1. Ouvrir Home Assistant
-2. Aller dans **Paramètres** > **Modules complémentaires** > **Boutique de modules**
+2. Aller dans **Paramètres** > **Applications** (**Modules complémentaires** dans les anciennes versions) > **Installer une application** (en bas à droite) — le **Magasin d'applications** s'ouvre
 3. Menu trois points (en haut à droite) > **Dépôts**
 4. Ajouter cette URL :
    ```
@@ -426,11 +426,11 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 
 #### 2. Installer le module
 
-1. Rechercher **Geraeteverwaltung** dans la boutique (actualiser si nécessaire)
+1. Rechercher **Geraeteverwaltung** dans le Magasin d'applications (actualiser si nécessaire)
 2. Cliquer sur **Installer**
-3. Démarrer le module
+3. Cliquer sur **Démarrer**
 4. Activer **Afficher dans la barre latérale** (recommandé)
-5. Cliquer sur **Ouvrir l'interface web**
+5. Cliquer sur **Ouvrir l'interface utilisateur web**
 
 #### 3. Activer Pro (optionnel)
 
@@ -566,7 +566,7 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 #### 1. Añadir el repositorio
 
 1. Abrir Home Assistant
-2. Ir a **Ajustes** > **Complementos** > **Tienda de complementos**
+2. Ir a **Configuración** > **Aplicaciones** (**Complementos** en versiones anteriores) > **Instalar aplicación** (abajo a la derecha) — se abre la **Tienda de aplicaciones**
 3. Menú de tres puntos (arriba a la derecha) > **Repositorios**
 4. Añadir esta URL:
    ```
@@ -576,11 +576,11 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 
 #### 2. Instalar el complemento
 
-1. Buscar **Geraeteverwaltung** en la tienda (actualizar si es necesario)
+1. Buscar **Geraeteverwaltung** en la Tienda de aplicaciones (actualizar si es necesario)
 2. Clicar **Instalar**
-3. Iniciar el complemento
-4. Activar **Mostrar en la barra lateral** (recomendado)
-5. Clicar **Abrir interfaz web**
+3. Clicar **Iniciar**
+4. Activar **Mostrar en el panel lateral** (recomendado)
+5. Clicar **Open Web UI**
 
 #### 3. Activar Pro (opcional)
 
@@ -716,7 +716,7 @@ Cada dispositivo también puede registrar:
 #### 1. Добавить репозиторий
 
 1. Открыть Home Assistant
-2. Перейти в **Настройки** > **Дополнения** > **Магазин дополнений**
+2. Перейти в **Настройки** > **Приложения** (в старых версиях **Дополнения**) > **Установить приложение** (внизу справа) — откроется **Магазин приложений**
 3. Меню с тремя точками (вверху справа) > **Репозитории**
 4. Добавить этот URL:
    ```
@@ -726,10 +726,10 @@ Cada dispositivo también puede registrar:
 
 #### 2. Установить дополнение
 
-1. Найти **Geraeteverwaltung** в магазине (обновите страницу при необходимости)
+1. Найти **Geraeteverwaltung** в Магазине приложений (обновите страницу при необходимости)
 2. Нажать **Установить**
-3. Запустить дополнение
-4. Включить **Показывать в боковой панели** (рекомендуется)
+3. Нажать **Запустить**
+4. Включить **Показывать на боковой панели** (рекомендуется)
 5. Нажать **Открыть веб-интерфейс**
 
 #### 3. Активировать Pro (по желанию)

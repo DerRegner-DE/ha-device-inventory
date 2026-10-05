@@ -44,19 +44,19 @@ The app runs as a Home Assistant add-on with its own database. It works on phone
 
 ## Installation, update, uninstallation
 
-**Requirements:** Home Assistant OS or Supervised (add-ons must be available), architecture amd64, aarch64 (e.g. Raspberry Pi 4/5) or armv7, a current browser. Camera and barcode scanner need an encrypted connection (HTTPS), see [Camera and scanner](#camera-and-scanner).
+**Requirements:** Home Assistant OS or Supervised (the *Apps* menu item, formerly *Add-ons*, must be present), architecture amd64, aarch64 (e.g. Raspberry Pi 4/5) or armv7, a current browser. Camera and barcode scanner need an encrypted connection (HTTPS), see [Camera and scanner](#camera-and-scanner).
 
 **Install:**
 
-1. In Home Assistant, open **Settings → Add-ons** (in newer versions **Apps**) → **Add-on Store**.
+1. In Home Assistant, open **Settings → Apps** (in older versions **Add-ons**) → bottom right, **Install app**. The **App store** opens.
 2. Top right, open the three-dot menu → **Repositories**.
 3. Paste `https://github.com/DerRegner-DE/ha-device-inventory`, click **Add**, close the dialog.
 4. Search the store for **Geraeteverwaltung** (reload the page if needed) → **Install**.
-5. Click **Start**, turn on **Show in sidebar**, click **Open web UI**.
+5. Click **Start**, turn on **Show in sidebar**, click **Open Web UI**.
 
-**Update:** Home Assistant shows an available update under *Settings → Add-ons → Geräteverwaltung* (and in the notifications). Click **Update**. *Create backup* is recommended, because updates can extend the database. Alternatively, turn on *Auto update*. The add-on's changelog lists what is new. After an update, see the section "After updating" in the quick start.
+**Update:** Home Assistant shows an available update under *Settings → Apps → Geräteverwaltung* (and in the notifications). Click **Update**. Leaving *Create backup before updating* turned on is recommended, because updates can extend the database. Alternatively, turn on *Auto update*. The add-on's changelog lists what is new. After an update, see the section "After updating" in the quick start.
 
-**Uninstall:** *Settings → Add-ons → Geräteverwaltung → Uninstall*. Home Assistant then deletes the add-on's data directory, including database, photos and license. Back up first: *Settings → Export Data* (JSON, Excel, PDF) or a Home Assistant backup that includes the add-on.
+**Uninstall:** *Settings → Apps → Geräteverwaltung → Uninstall*. Home Assistant then deletes the add-on's data directory, including database, photos and license. Back up first: *Settings → Export Data* (JSON, Excel, PDF) or a Home Assistant backup that includes the add-on.
 
 ---
 
@@ -86,11 +86,11 @@ If no e-mail arrives after the purchase: check the spam folder, otherwise write 
 
 ## Quick start in 5 steps
 
-1. **Install the add-on** via the Home Assistant add-on store URL (see the README in the GitHub repo). After installation, Device Management appears as an entry in the HA sidebar.
+1. **Install the add-on** as described under [Installation, update, uninstallation](#installation-update-uninstallation). After installation, Device Management appears as an entry in the HA sidebar.
 2. **Activate the Pro license** under *Settings → License*. Without a license you can manage up to 50 devices and the interface is in English — everything else (multilingual, Excel, MQTT, camera, barcode, documents) is Pro.
 3. **Import HA devices** under *Settings → Home Assistant Import → Import HA Devices*. With large setups (300+), the import can take a minute; it runs in the background with a progress indicator. It imports name, manufacturer, model, firmware, room and floor, integration, network and — since 3.1.0 — serial number, MAC address and power supply (Battery/Rechargeable), as far as Home Assistant knows them. A repeated import does not create duplicate devices; for existing devices it fills in serial number and MAC only where the fields are empty.
 4. **Optional: enable MQTT Discovery** under *Settings → Home Assistant Integration → Publish devices to HA* — whether this makes sense is explained in the chapter [Home Assistant integration](#home-assistant-integration-mqtt-discovery).
-5. **Complete your first devices**: tap a device in the list, then *Edit*, and enter at least purchase date, warranty end and purchase price. Add a photo and installation photos, upload receipts as documents — ready for insurance documentation.
+5. **Complete your first devices**: tap a device in the list, then *Edit*, and enter at least *Purchase Date* and *Warranty Until*, and the purchase price under *Notes*. Add a photo and installation photos, upload receipts as documents — ready for insurance documentation.
 
 ### After updating to 3.1.0
 
@@ -147,7 +147,7 @@ When you turn on *Publish devices to HA*, the add-on publishes **up to 6 MQTT Di
 | Sensor `*_warranty_days` | remaining days as a number | `123` |
 | Sensor `*_purchase` | purchase date | `2024-09-12` |
 | Sensor `*_type` | device type | `Router` |
-| Sensor `*_location` | location | `Büro OG` |
+| Sensor `*_location` | location | `Office 1st floor` |
 | Binary sensor `*_warranty_active` | `on` while the warranty runs | `on` / `off` |
 
 These entities appear in HA under *Settings → Devices & services → MQTT*, with a separate device card for each inventory entry.
@@ -162,11 +162,11 @@ These entities appear in HA under *Settings → Devices & services → MQTT*, wi
 
 The add-on first requests the credentials from the Supervisor. If the Mosquitto add-on provides them there, you do not need to enter anything. If the test under *Settings → Home Assistant Integration → Test MQTT connection* reports **"Not authorized"** (code 135), the add-on needs a user. The simplest option is a dedicated Home Assistant user — the Mosquitto add-on accepts every HA user:
 
-1. In Home Assistant, bottom left, open **Settings** → **People** → the **Users** tab at the top. If the tab is missing: click your own name at the bottom left and turn on **Advanced mode**.
-2. Bottom right, click **Add user**. Display name and username e.g. `geraeteverwaltung`; set a password.
-3. Turn on **"Can only log in from the local network"**, leave **"Administrator"** off. Click **Create**.
-4. **Settings** → **Add-ons** (in newer versions **Apps**) → **Geräteverwaltung** → **Configuration** tab.
-5. Enter the username under **mqtt_user** and the password under **mqtt_password**. Click **Save** and restart the add-on.
+1. In Home Assistant, bottom left, open **Settings** → **People** → the **Users** tab at the top (visible to administrators; in older HA versions only after turning on **Advanced mode** in your own profile).
+2. Bottom right, click **Add user**. **Display name** and **Username** e.g. `geraeteverwaltung`; set a **Password**.
+3. Turn on **Local only**, leave **Administrator** off. Click **Create**.
+4. **Settings** → **Apps** (in older versions **Add-ons**) → **Geräteverwaltung** → **Configuration** tab.
+5. Enter the username under **mqtt_user** and the password under **mqtt_password**. Click **Save**, then on the **Info** tab at the top click **Restart**.
 6. In Device Management, click *Test MQTT connection* — it should now report "OK".
 
 Why a dedicated user instead of your own account: it has no administrator rights, logs in only from the home network, and the add-on configuration contains its password instead of yours. When it is no longer needed, you can delete it without affecting anything else.
@@ -185,7 +185,7 @@ A frequently asked question: *"How do I delete all the MQTT topics again when I 
 
 By default, the retained MQTT topics **remain** on the broker, even if you turn the toggle off. This is an MQTT Discovery peculiarity (HA does not delete retained messages written by another producer). Three ways to clean up properly:
 
-1. **(Recommended) Clean up orphans**: Since v2.6.0, the *Home Assistant Integration* settings block has the button **"Clean up orphans"**. The button removes all retained topics for inventory devices that you have already deleted in Device Management. Active devices remain untouched. Safe as a routine action.
+1. **(Recommended) Clean up orphans**: Since v2.6.0, the *Home Assistant Integration* section of the settings has the button **"Clean up orphans"**. The button removes all retained topics for inventory devices that you have already deleted in Device Management. Active devices remain untouched. Safe as a routine action.
 
 2. **Remove all MQTT entries**: Next to it is the button **"Remove all MQTT entries"** (red). With confirmation. Removes **every** Discovery message published by the add-on, including those for devices still in the inventory. A sensible last step before permanently disabling MQTT Discovery.
 
@@ -256,7 +256,7 @@ What happens when merging:
 
 ### Insurance
 
-The preset *Insurance* in the PDF/Excel export automatically selects the fields an insurer typically wants:
+The preset *Insurance* in the PDF / Excel export automatically selects the fields an insurer typically wants:
 
 - #, Type, Name, Model, Manufacturer
 - Serial No., AIN / Article No.
@@ -265,7 +265,7 @@ The preset *Insurance* in the PDF/Excel export automatically selects the fields 
 Workflow:
 
 1. For every valuable device: take a photo, upload the purchase receipt as a document, maintain notes with the purchase price and any insurance note.
-2. Once a year: *Settings → Export PDF / Excel... → preset Insurance*. The PDF contains the table and a detail section per device (very long notes are cut at 1000 characters with a reference to the Excel export).
+2. Once a year: *Settings → Export Data → Export PDF / Excel... → Presets → Insurance*, then **PDF**. The PDF contains the devices as a compact table. If you also want a detail page per device, select the fields manually instead of choosing the preset (very long notes are cut there at 1000 characters, with a reference to the Excel export).
 3. Add Excel if the insurer processes the data further — Excel keeps the full length of the notes in one cell.
 
 ### Estate planning
@@ -291,11 +291,11 @@ For this, each device has two fields, at the very bottom of the edit form under 
 
 **"Works without Home Assistant?"** — three options: *Unknown* (default, nothing is output), *Yes, works without HA*, *No, needs HA*. With *Yes* or *No*, a note field for plain text appears below: "switch directly on the wall", "thermostat can be set on the device", "cannot be operated at all without HA".
 
-**"Wall switch bridged?"** (*new in 3.1.0*) — the most important point for removal: if a light switch was bridged for this device, the lamp will no longer work after the device is removed. Three options (*Unknown*, *Yes, switch bridged or decoupled*, *No*) and a note field: which switch, which box — or which setting, because often nothing is wired at all, but the actuator is reconfigured (e.g. Shelly in "detached" mode). Appears on the detail page in the same card as "Works without HA".
+**"Wall switch bridged?"** (*new in 3.1.0*) — the most important point for removal: if a light switch was bridged for this device, the lamp will no longer work after the device is removed. Three options (*Unknown*, *Yes, switch bridged or decoupled*, *No*) and a note field: which switch, which box — or which setting, because often nothing is wired at all, but the actuator is reconfigured (e.g. Shelly in "detached" mode). Appears on the detail page in the card "Home Assistant dependency", together with "Works without Home Assistant?".
 
 **"External link"** — a pointer to another system: the document in Paperless-ngx, the manufacturer's manual page, an entry in your own wiki. The link is shown on the detail page and opens in a new window. A plain name such as `paperless.local/x` is enough; `https://` is added automatically.
 
-The export preset **"Removal/electrician"** (Export → select preset) turns this into the sheet you put in the utility room:
+The export preset **"Removal/electrician"** (*Export PDF / Excel... → Presets*) turns this into the sheet you put in the utility room:
 
 - #, Type, Name, Manufacturer, Model
 - Location, Floor
@@ -344,15 +344,15 @@ As a PDF, all presets produce a compact table in landscape format, about ten pag
 
 ### Trash
 
-- Deleted devices are *soft-deleted*: restorable for 30 days in *Settings → Trash*.
+- Deleted devices go to the trash first and can be restored for 30 days under *Settings → Trash*.
 - Two restore modes: per entry (button in each row) or in bulk ("Restore N" at the top right after selection).
 - *Delete permanently* removes the device including its photos.
 - The button *Move all devices to trash* (Settings, at the very bottom) is meant as a last-resort reset button — it moves the entire inventory to the trash, with a snapshot.
 
 ### Database snapshots
 
-- Before every bulk action (bulk-delete-all, recategorize, bulk-update), a snapshot of the SQLite database is created automatically.
-- List under *Settings → Database snapshots*. Per entry: file name, operation, date, size.
+- Before every bulk action (deleting several or all devices, recategorizing, bulk editing, merging, deleting a category, Excel import with replace), the app automatically creates a snapshot of the database.
+- List under *Settings → Database snapshots*. Per entry: reason, age and size.
 - *Restore* overwrites the current DB with the snapshot — an "undo for the last action".
 
 ---
@@ -385,7 +385,7 @@ The license is stored in the add-on data folder as `license.json` (managed by HA
 
 ### "Which languages?"
 
-DE, EN, ES, FR, RU. Change it in the Settings view. The Free tier is limited to EN — Pro unlocks all languages.
+DE, EN, ES, FR, RU. Change it under *Settings → Language*. The Free tier is limited to EN — Pro unlocks all languages.
 
 ---
 

@@ -44,19 +44,19 @@ La app funciona como complemento de Home Assistant con base de datos propia, se 
 
 ## Instalación, actualización, desinstalación
 
-**Requisitos:** Home Assistant OS o Supervised (los complementos deben estar disponibles), arquitectura amd64, aarch64 (p. ej. Raspberry Pi 4/5) o armv7, un navegador actual. La cámara y el escáner de códigos de barras necesitan una conexión cifrada (HTTPS), consulte [Cámara y escáner](#cámara-y-escáner).
+**Requisitos:** Home Assistant OS o Supervised (debe existir el menú *Aplicaciones*, antes *Complementos*), arquitectura amd64, aarch64 (p. ej. Raspberry Pi 4/5) o armv7, un navegador actual. La cámara y el escáner de códigos de barras necesitan una conexión cifrada (HTTPS), consulte [Cámara y escáner](#cámara-y-escáner).
 
 **Instalar:**
 
-1. En Home Assistant **Ajustes → Complementos** (en versiones más recientes **Aplicaciones**) → **Tienda de complementos**.
+1. En Home Assistant **Configuración → Aplicaciones** (en versiones anteriores **Complementos**) → abajo a la derecha **Instalar aplicación**. Se abre la **Tienda de aplicaciones**.
 2. Arriba a la derecha, el menú de tres puntos → **Repositorios**.
 3. Pegue `https://github.com/DerRegner-DE/ha-device-inventory`, **Añadir**, cierre el diálogo.
 4. En la tienda, busque **Geraeteverwaltung** (si es necesario, recargue la página) → **Instalar**.
-5. **Iniciar**, active **Mostrar en la barra lateral**, **Abrir interfaz web**.
+5. **Iniciar**, active **Mostrar en el panel lateral**, **Open Web UI**.
 
-**Actualizar:** Home Assistant muestra una actualización disponible en *Ajustes → Complementos → Geräteverwaltung* (y en las notificaciones). Haga clic en **Actualizar**; se recomienda *Hacer una copia de seguridad antes de actualizar*, porque las actualizaciones pueden ampliar la base de datos. Como alternativa, active *Actualización automática*. Las novedades figuran en el registro de cambios (Changelog) del complemento. Tras una actualización, conviene revisar el apartado «Tras la actualización» del inicio rápido.
+**Actualizar:** Home Assistant muestra una actualización disponible en *Configuración → Aplicaciones → Geräteverwaltung* (y en las notificaciones). Haga clic en **Actualizar**; se recomienda dejar activado *Crea una copia de seguridad antes de actualizar*, porque las actualizaciones pueden ampliar la base de datos. Como alternativa, active *Actualización automática*. Las novedades figuran en el registro de cambios (Changelog) del complemento. Tras una actualización, conviene revisar el apartado «Tras la actualización» del inicio rápido.
 
-**Desinstalar:** *Ajustes → Complementos → Geräteverwaltung → Desinstalar*. Home Assistant borra entonces el directorio de datos del complemento con la base de datos, las fotos y la licencia. Haga antes una copia: *Ajustes → Exportar Datos* (JSON, Excel, PDF) o una copia de seguridad de Home Assistant que incluya el complemento.
+**Desinstalar:** *Configuración → Aplicaciones → Geräteverwaltung → Desinstalar*. Home Assistant borra entonces el directorio de datos del complemento con la base de datos, las fotos y la licencia. Haga antes una copia: *Ajustes → Exportar Datos* (JSON, Excel, PDF) o una copia de seguridad de Home Assistant que incluya el complemento.
 
 ---
 
@@ -86,11 +86,11 @@ Si tras la compra no llega ningún correo: revise la carpeta de spam; si no, esc
 
 ## Inicio rápido en 5 pasos
 
-1. **Instale el complemento** mediante la URL de la tienda de complementos de Home Assistant (consulte el README del repositorio de GitHub). Tras la instalación, la Gestión de Dispositivos aparece como entrada en la barra lateral de HA.
+1. **Instale el complemento** como se describe en [Instalación, actualización, desinstalación](#instalación-actualización-desinstalación). Tras la instalación, la Gestión de Dispositivos aparece como entrada en la barra lateral de HA.
 2. **Active la licencia Pro** en *Ajustes → Licencia*. Sin licencia se pueden gestionar hasta 50 dispositivos y la interfaz está en inglés; todo lo demás (varios idiomas, Excel, MQTT, cámara, código de barras, documentos) es Pro.
 3. **Importe los dispositivos de HA** en *Ajustes → Importar Home Assistant → Importar dispositivos HA*. En instalaciones grandes (300+) la importación puede tardar un minuto; se ejecuta en segundo plano con indicador de progreso. Se importan nombre, fabricante, modelo, firmware, habitación y planta, integración, red y, desde la 3.1.0, número de serie, dirección MAC y alimentación (batería/recargable), siempre que Home Assistant los conozca. Una nueva importación no duplica dispositivos y, en los dispositivos existentes, solo completa el número de serie y la MAC en campos vacíos.
 4. **Opcional: active MQTT-Discovery** en *Ajustes → Integración Home Assistant → Publicar dispositivos en HA*. Si tiene sentido o no, se explica en el capítulo [Integración con Home Assistant](#integración-con-home-assistant-mqtt-discovery).
-5. **Complete los primeros dispositivos**: toque un dispositivo de la lista, luego *Editar*, e introduzca como mínimo la fecha de compra, el fin de la garantía y el precio de compra. Añada una foto y fotos de instalación, suba los comprobantes como documentos: listo para la documentación del seguro.
+5. **Complete los primeros dispositivos**: toque un dispositivo de la lista, luego *Editar*, e introduzca como mínimo *Fecha de Compra* y *Garantía hasta*, y el precio de compra en *Notas*. Añada una foto y fotos de instalación, suba los comprobantes como documentos: listo para la documentación del seguro.
 
 ### Tras la actualización a 3.1.0
 
@@ -147,10 +147,10 @@ Si activa *Publicar dispositivos en HA*, el complemento publica **hasta 6 entrad
 | Sensor `*_warranty_days` | días restantes como número | `123` |
 | Sensor `*_purchase` | Fecha de compra | `2024-09-12` |
 | Sensor `*_type` | Tipo de dispositivo | `Router` |
-| Sensor `*_location` | Ubicación | `Büro OG` |
+| Sensor `*_location` | Ubicación | `Oficina 1.ª planta` |
 | Sensor binario `*_warranty_active` | `on` mientras dure la garantía | `on` / `off` |
 
-Estas entidades aparecen en HA en *Ajustes → Dispositivos y servicios → MQTT*, con una tarjeta de dispositivo propia por cada entrada del inventario.
+Estas entidades aparecen en HA en *Configuración → Dispositivos y servicios → MQTT*, con una tarjeta de dispositivo propia por cada entrada del inventario.
 
 **Desde la 3.1.0**, el sensor `*_type` lleva además los datos registrados como atributos: ubicación, número de serie, alimentación, función, notas, «Funciona sin HA» e «Interruptor de pared puenteado» con sus notas, enlace externo y el número de fotos y fotos de instalación. Los valores vacíos se omiten. En automatizaciones se accede, p. ej., con `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
 
@@ -162,11 +162,11 @@ Estas entidades aparecen en HA en *Ajustes → Dispositivos y servicios → MQTT
 
 El complemento solicita primero las credenciales al Supervisor. Si el complemento Mosquitto las proporciona allí, no hay que introducir nada. Si, en cambio, la prueba en *Ajustes → Integración Home Assistant → Probar conexión MQTT* indica **«Not authorized»** (código 135), el complemento necesita un usuario. Lo más sencillo es un usuario propio de Home Assistant; el complemento Mosquitto acepta cualquier usuario de HA:
 
-1. En Home Assistant, abajo a la izquierda, **Ajustes** → **Personas** → abra arriba la pestaña **Usuarios**. Si falta la pestaña: haga clic abajo a la izquierda en su propio nombre y active **Modo avanzado**.
-2. Abajo a la derecha, **Añadir usuario**. Nombre visible y nombre de usuario, p. ej. `geraeteverwaltung`; defina una contraseña.
-3. Active **«Solo puede iniciar sesión desde la red local»** y deje desactivado **«Administrador»**. **Crear**.
-4. **Ajustes** → **Complementos** (en versiones más recientes **Aplicaciones**) → **Geräteverwaltung** → pestaña **Configuración**.
-5. En **mqtt_user** introduzca el nombre de usuario y en **mqtt_password** la contraseña. **Guardar** y reinicie el complemento.
+1. En Home Assistant, abajo a la izquierda, **Configuración** → **Personas** → abra arriba la pestaña **Usuarios** (visible para administradores; en versiones anteriores de HA solo tras activar **Modo avanzado** en el propio perfil).
+2. Abajo a la derecha, **Añadir usuario**. **Nombre para mostrar** y **Nombre de usuario**, p. ej. `geraeteverwaltung`; defina la **Contraseña**.
+3. Active **Solo local** y deje desactivado **Administrador**. **Crear**.
+4. **Configuración** → **Aplicaciones** (en versiones anteriores **Complementos**) → **Geräteverwaltung** → pestaña **Configuración**.
+5. En **mqtt_user** introduzca el nombre de usuario y en **mqtt_password** la contraseña. **Guardar**; después, arriba en la pestaña **Información**, **Reiniciar**.
 6. En la Gestión de Dispositivos, *Probar conexión MQTT*: ahora debería aparecer «OK».
 
 Por qué un usuario propio en lugar de su cuenta: no tiene derechos de administrador, solo inicia sesión en la red doméstica y en la configuración del complemento figura su contraseña, no la suya. Si ya no se necesita, se puede eliminar sin afectar a nada más.
@@ -185,7 +185,7 @@ Una pregunta frecuente: *«¿Cómo borro todos los topics MQTT si desactivo el c
 
 Por defecto, los topics MQTT retenidos **permanecen** en el broker aunque desactive el interruptor. Es una particularidad de MQTT-Discovery (HA no borra mensajes retenidos escritos por otro productor). Tres formas de limpiar de forma ordenada:
 
-1. **(Recomendado) Limpiar entradas huérfanas**: en el bloque de ajustes *Integración Home Assistant* existe desde la v2.6.0 el botón **«Limpiar entradas huérfanas»**. El botón elimina todos los topics retenidos de dispositivos del inventario que ya ha borrado en la Gestión de Dispositivos. Los dispositivos activos no se tocan. Seguro como acción rutinaria.
+1. **(Recomendado) Limpiar entradas huérfanas**: en el apartado *Integración Home Assistant* de los Ajustes existe desde la v2.6.0 el botón **«Limpiar entradas huérfanas»**. El botón elimina todos los topics retenidos de dispositivos del inventario que ya ha borrado en la Gestión de Dispositivos. Los dispositivos activos no se tocan. Seguro como acción rutinaria.
 
 2. **Eliminar todas las entradas MQTT**: al lado está el botón **«Eliminar todas las entradas MQTT»** (rojo). Con confirmación. Elimina **todos** los mensajes Discovery publicados por el complemento, también los de dispositivos que siguen en el inventario. Es el último paso razonable antes de desactivar MQTT-Discovery de forma permanente.
 
@@ -256,7 +256,7 @@ Qué ocurre al fusionar:
 
 ### Seguro
 
-La plantilla *Seguro* de la exportación a PDF/Excel selecciona automáticamente los campos que suele pedir una aseguradora:
+La plantilla *Seguro* de la exportación a PDF / Excel selecciona automáticamente los campos que suele pedir una aseguradora:
 
 - Nº, Tipo, Nombre, Modelo, Fabricante
 - Nº de serie, AIN / Nº de artículo
@@ -265,7 +265,7 @@ La plantilla *Seguro* de la exportación a PDF/Excel selecciona automáticamente
 Flujo de trabajo:
 
 1. En cada dispositivo de valor: tome una foto, suba el comprobante de compra como documento y anote en Notas el precio de compra y, si procede, una nota para el seguro.
-2. Una vez al año: *Ajustes → Exportar PDF / Excel... → Plantilla Seguro*. El PDF contiene la tabla y una sección de detalle por dispositivo (las notas muy largas se cortan a 1000 caracteres con una referencia a la exportación a Excel).
+2. Una vez al año: *Ajustes → Exportar Datos → Exportar PDF / Excel... → Plantillas → Seguro*, después **PDF**. El PDF contiene los dispositivos como tabla compacta; quien quiera además una página de detalle por dispositivo compone los campos a mano en lugar de elegir la plantilla (allí las notas muy largas se acortan a 1000 caracteres, con una referencia a la exportación a Excel).
 3. Además Excel, si la aseguradora procesa los datos: Excel recoge las notas completas en una celda.
 
 ### Herencia
@@ -291,11 +291,11 @@ Para ello hay dos campos por dispositivo, al final del formulario de edición, e
 
 **«¿Funciona sin Home Assistant?»** — tres opciones: *Desconocido* (valor por defecto, no se muestra nada), *Sí, funciona sin HA*, *No, necesita HA*. Con *Sí* o *No* aparece debajo un campo de nota para el texto en claro: «interruptor directo en la pared», «el termostato se ajusta en el aparato», «sin HA no se puede manejar».
 
-**«¿Interruptor de pared puenteado?»** (*nuevo en 3.1.0*) — el punto más importante para el desmontaje: si para este dispositivo se puenteó un interruptor de luz, la lámpara deja de funcionar tras retirarlo. Tres opciones (*Desconocido*, *Sí, interruptor puenteado o desacoplado*, *No*) y un campo de nota: qué interruptor, qué caja, o qué ajuste, porque a menudo no hay nada conectado de otra forma, sino que el actuador está reconfigurado (p. ej. Shelly en modo «detached»). Aparece en la página de detalle en la misma tarjeta que «Funciona sin HA».
+**«¿Interruptor de pared puenteado?»** (*nuevo en 3.1.0*) — el punto más importante para el desmontaje: si para este dispositivo se puenteó un interruptor de luz, la lámpara deja de funcionar tras retirarlo. Tres opciones (*Desconocido*, *Sí, interruptor puenteado o desacoplado*, *No*) y un campo de nota: qué interruptor, qué caja, o qué ajuste, porque a menudo no hay nada conectado de otra forma, sino que el actuador está reconfigurado (p. ej. Shelly en modo «detached»). Aparece en la página de detalle en la tarjeta «Dependencia de Home Assistant», junto con «¿Funciona sin Home Assistant?».
 
 **«Enlace externo»** — una referencia a otro sistema: el documento en Paperless-ngx, la página del manual del fabricante, una entrada en su propio wiki. El enlace aparece en la página de detalle y se abre en una ventana nueva. Basta con un nombre como `paperless.local/x`; `https://` se añade automáticamente.
 
-La plantilla de exportación **«Desmontaje/electricista»** (Exportar → elegir plantilla) genera la hoja que se deja en el cuarto de la acometida:
+La plantilla de exportación **«Desmontaje/electricista»** (*Exportar PDF / Excel... → Plantillas*) genera la hoja que se deja en el cuarto de la acometida:
 
 - Nº, Tipo, Nombre, Fabricante, Modelo
 - Ubicación, Planta
@@ -344,15 +344,15 @@ En PDF, todas las plantillas generan una tabla compacta en formato apaisado, una
 
 ### Papelera
 
-- Al borrar, los dispositivos se marcan como borrados (*soft delete*): se pueden restaurar durante 30 días en *Ajustes → Papelera*.
+- Los dispositivos borrados van primero a la papelera y se pueden restaurar durante 30 días en *Ajustes → Papelera*.
 - Dos modos de restauración: por entrada (botón en cada fila) o en lote («Restaurar N» arriba a la derecha tras seleccionar).
 - *Eliminar permanentemente* borra el dispositivo junto con sus fotos.
 - El botón *Mover todo a la papelera* (Ajustes, al final) está pensado como último recurso de reinicio: mueve todo el inventario a la papelera con instantánea.
 
 ### Instantáneas de la base de datos
 
-- Antes de cada acción en lote (bulk-delete-all, recategorize, bulk-update) se crea automáticamente una instantánea de la base de datos SQLite.
-- Lista en *Ajustes → Instantáneas de la base de datos*. Por entrada: nombre de archivo, operación, fecha, tamaño.
+- Antes de cada acción masiva (borrar varios o todos los dispositivos, recategorizar, edición en lote, fusionar, borrar una categoría, importación de Excel con reemplazo) la app crea automáticamente una instantánea de la base de datos.
+- Lista en *Ajustes → Instantáneas de la base de datos*. Por entrada: motivo, antigüedad y tamaño.
 - *Restaurar* sobrescribe la base de datos actual con la instantánea: un «deshacer para la última acción».
 
 ---
@@ -385,7 +385,7 @@ La licencia se guarda en la carpeta de datos del complemento como `license.json`
 
 ### «¿Qué idiomas?»
 
-DE, EN, ES, FR, RU. Se cambia en la vista de Ajustes. La versión Free está limitada a EN; Pro desbloquea todos los idiomas.
+DE, EN, ES, FR, RU. Se cambia en *Ajustes → Idioma*. La versión Free está limitada a EN; Pro desbloquea todos los idiomas.
 
 ---
 
@@ -419,7 +419,7 @@ En *Ajustes → Integración Home Assistant* está **«Probar conexión MQTT»**
 
 - **Código 4 / 5 / 135 (inicio de sesión rechazado, «Not authorized»)**: faltan las credenciales o no son correctas. Paso a paso en [Credenciales para el broker MQTT](#credenciales-para-el-broker-mqtt).
 - **Conexión rechazada**: ¿está en marcha el broker Mosquitto? ¿Es correcto el puerto (1883 sin cifrar, 8883 TLS)?
-- **No accesible / tiempo de espera agotado**: ¿son correctos el hostname/la IP? Con un broker externo: la red de HA debe poder alcanzar el broker.
+- **No accesible / tiempo de espera agotado**: ¿son correctos el nombre de host/la IP? Con un broker externo: la red de HA debe poder alcanzar el broker.
 - **Error de DNS**: revise el campo `mqtt_host` en las opciones del complemento.
 
 ### La importación de HA devuelve 502 Bad Gateway
