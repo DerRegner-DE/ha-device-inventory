@@ -488,6 +488,10 @@ def bulk_purge_trash(body: BulkDeleteBody):
         if not ids:
             return {"purged": 0, "total": len(body.uuids)}
 
+    # v3.1.0: Sammel-Loeschen/"Papierkorb leeren" ist eine Massenaktion --
+    # wie alle anderen vorher ein Schnappschuss.
+    create_snapshot("trash_purge")
+    with get_db() as conn:
         files = _purge_devices(conn, ids)
     _remove_files(files)
     return {"purged": len(ids), "total": len(body.uuids)}

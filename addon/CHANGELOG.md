@@ -6,13 +6,45 @@ Feature-Release mit den im Forum zugesagten Uebergabe-Funktionen, neuen Exportmo
 
 **Nach dem Update bitte einmal in dieser Reihenfolge:**
 
-1. *Einstellungen → Home Assistant Import → HA-Geraete importieren* — ergaenzt Seriennummer und MAC-Adresse bei vorhandenen Geraeten und loest falsche Router-Zuordnungen (siehe unten). Bestehende Eintraege werden nicht ueberschrieben.
+1. *Einstellungen → Home Assistant Import → HA-Geraete importieren* (Pro) — ergaenzt Seriennummer und MAC-Adresse bei vorhandenen Geraeten und loest falsche Router-Zuordnungen (siehe unten). Bestehende Eintraege werden nicht ueberschrieben.
 2. *Einstellungen → Moegliche Dubletten* — doppelte Geraete pruefen und zusammenfuehren.
-3. *Einstellungen → Geraete neu kategorisieren → Vorschau & gezielt zuordnen* — die Vorschau zeigt diesmal deutlich mehr Aenderungen als frueher, ausserdem wird die Stromversorgung (Batterie/Akku) nachgetragen. Erst ansehen, dann uebernehmen; alles ist ueber Schnappschuss und Geraete-Historie zuruecknehmbar.
+3. *Einstellungen → Geraete neu kategorisieren → Vorschau & gezielt zuordnen* (Pro) — die Vorschau zeigt diesmal deutlich mehr Aenderungen als frueher, ausserdem wird die Stromversorgung (Batterie/Akku) nachgetragen. Erst ansehen, dann uebernehmen; alles ist ueber Schnappschuss und Geraete-Historie zuruecknehmbar.
+
+### Geaendert: Diese Funktionen sind ab 3.1.0 nur noch mit Pro nutzbar
+
+README und Lizenzseite fuehrten sie schon als Pro, die App hat sie aber nicht gesperrt. Ab diesem Update sind sie ohne gueltige Lizenz nicht mehr verfuegbar:
+
+- PDF- und Excel-Export mit Vorlagen, Reihenfolge und Bildern im PDF
+- Sammelbearbeitung (*Auswaehlen*)
+- MQTT: *Geraete in HA veroeffentlichen* einschalten, *MQTT-Verbindung testen*, *Alle Geraete jetzt synchronisieren* (damit auch die Sensoren in HA und der *Besuchen*-Link)
+- Einbauort-Bilder hinzufuegen und loeschen
+- Uebergabe-Felder bearbeiten: „Funktioniert ohne Home Assistant?", „Wandschalter ueberbrueckt?", „Externer Link"
+
+Schon vorher Pro waren HA-Import, *Geraete neu kategorisieren*, weitere Sprachen, mehr als 50 Geraete, Kamera, QR-/Barcode-Scanner, Geraetefoto sowie Dokumente hochladen, verlinken und loeschen.
+
+Was bleibt: Alle vorhandenen Fotos, Einbauort-Bilder, Dokumente und Uebergabe-Angaben bleiben sichtbar. MQTT laesst sich weiterhin ausschalten, und *Verwaiste Eintraege aufraeumen* und *Alle MQTT-Eintraege entfernen* bleiben frei. So bleiben keine Reste zurueck, wenn Pro nicht mehr aktiv ist. Bestehende Pro-Schluessel gelten unveraendert und schalten alles frei.
+
+Ohne Lizenz startet die App jetzt direkt auf Englisch. Bisher stellte sie erst beim ersten Oeffnen der Einstellungen um.
+
+### Neu: Excel importieren
+
+*Einstellungen → Daten exportieren*, unter den Export-Knoepfen (Pro): liest eine Excel-Datei aus *PDF / Excel exportieren...* wieder ein. Bisher gab es den Import nur als Server-Aufruf, obwohl die Lizenzseite ihn schon nannte. Die Spalten werden ueber ihre Ueberschrift erkannt, nicht ueber die Position; jede Feldauswahl funktioniert, gruppiert oder als durchgehende Tabelle. Die Etage wird nicht uebernommen, Fotos, Einbauort-Bilder und Dokumente sind nicht Teil der Datei. Ohne weitere Auswahl kommen die Geraete zum Bestand hinzu — wer den eigenen Export so einliest, hat danach jedes Geraet doppelt. Mit *Vorhandene Geraete ersetzen (alle in den Papierkorb, vorher Schnappschuss)* wandern zuerst alle Geraete in den Papierkorb; das muss mit *Wirklich alle Geraete ersetzen?* bestaetigt werden.
+
+### Neu: Papierkorb wird nach 30 Tagen geleert
+
+Geloeschte Geraete werden nach 30 Tagen im Papierkorb automatisch endgueltig geloescht, so wie es App und Handbuch schon lange ankuendigen. Die App prueft das beim Start und danach einmal taeglich und legt vorher einen Schnappschuss an („Vor automatischem Leeren des Papierkorbs (30 Tage)"). Neuer Knopf *Papierkorb leeren* oben im Papierkorb: loescht alle Eintraege endgueltig, nach einem zweiten Klick auf „Wirklich alle {N} endgueltig loeschen?". Wie beim Loeschen mehrerer ausgewaehlter Eintraege legt die App vorher einen Schnappschuss an („Vor Leeren des Papierkorbs").
+
+### Neu: Self-Imports aufraeumen
+
+*Einstellungen → Moegliche Dubletten*, Abschnitt „Eigene MQTT-Geraete aus altem Import", Knopf *Self-Imports aufraeumen*. Er verschiebt die Geraete, die der HA-Import vor v2.5.2 aus den eigenen MQTT-Veroeffentlichungen der App angelegt hat, in den Papierkorb; vorher wird ein Schnappschuss angelegt. Bisher ging das nur per Server-Aufruf.
+
+### Neu: Schnappschuss von Hand
+
+*Einstellungen → Datenbank-Schnappschuesse → Schnappschuss jetzt anlegen*, etwa vor eigenen Aufraeumarbeiten. Er steht in der Liste als „Von Hand angelegt". Alle automatischen Schnappschuesse tragen jetzt einen lesbaren Anlass (z. B. „Vor Zusammenfuehren", „Vor Loeschen der Kategorie „…"", „Vor Bereinigung der Self-Imports") statt der internen Kennung.
 
 ### Neu: „Wandschalter ueberbrueckt?" pro Geraet
 
-Im Forum der meistgenannte Punkt fuer den Rueckbau: Wer die Anlage spaeter abbaut, muss wissen, welcher Lichtschalter ueberbrueckt wurde, sonst geht die Lampe danach nicht mehr. Neues Feld unter *Anmerkungen* mit *Unbekannt / Ja / Nein* und einem Freitext fuer Schalter, Dose oder Einstellung — das deckt auch den Fall ab, dass gar nichts geklemmt, sondern der Aktor umgestellt ist (Shelly „detached"). Erscheint auf der Detailseite, in der Historie und im Export; in der Vorlage *Rueckbau/Elektriker* ist es fest enthalten.
+Im Forum der meistgenannte Punkt fuer den Rueckbau: Wer die Anlage spaeter abbaut, muss wissen, welcher Lichtschalter ueberbrueckt wurde, sonst geht die Lampe danach nicht mehr. Neues Feld im Formularbereich *Notizen* (unter *Anmerkungen*) mit *Unbekannt / Ja / Nein* und einem Freitext fuer Schalter, Dose oder Einstellung — das deckt auch den Fall ab, dass gar nichts geklemmt, sondern der Aktor umgestellt ist (Shelly „detached"). Erscheint auf der Detailseite, in der Historie und im Export; in der Vorlage *Rueckbau/Elektriker* ist es fest enthalten.
 
 ### Neu: Export-Vorlage „Notfallmappe"
 
@@ -89,8 +121,10 @@ FRITZ!Box und UPnP melden in Home Assistant jedes Geraet im Netz als an sich hae
 
 - **Eigene Kategorien** fehlten in der Sammelbearbeitung und teils als Filter-Reiter. Sie stehen jetzt ueberall, auch wenn noch kein Geraet zugeordnet ist; *Kategorien verwalten* ist alphabetisch sortiert.
 - **Eigene Feldauswahl im Export** ging auf einem anderen Geraet oder nach dem Loeschen der Browserdaten verloren — sie wird jetzt in der App gespeichert.
+- **Endgueltig loeschen** im Papierkorb scheiterte bei einzelnen Geraeten mit Einbauort-Bildern oder Dokumenten. Jetzt verschwindet das Geraet samt Fotos, Einbauort-Bildern und Dokumenten, und die zugehoerigen Dateien werden mit entfernt (vorher blieben sie liegen).
+- **MQTT-Zaehler:** Die Attribute `fotos` und `einbauort_bilder` fehlten nach *Alle Geraete jetzt synchronisieren*. Ausserdem meldet die App ein Geraet jetzt gleich neu an Home Assistant, wenn ein Foto oder Einbauort-Bild hinzukommt oder geloescht wird.
 - **Home-Assistant-Version im Fehlerformular** blieb nach einem HA-Update bis zum Neustart des Add-ons auf dem alten Stand.
-- **PDF:** Im Querformat fehlte ab Seite 2 der Tabellenkopf; Ueberschriften, Zusammenfassung und Seitenzahl folgen jetzt der eingestellten Sprache; die Spalten fuer Ja/Nein sind breiter.
+- **PDF:** Im Querformat fehlte ab Seite 2 der Tabellenkopf; Ueberschriften, Zusammenfassung und Seitenzahl folgen jetzt der Add-on-Option `language` (Deutsch bei `de`, sonst Englisch), nicht der Sprachauswahl in der App; die Spalten fuer Ja/Nein sind breiter.
 
 ## 3.0.1
 

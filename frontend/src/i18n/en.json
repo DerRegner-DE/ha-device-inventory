@@ -597,5 +597,6 @@
   "settings.xlsxImportReplace": "Replace existing devices (all to the trash, snapshot first)",
   "settings.xlsxImportReplaceConfirm": "Really replace all devices?",
   "settings.xlsxImportDone": "{count} devices imported.",
-  "settings.xlsxImportFailed": "Import failed"
+  "settings.xlsxImportFailed": "Import failed",
+  "snapshots.op.trash_purge": "Before emptying the trash"
 }

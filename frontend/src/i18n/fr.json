@@ -597,5 +597,6 @@
   "settings.xlsxImportReplace": "Remplacer les appareils existants (tous à la corbeille, instantané préalable)",
   "settings.xlsxImportReplaceConfirm": "Vraiment remplacer tous les appareils ?",
   "settings.xlsxImportDone": "{count} appareils importés.",
-  "settings.xlsxImportFailed": "Échec de l’import"
+  "settings.xlsxImportFailed": "Échec de l’import",
+  "snapshots.op.trash_purge": "Avant de vider la corbeille"
 }

@@ -597,5 +597,6 @@
   "settings.xlsxImportReplace": "Заменить существующие устройства (все в корзину, перед этим снимок)",
   "settings.xlsxImportReplaceConfirm": "Действительно заменить все устройства?",
   "settings.xlsxImportDone": "Импортировано устройств: {count}.",
-  "settings.xlsxImportFailed": "Импорт не удался"
+  "settings.xlsxImportFailed": "Импорт не удался",
+  "snapshots.op.trash_purge": "Перед очисткой корзины"
 }

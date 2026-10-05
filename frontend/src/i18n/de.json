@@ -597,5 +597,6 @@
   "settings.xlsxImportReplace": "Vorhandene Geräte ersetzen (alle in den Papierkorb, vorher Schnappschuss)",
   "settings.xlsxImportReplaceConfirm": "Wirklich alle Geräte ersetzen?",
   "settings.xlsxImportDone": "{count} Geräte importiert.",
-  "settings.xlsxImportFailed": "Import fehlgeschlagen"
+  "settings.xlsxImportFailed": "Import fehlgeschlagen",
+  "snapshots.op.trash_purge": "Vor Leeren des Papierkorbs"
 }

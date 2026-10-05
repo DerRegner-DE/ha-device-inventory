@@ -30,11 +30,11 @@
 
 ## What's new
 
-**v3.1** (October 2026) — Duplicates and a smarter import. Since HA 2026.8, Home Assistant often creates several entries for one device — a Shelly via its own integration and again via the FRITZ!Box. The import now merges these twins automatically, *Settings → Possible duplicates* lists the ones already imported, and *Merge with another device …* on the detail page handles the rest by hand. The auto-categorisation was reworked from the ground up: HA device classes never actually reached it before, so smoke detectors, plugs and TVs are now recognised properly, and routers (FRITZ!Box/UPnP) are no longer treated as parent devices. A new per-device field *Wall switch bridged?* and a new export template **Emergency folder** cover the fuse-box binder; exports can be sorted by floor › location › name and carry images in the PDF. The import now brings serial number, MAC address and power source along, and the device list shows a photo thumbnail. Devices published via MQTT get a *Visit* link on their HA device page that opens them directly in the app (needs MQTT; for the Mosquitto broker, create a dedicated HA user — see the manual).
+**v3.1** (October 2026) — Duplicates and a smarter import. Since HA 2026.8, Home Assistant often creates several entries for one device — a Shelly via its own integration and again via the FRITZ!Box. The import now merges these twins automatically, *Settings → Possible duplicates* lists the ones already imported, and *Merge with another device …* on the detail page handles the rest by hand. The auto-categorisation was reworked from the ground up: HA device classes never actually reached it before, so smoke detectors, plugs and TVs are now recognised properly, and routers (FRITZ!Box/UPnP) are no longer treated as parent devices. A new per-device field *Wall switch bridged?* and a new export template **Emergency folder** cover the fuse-box binder; exports can be sorted by floor › location › name and carry images in the PDF. The import now brings serial number, MAC address and power source along, and the device list shows a photo thumbnail. Devices published via MQTT get a *Visit* link on their HA device page that opens them directly in the app (needs MQTT; a dedicated HA user for the Mosquitto broker is only needed if the Supervisor does not supply the MQTT credentials — see the manual). *Import Excel* reads the add-on's own Excel export back in, matching columns by their heading, and either adds the devices or replaces the existing ones (snapshot first). Without a Pro license the Pro features are now actually locked — languages other than English, HA import and recategorization, Excel import/export and PDF export, camera, scanner and device photo, installation photos and documents, the handover fields, bulk edit and switching MQTT on — while existing photos, documents and entries stay visible and MQTT can still be switched off and cleaned up. Deleted devices now stay in the trash for 30 days and are then removed automatically (a snapshot is taken first); *Empty trash* clears it by hand, and *Create snapshot now* under *Settings → Database snapshots* takes a snapshot on demand.
 
-**v3.0** (September 2026) — Handover documentation. Three new per-device fields answer the question "what happens to this house when someone else takes over": *Does it work without Home Assistant?* (yes / no / unknown), a free-text note on how to operate it without HA, and an external link into another system — the invoice in Paperless-ngx, the manufacturer's manual page. A new export template **Decommissioning / Electrician** produces the list you hand to a tradesperson: location, wiring, power source, works-without-HA — deliberately without serial numbers or purchase data. All three export templates were re-cut to carry only what their reader actually needs.
+**v3.0** (September 2026) — Handover documentation. Three new per-device fields answer the question "what happens to this house when someone else takes over": *Works without Home Assistant?* (yes / no / unknown), a free-text note on how to operate it without HA, and an external link into another system — the invoice in Paperless-ngx, the manufacturer's manual page. A new export template **Removal/electrician** produces the list you hand to a tradesperson: location, wiring, power source, works-without-HA — deliberately without serial numbers or purchase data. All three export templates were re-cut to carry only what their reader actually needs.
 
-**v2.6** (May 2026) — Built-in user manual, MQTT-Discovery cleanup buttons (orphan + full purge), smarter Companion-app deep-link, "Parents only" filter to collapse multi-channel device families, dynamic category chips, consistent bulk-action bar, and an "Apply to children" toggle that propagates manufacturer/warranty/power-source from a parent device to its sub-channels.
+**v2.6** (May 2026) — Built-in user manual, MQTT-Discovery cleanup buttons (orphan + full purge), smarter Companion-app deep-link, "Parents only" filter to collapse multi-channel device families, dynamic category chips, consistent bulk-action bar, and an "Also apply to {count} sub-devices" toggle that propagates manufacturer/warranty/power-source from a parent device to its sub-channels.
 
 **v2.5** (April 2026) — Multi-channel device grouping via HA's `via_device_id` (Shelly 2PM and similar appear as one logical device with sub-channel children). Up to 20 attachment images per device for installation-location documentation. Per-device change history with field-level revert. Custom Excel/PDF export with built-in Insurance and Estate-planning presets, plus seven sort orders.
 
@@ -95,17 +95,19 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 | One-click HA device import | -- | **Yes** |
 | Smart type detection from HA data | -- | **Yes** |
 | Duplicate detection on import | -- | **Yes** |
-| Excel export | -- | **Yes** |
+| Excel import / export | -- | **Yes** |
 | PDF export (insurance documentation) | -- | **Yes** |
 | Camera capture with live preview | -- | **Yes** |
 | QR / Barcode scanner with auto-fill | -- | **Yes** |
-| Photo gallery per device | -- | **Yes** |
+| Device photo, installation photos (up to 20 per device) and documents | -- | **Yes** |
 | Bulk edit (type, integration, delete) | -- | **Yes** |
 | MQTT Discovery (publish as HA entities) | -- | **Yes** |
 | "Works without Home Assistant?" per device | -- | **Yes** |
 | External link per device (invoice, manual) | -- | **Yes** |
-| Export template Decommissioning / Electrician | -- | **Yes** |
-| Merge duplicate devices (duplicates list, manual) | Yes | Yes |
+| Export template Removal/electrician | -- | **Yes** |
+| Merge duplicate devices (Possible duplicates, manual merge, self-import cleanup) | Yes | Yes |
+| Trash with automatic cleanup after 30 days | Yes | Yes |
+| Database snapshots (automatic and by hand) | Yes | Yes |
 | "Wall switch bridged?" per device | -- | **Yes** |
 | Export template Emergency folder, sort by floor/location, images in PDF | -- | **Yes** |
 | "Visit" link from the HA device page back into the app (via MQTT) | -- | **Yes** |
@@ -143,7 +145,7 @@ Most smart home users have dozens or even hundreds of devices spread across thei
 2. **Choose a type** -- Select from 32 categories (Router, Camera, Thermostat, etc.)
 3. **Fill in the basics** -- Name, model, manufacturer, serial number
 4. **Set the location** -- Pick a floor and area from your Home Assistant setup
-5. **Add network details** -- IP address, MAC address, integration, network type
+5. **Add network details** -- IP address, MAC address, network type, power source (section *Network & Power*); the integration is in the section *Home Assistant*
 6. **Record warranty info** -- Purchase date and warranty expiration
 7. **Take a photo** (Pro) -- Use the camera button for a live preview capture
 8. **Scan a barcode** (Pro) -- Capture serial numbers or product codes instantly
@@ -157,7 +159,7 @@ Instead of entering devices manually, use the **HA Import** feature:
 3. The app imports your entire HA device registry -- manufacturers, models, and integrations are mapped automatically
 4. Review and enrich the imported devices with serial numbers, photos, and warranty dates
 
-The import is safe to run repeatedly -- existing devices are detected and skipped automatically. A re-import fills serial number and MAC address into empty fields of existing devices and merges duplicate twins into one device.
+The import is safe to run repeatedly -- existing devices are detected and skipped automatically. A re-import fills serial number and MAC address into empty fields of existing devices. It only prevents new twins: devices that were already imported twice are not merged by a re-import -- use *Settings → Possible duplicates* for those.
 
 ### Pro License
 
@@ -168,12 +170,18 @@ The import is safe to run repeatedly -- existing devices are detected and skippe
 | Price | Free | EUR 9.99 (one-time) |
 | Device limit | 50 | Unlimited |
 | Languages | EN | DE, EN, ES, FR, RU |
-| HA Import | -- | Yes |
-| Excel & PDF Export | -- | Yes |
+| HA Import & recategorization | -- | Yes |
+| Excel Import/Export & PDF Export | -- | Yes |
 | Camera & QR Scanner | -- | Yes |
-| Photo Gallery | -- | Yes |
+| Device photo, installation photos & documents | -- | Yes |
+| Handover fields (works without HA, wall switch, external link) | -- | Yes |
 | Bulk Edit | -- | Yes |
 | MQTT Discovery | -- | Yes |
+| Merge duplicates, self-import cleanup | Yes | Yes |
+| Trash (30-day automatic cleanup) | Yes | Yes |
+| Database snapshots | Yes | Yes |
+
+Without a license, existing photos, documents and handover entries stay visible, and MQTT can still be switched off and cleaned up.
 
 **[Buy Pro License](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Instant delivery. Your license key will be included in the purchase confirmation email. You can activate it on up to 3 installations.
 
@@ -193,8 +201,8 @@ The app includes 32 predefined device categories with dedicated icons:
 | Printer | Sensor | Smartphone | Other |
 
 Each device can also track:
-- **Network type:** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
-- **Power source:** Adapter, Mains (230V), Battery, Rechargeable, USB, PoE, Solar, High Voltage
+- **Network type:** WiFi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
+- **Power source:** Power Adapter, 230V Mains, Battery, Rechargeable, USB, PoE, Solar, High Voltage
 - **Integration:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT, and more
 
 ### Technical Requirements
@@ -246,17 +254,19 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 | HA-Import per Klick | -- | **Ja** |
 | Automatische Typerkennung | -- | **Ja** |
 | Duplikaterkennung beim Import | -- | **Ja** |
-| Excel-Export | -- | **Ja** |
+| Excel-Import / -Export | -- | **Ja** |
 | PDF-Export (Versicherungsdokumentation) | -- | **Ja** |
 | Kameraaufnahme mit Live-Vorschau | -- | **Ja** |
 | QR- / Barcode-Scanner mit Auto-Ausfüllen | -- | **Ja** |
-| Fotogalerie pro Gerät | -- | **Ja** |
+| Gerätefoto, Einbauort-Bilder (bis zu 20 pro Gerät) und Dokumente | -- | **Ja** |
 | Massenbearbeitung (Typ, Integration, Löschen) | -- | **Ja** |
 | MQTT Discovery (als HA-Entities publizieren) | -- | **Ja** |
 | „Funktioniert ohne Home Assistant?" pro Gerät | -- | **Ja** |
 | Externer Link pro Gerät (Rechnung, Handbuch) | -- | **Ja** |
 | Export-Vorlage Rückbau/Elektriker | -- | **Ja** |
-| Doppelte Geräte zusammenführen (Liste „Mögliche Dubletten", von Hand) | Ja | Ja |
+| Doppelte Geräte zusammenführen (Liste „Mögliche Dubletten", von Hand, „Self-Imports aufräumen") | Ja | Ja |
+| Papierkorb mit automatischem Leeren nach 30 Tagen | Ja | Ja |
+| Datenbank-Schnappschüsse (automatisch und von Hand) | Ja | Ja |
 | „Wandschalter überbrückt?" pro Gerät | -- | **Ja** |
 | Export-Vorlage Notfallmappe, Sortierung nach Etage/Standort, Bilder im PDF | -- | **Ja** |
 | „Besuchen"-Link von der HA-Geräteseite zurück in die App (über MQTT) | -- | **Ja** |
@@ -294,7 +304,7 @@ Die meisten Smart-Home-Nutzer haben Dutzende oder sogar Hunderte von Geräten im
 2. **Typ wählen** -- Aus 32 Kategorien auswählen (Router, Kamera, Thermostat, ...)
 3. **Basisdaten eingeben** -- Name, Modell, Hersteller, Seriennummer
 4. **Standort festlegen** -- Etage und Bereich aus der Home-Assistant-Konfiguration wählen
-5. **Netzwerkdaten erfassen** -- IP-Adresse, MAC-Adresse, Integration, Netzwerktyp
+5. **Netzwerkdaten erfassen** -- IP-Adresse, MAC-Adresse, Netzwerktyp, Stromversorgung (Abschnitt *Netzwerk & Strom*); die Integration steht im Abschnitt *Home Assistant*
 6. **Garantieinfo eintragen** -- Kaufdatum und Garantieablauf
 7. **Foto aufnehmen** (Pro) -- Kamera-Button für Live-Vorschau verwenden
 8. **Barcode scannen** (Pro) -- Seriennummern oder Produktcodes sofort erfassen
@@ -308,7 +318,7 @@ Statt Geräte manuell einzugeben, die **HA-Import**-Funktion nutzen:
 3. Die App importiert das gesamte HA-Geräteregister -- Hersteller, Modelle und Integrationen werden automatisch zugeordnet
 4. Importierte Geräte mit Seriennummern, Fotos und Garantiedaten anreichern
 
-Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automatisch erkannt und übersprungen. Ein erneuter Import trägt Seriennummer und MAC-Adresse in leere Felder vorhandener Geräte nach und führt doppelte Zwillinge zu einem Gerät zusammen.
+Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automatisch erkannt und übersprungen. Ein erneuter Import trägt Seriennummer und MAC-Adresse in leere Felder vorhandener Geräte nach. Er verhindert nur neue Zwillinge: Geräte, die schon doppelt importiert wurden, führt ein erneuter Import nicht zusammen -- dafür *Einstellungen → Mögliche Dubletten* nutzen.
 
 ### Pro-Lizenz
 
@@ -319,12 +329,18 @@ Der Import kann mehrfach ausgeführt werden -- vorhandene Geräte werden automat
 | Preis | Kostenlos | 9,99 EUR (einmalig) |
 | Gerätelimit | 50 | Unbegrenzt |
 | Sprachen | EN | DE, EN, ES, FR, RU |
-| HA-Import | -- | Ja |
-| Excel- & PDF-Export | -- | Ja |
+| HA-Import & Neu-Kategorisieren | -- | Ja |
+| Excel-Import/-Export & PDF-Export | -- | Ja |
 | Kamera & QR-Scanner | -- | Ja |
-| Fotogalerie | -- | Ja |
+| Gerätefoto, Einbauort-Bilder & Dokumente | -- | Ja |
+| Übergabe-Felder (ohne HA, Wandschalter, Externer Link) | -- | Ja |
 | Massenbearbeitung | -- | Ja |
 | MQTT Discovery | -- | Ja |
+| Dubletten zusammenführen, Self-Imports aufräumen | Ja | Ja |
+| Papierkorb (automatisches Leeren nach 30 Tagen) | Ja | Ja |
+| Datenbank-Schnappschüsse | Ja | Ja |
+
+Ohne Lizenz bleiben vorhandene Fotos, Dokumente und Übergabe-Angaben sichtbar; MQTT lässt sich weiterhin ausschalten und aufräumen.
 
 **[Pro-Lizenz kaufen](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Sofortige Auslieferung. Der Lizenzschlüssel ist in der Kaufbestätigungs-E-Mail enthalten. Auf bis zu 3 Installationen aktivierbar.
 
@@ -345,7 +361,7 @@ Die App enthält 32 vordefinierte Gerätekategorien mit eigenen Icons:
 
 Jedes Gerät kann zusätzlich erfassen:
 - **Netzwerktyp:** WLAN, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
-- **Stromquelle:** Netzteil, Festnetz (230V), Batterie, Akku, USB, PoE, Solar, Hochspannung
+- **Stromquelle:** Netzteil, 230V, Batterie, Akku, USB, PoE, Solar, Starkstrom
 - **Integration:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT und weitere
 
 ### Technische Voraussetzungen
@@ -395,20 +411,22 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 | Langues | Anglais | **DE, EN, ES, FR, RU** |
 | Import HA en un clic | -- | **Oui** |
 | Détection automatique du type | -- | **Oui** |
-| Détection des doublons | -- | **Oui** |
-| Export Excel | -- | **Oui** |
+| Détection des doublons à l'import | -- | **Oui** |
+| Import / export Excel | -- | **Oui** |
 | Export PDF (assurance) | -- | **Oui** |
 | Capture photo avec aperçu en direct | -- | **Oui** |
 | Scanner QR / code-barres | -- | **Oui** |
-| Galerie photo par appareil | -- | **Oui** |
+| Photo de l'appareil, photos d'installation (jusqu'à 20 par appareil) et documents | -- | **Oui** |
 | Édition en masse (type, intégration, suppression) | -- | **Oui** |
 | MQTT Discovery (publier comme entités HA) | -- | **Oui** |
 | « Fonctionne sans Home Assistant ? » par appareil | -- | **Oui** |
 | Lien externe par appareil (facture, manuel) | -- | **Oui** |
-| Modèle d'export Démontage / Électricien | -- | **Oui** |
-| Fusion des appareils en double (liste des doublons, manuelle) | Oui | Oui |
+| Modèle d'export Démontage/électricien | -- | **Oui** |
+| Fusion des appareils en double (« Doublons possibles », fusion manuelle, nettoyage des auto-imports) | Oui | Oui |
+| Corbeille avec vidage automatique après 30 jours | Oui | Oui |
+| Instantanés de la base de données (automatiques et manuels) | Oui | Oui |
 | « Interrupteur mural ponté ? » par appareil | -- | **Oui** |
-| Modèle d'export Dossier d'urgence, tri par étage/emplacement, images dans le PDF | -- | **Oui** |
+| Modèle d'export Dossier d’urgence, tri par étage/emplacement, images dans le PDF | -- | **Oui** |
 | Lien depuis la page appareil de HA vers l'application (via MQTT) | -- | **Oui** |
 
 ### Installation
@@ -444,7 +462,7 @@ La plupart des utilisateurs de maison connectée possèdent des dizaines, voire 
 2. **Choisir un type** -- Parmi 32 catégories (Routeur, Caméra, Thermostat, etc.)
 3. **Remplir les informations** -- Nom, modèle, fabricant, numéro de série
 4. **Définir l'emplacement** -- Choisir un étage et une zone depuis Home Assistant
-5. **Ajouter les détails réseau** -- Adresse IP, adresse MAC, intégration, type réseau
+5. **Ajouter les détails réseau** -- Adresse IP, adresse MAC, type réseau, alimentation (section *Réseau & Alimentation*) ; l'intégration se trouve dans la section *Home Assistant*
 6. **Enregistrer la garantie** -- Date d'achat et date d'expiration
 7. **Prendre une photo** (Pro) -- Utiliser le bouton caméra avec aperçu en direct
 8. **Scanner un code-barres** (Pro) -- Capturer les numéros de série instantanément
@@ -458,7 +476,7 @@ Au lieu de saisir les appareils manuellement, utiliser la fonction **Import HA**
 3. L'application importe tout votre registre d'appareils HA -- fabricants, modèles et intégrations sont mappés automatiquement
 4. Enrichir les appareils importés avec numéros de série, photos et dates de garantie
 
-L'import peut être exécuté plusieurs fois -- les doublons sont détectés et ignorés automatiquement. Un nouvel import complète le numéro de série et l'adresse MAC dans les champs vides des appareils existants et fusionne les jumeaux en un seul appareil.
+L'import peut être exécuté plusieurs fois -- les doublons sont détectés et ignorés automatiquement. Un nouvel import complète le numéro de série et l'adresse MAC dans les champs vides des appareils existants. Il évite seulement les nouveaux jumeaux : les appareils déjà importés en double ne sont pas fusionnés par un nouvel import -- utiliser pour cela *Paramètres → Doublons possibles*.
 
 ### Licence Pro
 
@@ -469,12 +487,18 @@ L'import peut être exécuté plusieurs fois -- les doublons sont détectés et 
 | Prix | Gratuit | 9,99 EUR (unique) |
 | Limite d'appareils | 50 | Illimité |
 | Langues | EN | DE, EN, ES, FR, RU |
-| Import HA | -- | Oui |
-| Export Excel & PDF | -- | Oui |
+| Import HA & recatégorisation | -- | Oui |
+| Import/export Excel & export PDF | -- | Oui |
 | Caméra & Scanner QR | -- | Oui |
-| Galerie photo | -- | Oui |
+| Photo de l'appareil, photos d'installation & documents | -- | Oui |
+| Champs de remise (sans HA, interrupteur mural, lien externe) | -- | Oui |
 | Édition en masse | -- | Oui |
 | MQTT Discovery | -- | Oui |
+| Fusion des doublons, nettoyage des auto-imports | Oui | Oui |
+| Corbeille (vidage automatique après 30 jours) | Oui | Oui |
+| Instantanés de la base de données | Oui | Oui |
+
+Sans licence, les photos, documents et champs de remise existants restent visibles ; MQTT peut toujours être désactivé et nettoyé.
 
 **[Acheter la licence Pro](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Livraison instantanée par e-mail. Activable sur 3 installations maximum.
 
@@ -494,8 +518,8 @@ L'application comprend 32 catégories prédéfinies avec des icônes dédiées :
 | Imprimante | Capteur | Smartphone | Autre |
 
 Chaque appareil peut également suivre :
-- **Type réseau :** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, CPL, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
-- **Alimentation :** Adaptateur, Secteur (230V), Pile, Batterie, USB, PoE, Solaire, Haute tension
+- **Type réseau :** WiFi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, CPL, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
+- **Alimentation :** Adaptateur, 230V, Pile, Batterie, USB, PoE, Solaire, Haute Tension
 - **Intégration :** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT et plus
 
 ### Prérequis techniques
@@ -545,18 +569,20 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 | Idiomas | Inglés | **DE, EN, ES, FR, RU** |
 | Importación HA con un clic | -- | **Sí** |
 | Detección automática de tipo | -- | **Sí** |
-| Detección de duplicados | -- | **Sí** |
-| Exportación Excel | -- | **Sí** |
+| Detección de duplicados en la importación | -- | **Sí** |
+| Importación / exportación Excel | -- | **Sí** |
 | Exportación PDF (seguros) | -- | **Sí** |
 | Captura de foto con vista previa en vivo | -- | **Sí** |
 | Escáner QR / código de barras | -- | **Sí** |
-| Galería de fotos por dispositivo | -- | **Sí** |
+| Foto del dispositivo, fotos de instalación (hasta 20 por dispositivo) y documentos | -- | **Sí** |
 | Edición masiva (tipo, integración, eliminar) | -- | **Sí** |
 | MQTT Discovery (publicar como entidades HA) | -- | **Sí** |
 | «¿Funciona sin Home Assistant?» por dispositivo | -- | **Sí** |
 | Enlace externo por dispositivo (factura, manual) | -- | **Sí** |
-| Plantilla de exportación Desmontaje / Electricista | -- | **Sí** |
-| Fusionar dispositivos duplicados (lista de duplicados, manual) | Sí | Sí |
+| Plantilla de exportación Desmontaje/electricista | -- | **Sí** |
+| Fusionar dispositivos duplicados («Posibles duplicados», fusión manual, limpieza de autoimportaciones) | Sí | Sí |
+| Papelera con vaciado automático a los 30 días | Sí | Sí |
+| Instantáneas de la base de datos (automáticas y manuales) | Sí | Sí |
 | «¿Interruptor de pared puenteado?» por dispositivo | -- | **Sí** |
 | Plantilla de exportación Carpeta de emergencia, orden por planta/ubicación, imágenes en el PDF | -- | **Sí** |
 | Enlace desde la página del dispositivo en HA de vuelta a la app (vía MQTT) | -- | **Sí** |
@@ -594,7 +620,7 @@ La mayoría de los usuarios de hogares inteligentes tienen docenas o incluso cie
 2. **Elegir tipo** -- Entre 32 categorías (Router, Cámara, Termostato, etc.)
 3. **Rellenar datos básicos** -- Nombre, modelo, fabricante, número de serie
 4. **Establecer ubicación** -- Seleccionar planta y zona desde Home Assistant
-5. **Añadir datos de red** -- Dirección IP, MAC, integración, tipo de red
+5. **Añadir datos de red** -- Dirección IP, MAC, tipo de red, fuente de alimentación (sección *Red y Energía*); la integración está en la sección *Home Assistant*
 6. **Registrar garantía** -- Fecha de compra y vencimiento
 7. **Tomar foto** (Pro) -- Usar el botón de cámara con vista previa en vivo
 8. **Escanear código de barras** (Pro) -- Capturar números de serie al instante
@@ -608,7 +634,7 @@ En lugar de introducir dispositivos manualmente, usar la función **Importar de 
 3. La app importa todo tu registro de dispositivos HA -- fabricantes, modelos e integraciones se mapean automáticamente
 4. Enriquecer los dispositivos importados con números de serie, fotos y fechas de garantía
 
-La importación se puede ejecutar varias veces -- los duplicados se detectan y omiten automáticamente. Una nueva importación completa el número de serie y la dirección MAC en los campos vacíos de los dispositivos existentes y fusiona los gemelos en un solo dispositivo.
+La importación se puede ejecutar varias veces -- los duplicados se detectan y omiten automáticamente. Una nueva importación completa el número de serie y la dirección MAC en los campos vacíos de los dispositivos existentes. Solo evita gemelos nuevos: los dispositivos ya importados por duplicado no se fusionan con una nueva importación -- para ello, usar *Ajustes → Posibles duplicados*.
 
 ### Licencia Pro
 
@@ -619,12 +645,18 @@ La importación se puede ejecutar varias veces -- los duplicados se detectan y o
 | Precio | Gratis | 9,99 EUR (único) |
 | Límite de dispositivos | 50 | Ilimitado |
 | Idiomas | EN | DE, EN, ES, FR, RU |
-| Importación HA | -- | Sí |
-| Exportación Excel & PDF | -- | Sí |
+| Importación HA y recategorización | -- | Sí |
+| Importación/exportación Excel y exportación PDF | -- | Sí |
 | Cámara & Escáner QR | -- | Sí |
-| Galería de fotos | -- | Sí |
+| Foto del dispositivo, fotos de instalación y documentos | -- | Sí |
+| Campos de traspaso (sin HA, interruptor de pared, enlace externo) | -- | Sí |
 | Edición masiva | -- | Sí |
 | MQTT Discovery | -- | Sí |
+| Fusionar duplicados, limpieza de autoimportaciones | Sí | Sí |
+| Papelera (vaciado automático a los 30 días) | Sí | Sí |
+| Instantáneas de la base de datos | Sí | Sí |
+
+Sin licencia, las fotos, los documentos y los campos de traspaso existentes siguen visibles; MQTT se puede seguir desactivando y limpiando.
 
 **[Comprar licencia Pro](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Entrega instantánea por correo electrónico. Activable en hasta 3 instalaciones.
 
@@ -644,8 +676,8 @@ La app incluye 32 categorías predefinidas con iconos dedicados:
 | Impresora | Sensor | Smartphone | Otros |
 
 Cada dispositivo también puede registrar:
-- **Tipo de red:** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, PLC, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
-- **Fuente de alimentación:** Adaptador, Red (230V), Pila, Batería, USB, PoE, Solar, Alta tensión
+- **Tipo de red:** WiFi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
+- **Fuente de alimentación:** Adaptador, 230V, Batería, Recargable, USB, PoE, Solar, Alta Tensión
 - **Integración:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT y más
 
 ### Requisitos técnicos
@@ -695,18 +727,20 @@ Cada dispositivo también puede registrar:
 | Языки | Английский | **DE, EN, ES, FR, RU** |
 | Импорт HA одним кликом | -- | **Да** |
 | Автоопределение типа | -- | **Да** |
-| Определение дублей | -- | **Да** |
-| Экспорт Excel | -- | **Да** |
+| Определение дублей при импорте | -- | **Да** |
+| Импорт / экспорт Excel | -- | **Да** |
 | Экспорт PDF (страхование) | -- | **Да** |
 | Съёмка фото с предпросмотром | -- | **Да** |
 | Сканер QR / штрихкода | -- | **Да** |
-| Фотогалерея на устройство | -- | **Да** |
+| Фото устройства, фото установки (до 20 на устройство) и документы | -- | **Да** |
 | Массовое редактирование (тип, интеграция, удаление) | -- | **Да** |
 | MQTT Discovery (публикация как сущности HA) | -- | **Да** |
-| «Работает ли без Home Assistant?» для каждого устройства | -- | **Да** |
+| «Работает без Home Assistant?» для каждого устройства | -- | **Да** |
 | Внешняя ссылка для устройства (счёт, руководство) | -- | **Да** |
-| Шаблон экспорта Демонтаж / Электрик | -- | **Да** |
-| Объединение дублей устройств (список дубликатов, вручную) | Да | Да |
+| Шаблон экспорта Демонтаж/электрик | -- | **Да** |
+| Объединение дублей устройств («Возможные дубликаты», вручную, очистка самоимпорта) | Да | Да |
+| Корзина с автоматической очисткой через 30 дней | Да | Да |
+| Снимки базы данных (автоматически и вручную) | Да | Да |
 | «Настенный выключатель перемкнут?» для каждого устройства | -- | **Да** |
 | Шаблон экспорта Аварийная папка, сортировка по этажу/месту, изображения в PDF | -- | **Да** |
 | Ссылка со страницы устройства в HA обратно в приложение (через MQTT) | -- | **Да** |
@@ -744,7 +778,7 @@ Cada dispositivo también puede registrar:
 2. **Выбрать тип** -- Из 32 категорий (Роутер, Камера, Термостат и др.)
 3. **Заполнить основные данные** -- Название, модель, производитель, серийный номер
 4. **Указать расположение** -- Выбрать этаж и зону из Home Assistant
-5. **Добавить сетевые данные** -- IP-адрес, MAC-адрес, интеграция, тип сети
+5. **Добавить сетевые данные** -- IP-адрес, MAC-адрес, тип сети, источник питания (раздел *Сеть и Питание*); интеграция находится в разделе *Home Assistant*
 6. **Записать гарантию** -- Дата покупки и истечения гарантии
 7. **Сделать фото** (Pro) -- Использовать кнопку камеры с предпросмотром
 8. **Сканировать штрихкод** (Pro) -- Мгновенный захват серийных номеров
@@ -758,7 +792,7 @@ Cada dispositivo también puede registrar:
 3. Приложение импортирует весь реестр устройств HA -- производители, модели и интеграции сопоставляются автоматически
 4. Дополнить импортированные устройства серийными номерами, фотографиями и датами гарантии
 
-Импорт можно запускать несколько раз -- дубли определяются и пропускаются автоматически. Повторный импорт дописывает серийный номер и MAC-адрес в пустые поля существующих устройств и объединяет дубли-близнецы в одно устройство.
+Импорт можно запускать несколько раз -- дубли определяются и пропускаются автоматически. Повторный импорт дописывает серийный номер и MAC-адрес в пустые поля существующих устройств. Он лишь предотвращает новые дубли-близнецы: устройства, уже импортированные дважды, повторный импорт не объединяет -- для этого используйте *Настройки → Возможные дубликаты*.
 
 ### Лицензия Pro
 
@@ -769,12 +803,18 @@ Cada dispositivo también puede registrar:
 | Цена | Бесплатно | 9,99 EUR (единоразово) |
 | Лимит устройств | 50 | Без ограничений |
 | Языки | EN | DE, EN, ES, FR, RU |
-| Импорт HA | -- | Да |
-| Экспорт Excel и PDF | -- | Да |
+| Импорт HA и перекатегоризация | -- | Да |
+| Импорт/экспорт Excel и экспорт PDF | -- | Да |
 | Камера и сканер QR | -- | Да |
-| Фотогалерея | -- | Да |
+| Фото устройства, фото установки и документы | -- | Да |
+| Поля передачи (без HA, настенный выключатель, внешняя ссылка) | -- | Да |
 | Массовое редактирование | -- | Да |
 | MQTT Discovery | -- | Да |
+| Объединение дублей, очистка самоимпорта | Да | Да |
+| Корзина (автоочистка через 30 дней) | Да | Да |
+| Снимки базы данных | Да | Да |
+
+Без лицензии существующие фото, документы и поля передачи остаются видимыми; MQTT по-прежнему можно отключить и очистить.
 
 **[Купить лицензию Pro](https://derregner.lemonsqueezy.com/checkout/buy/43a72d0b-6948-4ade-909b-6ec216678904)** -- Мгновенная доставка на e-mail. Активация на 3 установки.
 
@@ -794,8 +834,8 @@ Cada dispositivo también puede registrar:
 | Принтер | Датчик | Смартфон | Прочее |
 
 Каждое устройство может дополнительно отслеживать:
-- **Тип сети:** Wi-Fi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
-- **Источник питания:** Адаптер, Сеть (230В), Батарея, Аккумулятор, USB, PoE, Солнечная энергия, Высокое напряжение
+- **Тип сети:** WiFi, LAN, Zigbee, Z-Wave, Bluetooth, Thread/Matter, DECT, Powerline, HomeMatic RF, KNX, Modbus, 1-Wire, RS-232, EnOcean, USB
+- **Источник питания:** Блок питания, 230В, Батарея, Аккумулятор, USB, PoE, Солнечная, Высокое напряжение
 - **Интеграция:** Fritz, Zigbee2MQTT, Tuya, LocalTuya, Bosch SHC, HomeMatic IP, Ring, Blink, Alexa, TP-Link, Tasmota, MQTT и другие
 
 ### Технические требования

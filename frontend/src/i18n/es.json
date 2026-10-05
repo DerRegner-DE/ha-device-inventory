@@ -597,5 +597,6 @@
   "settings.xlsxImportReplace": "Reemplazar los dispositivos existentes (todos a la papelera, con instantánea previa)",
   "settings.xlsxImportReplaceConfirm": "¿Reemplazar realmente todos los dispositivos?",
   "settings.xlsxImportDone": "{count} dispositivos importados.",
-  "settings.xlsxImportFailed": "La importación ha fallado"
+  "settings.xlsxImportFailed": "La importación ha fallado",
+  "snapshots.op.trash_purge": "Antes de vaciar la papelera"
 }
