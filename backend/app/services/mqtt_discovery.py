@@ -196,8 +196,8 @@ async def ensure_addon_slug() -> str | None:
         if not _addon_slug:
             # Rueckfall: Der Supervisor benennt den Container nach dem Slug,
             # nur der Trenner nach dem Repo-Praefix wird zum Bindestrich
-            # ("a0d7b954-geraeteverwaltung", "local-geraeteverwaltung-preview"
-            # fuer den Slug "local_geraeteverwaltung-preview").
+            # ("a0d7b954-geraeteverwaltung"; ein lokales Add-on mit Slug
+            # "local_geraeteverwaltung-test" heisst "local-geraeteverwaltung-test").
             host = os.environ.get("HOSTNAME", "")
             if "geraeteverwaltung" in host:
                 _addon_slug = host.replace("-", "_", 1)

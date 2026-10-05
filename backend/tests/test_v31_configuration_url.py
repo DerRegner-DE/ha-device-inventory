@@ -44,7 +44,7 @@ def test_link_from_container_hostname_when_supervisor_call_fails(monkeypatch):
         "homeassistant://app/a0d7b954_geraeteverwaltung/devices/0123456789abcdef"
     )
     _reset(md)
-    # Lokales Preview-Add-on auf der Testbox: Slug enthaelt selbst einen Bindestrich.
-    monkeypatch.setenv("HOSTNAME", "local-geraeteverwaltung-preview")
-    assert asyncio.run(md.ensure_addon_slug()) == "local_geraeteverwaltung-preview"
+    # Lokales Add-on, dessen Slug selbst einen Bindestrich enthaelt.
+    monkeypatch.setenv("HOSTNAME", "local-geraeteverwaltung-test")
+    assert asyncio.run(md.ensure_addon_slug()) == "local_geraeteverwaltung-test"
     _reset(md)
