@@ -259,7 +259,7 @@
   "snapshots.op.xlsx_replace_import": "Antes de importación Excel (reemplazo)",
   "snapshots.op.pre_restore": "Antes de restauración (auto)",
   "settings.trash": "Papelera",
-  "settings.trashDesc": "Los dispositivos eliminados permanecen visibles aquí y pueden restaurarse individualmente o en lote. La eliminación permanente quita un dispositivo y todas sus fotos para siempre.",
+  "settings.trashDesc": "Los dispositivos eliminados permanecen visibles aquí 30 días y pueden restaurarse individualmente o en lote; después la app los elimina automáticamente (antes, instantánea). La eliminación permanente quita un dispositivo con sus fotos, fotos de instalación y documentos para siempre.",
   "trash.loading": "Cargando papelera...",
   "trash.empty": "La papelera está vacía.",
   "trash.restoreButton": "Restaurar",

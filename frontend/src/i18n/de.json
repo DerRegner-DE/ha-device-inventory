@@ -259,7 +259,7 @@
   "snapshots.op.xlsx_replace_import": "Vor Excel-Import (Ersetzen)",
   "snapshots.op.pre_restore": "Vor Wiederherstellung (Automatisch)",
   "settings.trash": "Papierkorb",
-  "settings.trashDesc": "Gelöschte Geräte bleiben hier sichtbar und können einzeln oder in Gruppen wiederhergestellt werden. Endgültiges Löschen entfernt ein Gerät inklusive aller Fotos dauerhaft.",
+  "settings.trashDesc": "Gelöschte Geräte bleiben hier 30 Tage sichtbar und können einzeln oder in Gruppen wiederhergestellt werden; danach löscht die App sie automatisch (vorher Schnappschuss). Endgültiges Löschen entfernt ein Gerät mit Fotos, Einbauort-Bildern und Dokumenten dauerhaft.",
   "trash.loading": "Lade Papierkorb...",
   "trash.empty": "Papierkorb ist leer.",
   "trash.restoreButton": "Wiederherstellen",

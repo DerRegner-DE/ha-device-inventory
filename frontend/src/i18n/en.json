@@ -259,7 +259,7 @@
   "snapshots.op.xlsx_replace_import": "Before Excel import (replace)",
   "snapshots.op.pre_restore": "Before restore (auto)",
   "settings.trash": "Trash",
-  "settings.trashDesc": "Deleted devices remain visible here and can be restored individually or in bulk. Permanently deleting removes a device and all its photos for good.",
+  "settings.trashDesc": "Deleted devices stay visible here for 30 days and can be restored individually or in bulk; after that the app deletes them automatically (snapshot first). Permanently deleting removes a device with its photos, installation photos and documents for good.",
   "trash.loading": "Loading trash...",
   "trash.empty": "Trash is empty.",
   "trash.restoreButton": "Restore",
