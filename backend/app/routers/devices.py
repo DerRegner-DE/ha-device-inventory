@@ -9,6 +9,7 @@ from uuid import uuid4
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Query
 from pydantic import BaseModel
 
+from app.config import settings
 from app.database import get_db, dict_from_row, dicts_from_rows
 from app.models import Device, DeviceCreate, DeviceUpdate, DeviceListResponse, Photo, BulkUpdateBody, BulkDeleteBody, BulkRestoreBody
 from app.services.mqtt_discovery import publish_device, remove_device as mqtt_remove_device
@@ -375,12 +376,71 @@ def restore_device(uuid: str):
     return {"status": "ok", "restored": cursor.rowcount}
 
 
+def _purge_devices(conn, ids: list[int]) -> list:
+    """Endgueltiges Loeschen aus dem Papierkorb, fuer Einzel- und Sammel-Loeschen.
+
+    Kind-Zeilen zuerst: photos, documents und attachments haben kein
+    ``ON DELETE CASCADE``. v3.1.0: Das Einzel-Loeschen raeumte bisher nur
+    photos weg und scheiterte bei Geraeten mit Einbauort-Bildern oder
+    Dokumenten; ausserdem blieben die Dateien liegen. Gibt die Dateien
+    zurueck, die nach dem Commit entfernt werden.
+    """
+    ph = ", ".join(["?"] * len(ids))
+    files = []
+    for r in conn.execute(f"SELECT uuid, filename FROM photos WHERE device_id IN ({ph})", ids).fetchall():
+        files += [settings.PHOTOS_DIR / r["filename"], settings.PHOTOS_DIR / "thumbs" / f"{r['uuid']}.jpg"]
+    for r in conn.execute(f"SELECT filename FROM attachments WHERE device_id IN ({ph})", ids).fetchall():
+        files.append(settings.PHOTOS_DIR / r["filename"])
+    docs_dir = settings.PHOTOS_DIR.parent / "documents"
+    for r in conn.execute(
+        f"SELECT uuid FROM documents WHERE device_id IN ({ph}) AND (url IS NULL OR url = '')", ids
+    ).fetchall():
+        files += list(docs_dir.glob(f"{r['uuid']}*"))
+    uuids = [r["uuid"] for r in conn.execute(f"SELECT uuid FROM devices WHERE id IN ({ph})", ids).fetchall()]
+    for table in ("photos", "documents", "attachments"):
+        conn.execute(f"DELETE FROM {table} WHERE device_id IN ({ph})", ids)
+    if uuids:
+        uph = ", ".join(["?"] * len(uuids))
+        conn.execute(f"DELETE FROM device_aliases WHERE device_uuid IN ({uph})", uuids)
+    conn.execute(f"DELETE FROM devices WHERE id IN ({ph})", ids)
+    return files
+
+
+TRASH_RETENTION_DAYS = 30
+
+
+def purge_expired_trash(days: int = TRASH_RETENTION_DAYS) -> int:
+    """v3.1.0: Was laenger als ``days`` Tage im Papierkorb liegt, wird endgueltig
+    geloescht -- so, wie App und Handbuch es seit 2.4 ankuendigen. Vorher ein
+    Schnappschuss, damit auch das zuruecknehmbar bleibt."""
+    with get_db() as conn:
+        ids = [r["id"] for r in conn.execute(
+            "SELECT id FROM devices WHERE deleted_at IS NOT NULL "
+            "AND deleted_at < datetime('now', ?)", (f"-{int(days)} days",),
+        ).fetchall()]
+    if not ids:
+        return 0
+    create_snapshot("trash_expired")
+    with get_db() as conn:
+        files = _purge_devices(conn, ids)
+    _remove_files(files)
+    return len(ids)
+
+
+def _remove_files(files: list) -> None:
+    for f in files:
+        try:
+            f.unlink(missing_ok=True)
+        except OSError:
+            pass  # Datei ist Beiwerk; die Datenbank ist bereits bereinigt
+
+
 @router.delete("/trash/{uuid}", status_code=204)
 def hard_delete_device(uuid: str):
     """Permanently delete a soft-deleted device (empty trash for one item).
 
     Only works on already-deleted devices — calling this on a live device
-    returns 400. Removes photos rows as well.
+    returns 400. Removes photos, documents, attachments and their files.
     """
     with get_db() as conn:
         row = conn.execute(
@@ -393,8 +453,8 @@ def hard_delete_device(uuid: str):
                 status_code=400,
                 detail="Device is not in trash. Soft-delete it first via DELETE /devices/{uuid}.",
             )
-        conn.execute("DELETE FROM photos WHERE device_id = ?", (row["id"],))
-        conn.execute("DELETE FROM devices WHERE id = ?", (row["id"],))
+        files = _purge_devices(conn, [row["id"]])
+    _remove_files(files)
 
 
 @router.post("/trash/purge")
@@ -428,15 +488,9 @@ def bulk_purge_trash(body: BulkDeleteBody):
         if not ids:
             return {"purged": 0, "total": len(body.uuids)}
 
-        id_placeholders = ", ".join(["?"] * len(ids))
-        for table in ("photos", "documents", "attachments"):
-            conn.execute(
-                f"DELETE FROM {table} WHERE device_id IN ({id_placeholders})", ids
-            )
-        cursor = conn.execute(
-            f"DELETE FROM devices WHERE id IN ({id_placeholders})", ids
-        )
-        return {"purged": cursor.rowcount, "total": len(body.uuids)}
+        files = _purge_devices(conn, ids)
+    _remove_files(files)
+    return {"purged": len(ids), "total": len(body.uuids)}
 
 
 @router.put("/bulk/update")

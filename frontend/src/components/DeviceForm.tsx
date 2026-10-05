@@ -757,7 +757,12 @@ export function DeviceForm({ device }: DeviceFormProps) {
 
           {/* v3.0.0: Uebergabe-Doku. Beide Felder zielen auf den Fall, den das
               Forum immer wieder beschreibt: Jemand anderes steht spaeter vor
-              der Anlage — Angehoerige, Elektriker, Kaeufer. */}
+              der Anlage — Angehoerige, Elektriker, Kaeufer.
+              v3.1.0: Pro (README/Lizenzseite); vorhandene Werte bleiben sichtbar. */}
+          <fieldset disabled={!hasFeature("ha_sync")} class="space-y-4 m-0 p-0 border-0 min-w-0">
+          {!hasFeature("ha_sync") && (
+            <p class="text-xs text-amber-600 dark:text-amber-400">{t("form.handoverPro")}</p>
+          )}
           <Field label={t("form.withoutHa")} hint={t("form.withoutHaHint")}>
             <select
               value={form.ohne_ha}
@@ -815,6 +820,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
               placeholder={t("form.externalUrlPlaceholder")}
             />
           </Field>
+          </fieldset>
         </Section>
 
         {/* v2.5.3: Bug 6 — installation photos + documents live in the edit
@@ -822,7 +828,7 @@ export function DeviceForm({ device }: DeviceFormProps) {
             appear read-only on DeviceDetail. */}
         {isEdit && device?.uuid && (
           <div class="space-y-3">
-            <AttachmentsSection deviceUuid={device.uuid} />
+            <AttachmentsSection deviceUuid={device.uuid} locked={!hasFeature("ha_sync")} />
             <DocumentsSection deviceUuid={device.uuid} />
           </div>
         )}

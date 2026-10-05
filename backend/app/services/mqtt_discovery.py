@@ -367,11 +367,29 @@ def _build_state_payload(device: dict) -> dict:
                 "schalter_gebrueckt": device.get("schalter_gebrueckt"),
                 "schalter_gebrueckt_hinweis": device.get("schalter_gebrueckt_hinweis"),
                 "external_url": device.get("external_url"),
-                "fotos": len(device.get("photos") or []) or None,
+                "fotos": (device["photos_count"] if "photos_count" in device
+                          else len(device.get("photos") or [])) or None,
                 "einbauort_bilder": device.get("attachments_count") or None,
             }.items() if v not in (None, "")
         },
     }
+
+
+async def republish_device_id(device_id: int) -> None:
+    """v3.1.0: nach Foto-/Einbauort-Bild-Aenderungen die Zaehler in HA nachziehen."""
+    if not settings.MQTT_DISCOVERY_ENABLED:
+        return
+    try:
+        from app.database import dicts_from_rows, get_db
+
+        with get_db() as conn:
+            rows = dicts_from_rows(conn.execute(
+                "SELECT * FROM devices WHERE id = ? AND deleted_at IS NULL", (device_id,),
+            ).fetchall())
+        if rows:
+            await publish_device(rows[0])
+    except Exception as e:  # Veroeffentlichung ist Beiwerk, die Aenderung selbst ist gespeichert
+        logger.warning("MQTT republish for device %s failed: %s", device_id, e)
 
 
 async def publish_device(device: dict) -> bool:
@@ -380,15 +398,27 @@ async def publish_device(device: dict) -> bool:
         return False
 
     await ensure_addon_slug()
-    if "attachments_count" not in device and device.get("id") is not None:
+    if device.get("id") is not None and (
+        "attachments_count" not in device or ("photos" not in device and "photos_count" not in device)
+    ):
+        # Zeilen aus "Alle Geraete synchronisieren" kommen ohne Fotos/Zaehler;
+        # ohne Nachladen fehlten die Attribute "fotos"/"einbauort_bilder" in HA.
         try:
             from app.database import get_db
 
             with get_db() as conn:
-                device = {**device, "attachments_count": conn.execute(
-                    "SELECT COUNT(*) FROM attachments WHERE device_id = ? AND deleted_at IS NULL",
-                    (device["id"],),
-                ).fetchone()[0]}
+                extra = {}
+                if "attachments_count" not in device:
+                    extra["attachments_count"] = conn.execute(
+                        "SELECT COUNT(*) FROM attachments WHERE device_id = ? AND deleted_at IS NULL",
+                        (device["id"],),
+                    ).fetchone()[0]
+                if "photos" not in device:
+                    extra["photos_count"] = conn.execute(
+                        "SELECT COUNT(*) FROM photos WHERE device_id = ? AND deleted_at IS NULL",
+                        (device["id"],),
+                    ).fetchone()[0]
+                device = {**device, **extra}
         except Exception:
             pass  # Zaehler ist Beiwerk, die Veroeffentlichung geht vor
     try:

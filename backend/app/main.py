@@ -83,6 +83,19 @@ async def _initial_ha_sync() -> None:
 
 
 @asynccontextmanager
+async def _trash_retention_loop() -> None:
+    from app.routers.devices import purge_expired_trash
+
+    while True:
+        try:
+            purged = purge_expired_trash()
+            if purged:
+                logger.info("Papierkorb: %d Geraete nach Ablauf der Frist endgueltig geloescht", purged)
+        except Exception as e:  # nie die App stoppen
+            logger.warning("Papierkorb-Bereinigung fehlgeschlagen: %s", e)
+        await asyncio.sleep(24 * 3600)
+
+
 async def lifespan(app: FastAPI):
     # Startup
     logger.info("Initializing database at %s", settings.DB_PATH)
@@ -107,6 +120,9 @@ async def lifespan(app: FastAPI):
             asyncio.create_task(mqtt_test())
         except Exception as e:
             logger.warning("MQTT startup test could not be scheduled: %s", e)
+
+    # v3.1.0: Papierkorb nach 30 Tagen leeren -- beim Start und danach taeglich.
+    asyncio.create_task(_trash_retention_loop())
 
     # Start HA sync in background (non-blocking)
     if settings.HA_TOKEN:

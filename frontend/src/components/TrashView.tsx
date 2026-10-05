@@ -33,6 +33,7 @@ export function TrashView() {
   const [busy, setBusy] = useState(false);
   const [purgeConfirm, setPurgeConfirm] = useState<string | null>(null);
   const [bulkPurgeConfirm, setBulkPurgeConfirm] = useState(false);
+  const [emptyConfirm, setEmptyConfirm] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
   async function refresh() {
@@ -114,6 +115,28 @@ export function TrashView() {
     setBusy(false);
   };
 
+  // v3.1.0: "Papierkorb leeren" -- alles endgueltig loeschen, zweistufig bestaetigt.
+  const handleEmptyTrash = async () => {
+    if (!emptyConfirm) {
+      setEmptyConfirm(true);
+      return;
+    }
+    setEmptyConfirm(false);
+    setBusy(true);
+    setResult(null);
+    const res = await apiPost<{ purged: number; total: number }>(
+      "/devices/trash/purge",
+      { uuids: items.map((i) => i.uuid) },
+    );
+    if (res) {
+      setResult(t("trash.purged", { count: res.purged }));
+      await refresh();
+    } else {
+      setResult(t("trash.purgeFailed"));
+    }
+    setBusy(false);
+  };
+
   const handlePurge = async (uuid: string) => {
     if (purgeConfirm !== uuid) {
       setPurgeConfirm(uuid);
@@ -142,6 +165,29 @@ export function TrashView() {
 
   return (
     <div>
+      <button
+        type="button"
+        onClick={handleEmptyTrash}
+        disabled={busy}
+        class={`w-full mb-3 py-2 rounded-xl text-sm font-medium disabled:opacity-50 ${
+          emptyConfirm
+            ? "bg-red-500 text-white hover:bg-red-600"
+            : "border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+        }`}
+      >
+        {emptyConfirm
+          ? t("trash.emptyAllConfirm", { count: items.length })
+          : t("trash.emptyAll")}
+      </button>
+      {emptyConfirm && (
+        <button
+          type="button"
+          onClick={() => setEmptyConfirm(false)}
+          class="w-full -mt-2 mb-3 text-xs text-gray-400 hover:text-gray-600 text-center"
+        >
+          {t("common.cancel")}
+        </button>
+      )}
       <div class="flex items-center justify-between mb-3 gap-2">
         <button
           onClick={selectAll}

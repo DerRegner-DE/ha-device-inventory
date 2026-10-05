@@ -28,6 +28,8 @@ export function Settings() {
 
   const isPro = license.valid && license.tier === "pro";
   const hasMultilingual = hasFeature("multilingual");
+  // v3.1.0: PDF-/Excel-Export ist Pro, wie in README und Lizenzseite angegeben.
+  const hasExcel = hasFeature("excel");
   const hasHaSync = hasFeature("ha_sync");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
@@ -143,6 +145,27 @@ export function Settings() {
       setWipeResult(t("settings.wipeFailed"));
     }
     setWiping(false);
+  };
+
+  // v3.1.0: Self-Import-Bereinigung bekommt einen Knopf; bisher gab es sie nur
+  // als API-Aufruf, auf den das Handbuch verweisen musste.
+  const [cleaningSelf, setCleaningSelf] = useState(false);
+  const [selfResult, setSelfResult] = useState<string | null>(null);
+  const handleCleanupSelfImports = async () => {
+    setCleaningSelf(true);
+    setSelfResult(null);
+    try {
+      const res = await apiPost<{ purged?: number }>("/ha/cleanup-self-imports", {}, undefined, undefined, 60000);
+      if (res && typeof res.purged === "number") {
+        setSelfResult(res.purged > 0 ? t("settings.selfImportsDone", { count: res.purged }) : t("settings.selfImportsNone"));
+        if (res.purged > 0) await syncFromServer();
+      } else {
+        setSelfResult(t("settings.selfImportsFailed"));
+      }
+    } catch {
+      setSelfResult(t("settings.selfImportsFailed"));
+    }
+    setCleaningSelf(false);
   };
 
   const handleImportHA = async () => {
@@ -276,6 +299,7 @@ export function Settings() {
 
   const handleMqttToggle = async () => {
     const newVal = !mqttEnabled;
+    if (newVal && !hasHaSync) return; // v3.1.0: Einschalten nur mit Pro
     if (newVal && !confirmMqtt) {
       setConfirmMqtt(true);
       return;
@@ -653,6 +677,21 @@ export function Settings() {
           <div class="mt-2">
             <DuplicatesSection />
           </div>
+          <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+            <h4 class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.selfImports")}</h4>
+            <p class="text-xs text-gray-400 mb-2">{t("settings.selfImportsDesc")}</p>
+            <button
+              type="button"
+              onClick={handleCleanupSelfImports}
+              disabled={cleaningSelf}
+              class="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+            >
+              {cleaningSelf ? t("settings.selfImportsRunning") : t("settings.selfImportsButton")}
+            </button>
+            {selfResult && (
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">{selfResult}</p>
+            )}
+          </div>
         </details>
 
         {/* Trash view (v2.4.2) — soft-deleted devices with restore.
@@ -745,9 +784,14 @@ export function Settings() {
                   {t("common.cancel")}
                 </button>
               )}
+              {/* v3.1.0: Einschalten nur mit Pro; Ausschalten bleibt immer moeglich. */}
+              {!hasHaSync && !mqttEnabled && (
+                <span class="text-xs text-gray-400">Pro</span>
+              )}
               <button
                 onClick={handleMqttToggle}
-                class={`relative w-11 h-6 rounded-full transition-colors ${
+                disabled={!hasHaSync && !mqttEnabled}
+                class={`relative w-11 h-6 rounded-full transition-colors disabled:opacity-50 ${
                   confirmMqtt ? "bg-amber-400" : mqttEnabled ? "bg-[#4CAF50]" : "bg-gray-300"
                 }`}
                 title={confirmMqtt ? t("common.confirm") : undefined}
@@ -762,12 +806,13 @@ export function Settings() {
           </div>
           <button
             onClick={handleMqttTest}
-            disabled={mqttTesting}
+            disabled={mqttTesting || !hasHaSync}
             class="w-full py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 mb-2"
           >
             {mqttTesting ? "…" : (t("settings.mqttTestButton") || "Test MQTT connection")}
+            {!hasHaSync && " (Pro)"}
           </button>
-          {mqttEnabled && (
+          {mqttEnabled && hasHaSync && (
             <button
               onClick={handleMqttSync}
               disabled={mqttSyncing}
@@ -841,14 +886,16 @@ export function Settings() {
             </button>
             <button
               onClick={() => setExportPickerOpen(true)}
-              class="flex-1 py-2.5 rounded-xl bg-[#e74c3c] text-white text-sm font-medium hover:bg-[#c0392b]"
+              disabled={!hasExcel}
+              class="flex-1 py-2.5 rounded-xl bg-[#e74c3c] text-white text-sm font-medium hover:bg-[#c0392b] disabled:opacity-50"
             >
               {t("settings.pdfXlsxExportButton")}
+              {!hasExcel && " (Pro)"}
             </button>
           </div>
         </div>
 
-        {exportPickerOpen && (
+        {exportPickerOpen && hasExcel && (
           <ExportPicker onClose={() => setExportPickerOpen(false)} />
         )}
 

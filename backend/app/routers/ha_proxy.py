@@ -223,8 +223,8 @@ async def cleanup_self_imports():
     if not self_ha_ids:
         return {"status": "ok", "purged": 0, "message": "Keine Self-Imports gefunden."}
 
+    placeholders = ", ".join(["?"] * len(self_ha_ids))
     with get_db() as conn:
-        placeholders = ", ".join(["?"] * len(self_ha_ids))
         affected = dicts_from_rows(
             conn.execute(
                 f"SELECT uuid FROM devices WHERE ha_device_id IN ({placeholders}) "
@@ -232,7 +232,11 @@ async def cleanup_self_imports():
                 tuple(self_ha_ids),
             ).fetchall()
         )
-        if affected:
+    if affected:
+        # v3.1.0: wie jede andere Massenaktion vorher ein Schnappschuss.
+        from app.services.snapshots import create_snapshot
+        create_snapshot("cleanup_self_imports")
+        with get_db() as conn:
             conn.execute(
                 f"UPDATE devices SET deleted_at = datetime('now'), "
                 f"sync_version = sync_version + 1 "

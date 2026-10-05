@@ -6,11 +6,12 @@ import os
 import shutil
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import get_db, dict_from_row
+from app.services.mqtt_discovery import republish_device_id
 
 router = APIRouter(tags=["photos"])
 
@@ -24,6 +25,7 @@ async def upload_photo(
     file: UploadFile = File(...),
     caption: str | None = Form(None),
     is_primary: bool = Form(False),
+    background_tasks: BackgroundTasks = None,
 ):
     # Validate device exists
     with get_db() as conn:
@@ -89,6 +91,9 @@ async def upload_photo(
             conn.execute("SELECT * FROM photos WHERE uuid = ?", (photo_uuid,)).fetchone()
         )
 
+    # v3.1.0: Fotozaehler in HA (Attribut "fotos") nachziehen.
+    if background_tasks is not None:
+        background_tasks.add_task(republish_device_id, device_id)
     return row
 
 
@@ -145,7 +150,7 @@ def get_photo(photo_uuid: str, thumb: bool = False):
 
 
 @router.delete("/photos/{photo_uuid}", status_code=204)
-def delete_photo(photo_uuid: str):
+def delete_photo(photo_uuid: str, background_tasks: BackgroundTasks = None):
     with get_db() as conn:
         row = dict_from_row(
             conn.execute("SELECT * FROM photos WHERE uuid = ? AND deleted_at IS NULL", (photo_uuid,)).fetchone()
@@ -165,3 +170,5 @@ def delete_photo(photo_uuid: str):
     filepath = settings.PHOTOS_DIR / row["filename"]
     if filepath.exists():
         filepath.unlink()
+    if background_tasks is not None:
+        background_tasks.add_task(republish_device_id, row["device_id"])

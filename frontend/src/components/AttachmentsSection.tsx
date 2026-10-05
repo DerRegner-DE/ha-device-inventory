@@ -24,9 +24,12 @@ interface Attachment {
 export function AttachmentsSection({
   deviceUuid,
   readOnly = false,
+  locked = false,
 }: {
   deviceUuid: string;
   readOnly?: boolean;
+  /** v3.1.0: Einbauort-Bilder sind Pro -- Bestand sichtbar, Hochladen/Loeschen gesperrt. */
+  locked?: boolean;
 }) {
   const [items, setItems] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +112,7 @@ export function AttachmentsSection({
                   {a.caption}
                 </div>
               )}
-              {!readOnly && (
+              {!readOnly && !locked && (
                 <button
                   type="button"
                   onClick={() => handleDelete(a.uuid)}
@@ -124,7 +127,10 @@ export function AttachmentsSection({
         </div>
       )}
 
-      {!readOnly && (
+      {!readOnly && locked && (
+        <p class="text-xs text-amber-600 dark:text-amber-400">{t("attachments.proOnly")}</p>
+      )}
+      {!readOnly && !locked && (
         <div class="space-y-2">
           <input
             type="text"

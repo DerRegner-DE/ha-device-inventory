@@ -1,9 +1,9 @@
 """Database snapshot endpoints (v2.4.2).
 
-Lists, restores, and deletes pre-action DB snapshots. Snapshot *creation*
-is not exposed here — snapshots are taken automatically by destructive
-operations (recategorize, bulk edit/delete, XLSX replace-import, category
-delete) via ``app.services.snapshots.create_snapshot``.
+Lists, restores, and deletes pre-action DB snapshots. Snapshots are taken
+automatically by destructive operations via
+``app.services.snapshots.create_snapshot``; since v3.1.0 they can also be
+created by hand (POST /snapshots).
 """
 
 from __future__ import annotations
@@ -19,6 +19,15 @@ router = APIRouter(prefix="/snapshots", tags=["snapshots"])
 def list_snapshots():
     """List all snapshots, newest first, with metadata."""
     return {"snapshots": snap_svc.list_snapshots()}
+
+
+@router.post("", status_code=201)
+def create_manual_snapshot():
+    """v3.1.0: Schnappschuss von Hand, z. B. vor eigenen Aufraeumarbeiten."""
+    path = snap_svc.create_snapshot("manual")
+    if path is None:
+        raise HTTPException(status_code=500, detail="Snapshot could not be created")
+    return {"filename": path.name}
 
 
 @router.post("/{filename}/restore")

@@ -11,11 +11,12 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from fastapi import APIRouter, Form, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Form, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.database import dict_from_row, dicts_from_rows, get_db
+from app.services.mqtt_discovery import republish_device_id
 
 router = APIRouter(tags=["attachments"])
 
@@ -33,6 +34,7 @@ async def upload_attachment(
     device_uuid: str,
     file: UploadFile = File(...),
     caption: str | None = Form(None),
+    background_tasks: BackgroundTasks = None,
 ):
     with get_db() as conn:
         device = dict_from_row(
@@ -100,6 +102,9 @@ async def upload_attachment(
         row = dict_from_row(
             conn.execute("SELECT * FROM attachments WHERE uuid = ?", (att_uuid,)).fetchone()
         )
+    # v3.1.0: Zaehler "einbauort_bilder" in HA nachziehen.
+    if background_tasks is not None:
+        background_tasks.add_task(republish_device_id, device["id"])
     return row
 
 
@@ -171,7 +176,7 @@ def update_attachment(att_uuid: str, caption: str | None = Form(None)):
 
 
 @router.delete("/attachments/{att_uuid}", status_code=204)
-def delete_attachment(att_uuid: str):
+def delete_attachment(att_uuid: str, background_tasks: BackgroundTasks = None):
     with get_db() as conn:
         row = dict_from_row(
             conn.execute(
@@ -189,3 +194,5 @@ def delete_attachment(att_uuid: str):
             "UPDATE devices SET sync_version = sync_version + 1, updated_at = datetime('now') WHERE id = ?",
             (row["device_id"],),
         )
+    if background_tasks is not None:
+        background_tasks.add_task(republish_device_id, row["device_id"])

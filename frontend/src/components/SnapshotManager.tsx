@@ -13,6 +13,10 @@ interface Snapshot {
 /** Friendly label for the op slug that was used when the snapshot was taken.
  *  Falls back to the raw op string for unknown values. */
 function opLabel(op: string): string {
+  // Kategorie-Loeschungen tragen den Namen im Slug: category_delete_<name>.
+  if (op.startsWith("category_delete_")) {
+    return t("snapshots.op.category_delete", { name: op.slice("category_delete_".length) });
+  }
   const key = `snapshots.op.${op}`;
   const translated = t(key);
   return translated && translated !== key ? translated : op;
@@ -94,20 +98,47 @@ export function SnapshotManager() {
     else setResult(t("snapshots.deleteFailed"));
   };
 
+  // v3.1.0: Schnappschuss von Hand (vorher nur automatisch vor Massenaktionen).
+  const [creating, setCreating] = useState(false);
+  const handleCreate = async () => {
+    setCreating(true);
+    setResult(null);
+    const res = await apiPost<{ filename: string }>("/snapshots", {}, undefined, undefined, 60000);
+    setResult(res && res.filename ? t("snapshots.created") : t("snapshots.createFailed"));
+    if (res && res.filename) await refresh();
+    setCreating(false);
+  };
+
   if (loading) {
     return <p class="text-xs text-gray-500">{t("snapshots.loading")}</p>;
   }
 
+  const createButton = (
+    <button
+      type="button"
+      onClick={handleCreate}
+      disabled={creating}
+      class="w-full py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+    >
+      {creating ? t("snapshots.creating") : t("snapshots.createButton")}
+    </button>
+  );
+
   if (snapshots.length === 0) {
     return (
-      <p class="text-xs text-gray-500">
-        {t("snapshots.empty")}
-      </p>
+      <div class="space-y-2">
+        {createButton}
+        <p class="text-xs text-gray-500">
+          {t("snapshots.empty")}
+        </p>
+        {result && <p class="text-xs text-gray-500 text-center">{result}</p>}
+      </div>
     );
   }
 
   return (
     <div class="space-y-2">
+      {createButton}
       {snapshots.map((s) => {
         const isConfirming = confirmId === s.filename;
         const isDeleteConfirming = deleteConfirmId === s.filename;

@@ -6,7 +6,7 @@ import { FilterBar } from "./FilterBar";
 import { DonutFilters, type DonutFilterKey } from "./DonutFilters";
 import { t } from "../i18n";
 import { useLanguage } from "../i18n";
-import { getDeviceLimit } from "../license";
+import { getDeviceLimit, hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { apiPost } from "../api/client";
 import { showUndoToast } from "./UndoToast";
@@ -344,16 +344,19 @@ export function DeviceList() {
           )}
           {/* v2.6.0 (Forum): "Auswählen"-Button präsenter — als Ghost-Button
               mit Border, sodass User ihn beim ersten Hingucken finden. */}
+          {/* v3.1.0: Sammelbearbeitung ist Pro (README/Lizenzseite). */}
           <button
             type="button"
             onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-            class={`text-xs px-3 py-1 rounded-lg font-medium border transition-colors ${
+            disabled={!selectMode && !hasFeature("ha_sync")}
+            class={`text-xs px-3 py-1 rounded-lg font-medium border transition-colors disabled:opacity-50 disabled:pointer-events-none ${
               selectMode
                 ? "bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-700 dark:text-gray-200"
                 : "border-[#1F4E79] text-[#1F4E79] hover:bg-[#1F4E79] hover:text-white"
             }`}
           >
             {selectMode ? t("bulk.cancel") : t("bulk.select")}
+            {!selectMode && !hasFeature("ha_sync") && " (Pro)"}
           </button>
         </div>
       )}
