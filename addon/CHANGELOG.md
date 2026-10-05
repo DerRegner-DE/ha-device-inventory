@@ -1,5 +1,88 @@
 # Changelog
 
+## 3.1.0
+
+Feature-Release mit den im Forum zugesagten Uebergabe-Funktionen, neuen Exportmoeglichkeiten, Hilfe gegen doppelte Geraete seit HA 2026.8 — und einer gruendlich ueberarbeiteten Auto-Kategorisierung. Dabei kam ein alter Fehler ans Licht: Die Kategorisierung nach `device_class` hat seit 2.4.0 auf echten Anlagen nie gegriffen (siehe unten).
+
+**Nach dem Update bitte einmal in dieser Reihenfolge:**
+
+1. *Einstellungen → Aus Home Assistant importieren* — ergaenzt Seriennummer und MAC-Adresse bei vorhandenen Geraeten und loest falsche Router-Zuordnungen (siehe unten). Bestehende Eintraege werden nicht ueberschrieben.
+2. *Einstellungen → Moegliche Dubletten* — doppelte Geraete pruefen und zusammenfuehren.
+3. *Einstellungen → Kategorien neu zuordnen* — die Vorschau zeigt diesmal deutlich mehr Aenderungen als frueher, ausserdem wird die Stromversorgung (Batterie/Akku) nachgetragen. Erst ansehen, dann uebernehmen; alles ist ueber Schnappschuss und Geraete-Historie zuruecknehmbar.
+
+### Neu: „Wandschalter ueberbrueckt?" pro Geraet
+
+Im Forum der meistgenannte Punkt fuer den Rueckbau: Wer die Anlage spaeter abbaut, muss wissen, welcher Lichtschalter ueberbrueckt wurde, sonst geht die Lampe danach nicht mehr. Neues Feld unter *Anmerkungen* mit *Unbekannt / Ja / Nein* und einem Freitext fuer Schalter, Dose oder Einstellung — das deckt auch den Fall ab, dass gar nichts geklemmt, sondern der Aktor umgestellt ist (Shelly „detached"). Erscheint auf der Detailseite, in der Historie und im Export; in der Vorlage *Rueckbau/Elektriker* ist es fest enthalten.
+
+### Neu: Export-Vorlage „Notfallmappe"
+
+Die Liste fuer den Zaehlerschrank: Geraet, Etage und Standort, Hersteller, Modell, Seriennummer, Stromversorgung, „laeuft ohne HA", ueberbrueckte Schalter, Kaufdatum, Garantie, Link zur Anleitung, Funktion und Anmerkungen. Gedacht fuer den Elektriker oder Helfer, den Angehoerige holen. Bewusst ohne Netzwerkdetails — und ohne Kennwoerter, die die App grundsaetzlich nicht speichert.
+
+### Neu: Export nach Etage › Standort › Name
+
+Im Export-Dialog ist die Reihenfolge waehlbar. „Etage › Standort › Name" liefert in Excel eine durchgehende Tabelle ohne Kategorie-Zwischenzeilen, die sich frei sortieren und filtern laesst. Die Spalte *Etage* zeigt jetzt den Namen aus Home Assistant statt der internen Kennung.
+
+### Neu: Bilder im PDF (GitHub #26)
+
+Im Export-Dialog lassen sich Einbauort-Bilder sowie Geraetefotos und Bild-Dokumente zuwaehlen. Sie erscheinen als Bildanhang am Ende des PDFs, in der Liste steht bei jedem Geraet der Verweis (B1, B2 …). Mehrfach hochgeladene gleiche Bilder erscheinen nur einmal, mit allen Geraeten, zu denen sie gehoeren. Die Bilder werden verkleinert eingebettet, damit das PDF handlich bleibt. Im Excel-Export gibt es keine Bilder.
+
+### Neu: Doppelte Geraete zusammenfuehren
+
+Seit HA 2026.8 legt Home Assistant fuer ein Geraet oft mehrere Eintraege an — etwa den Shelly ueber seine eigene Integration und noch einmal ueber die FRITZ!Box, bei mehreren FRITZ!Boxen im Mesh sogar mehrfach.
+
+- **Beim Import** werden Eintraege mit gleicher MAC- oder Zigbee-Adresse aus verschiedenen Integrationen bzw. Konfigurationen zu *einem* Geraet. Es bleibt der Eintrag der steuernden Integration; der Zwilling wird gemerkt und beim naechsten Import nicht wieder angelegt.
+- **Bereits doppelt importierte Geraete** listet *Einstellungen → Moegliche Dubletten* (gleiche MAC-Adresse) mit einem Vorschlag, welches bleibt. Einzeln oder mit *Alle Vorschlaege uebernehmen*.
+- **Von Hand**: *Mit anderem Geraet zusammenfuehren …* auf der Detailseite, fuer alles ohne gemeinsame Kennung.
+
+Fotos, Einbauort-Bilder, Dokumente, Historie und Untergeraete wandern dabei mit, leere Felder werden ergaenzt, Anmerkungen angehaengt. Das aufgeloeste Geraet landet im Papierkorb; vorher wird ein Schnappschuss angelegt.
+
+### Neu: Von der HA-Geraeteseite zurueck in die App (GitHub #27)
+
+Geraete, die die App per MQTT an Home Assistant meldet, haben auf ihrer HA-Geraeteseite jetzt einen *Besuchen*-Link, der direkt das Geraet in der Geraeteverwaltung oeffnet. Fuer Geraete anderer Integrationen kann ein Add-on keinen Link auf deren Geraeteseite setzen.
+
+### Neu: Seriennummer und MAC-Adresse beim Import (GitHub #25)
+
+Beide Werte kennt Home Assistant oft schon — jetzt kommen sie beim Import mit. Ein erneuter Import traegt sie bei vorhandenen Geraeten nach, aber nur in leere Felder.
+
+### Neu: Stromversorgung beim Import
+
+Geraete mit Batterie-Sensor bekommen *Batterie*, wiederaufladbare (Ladezustand, Maehroboter, Saugroboter, Smartphones) *Akku*. Ohne Hinweis bleibt das Feld leer, statt zu raten. Bei vorhandenen Geraeten ueber *Kategorien neu zuordnen*, nur wenn das Feld leer ist.
+
+### Neu: Foto in der Geraeteliste
+
+Hat ein Geraet ein Foto, zeigt die Liste eine kleine Vorschau statt des Anfangsbuchstabens.
+
+### Neu: Mehr Angaben in Home Assistant
+
+Die per MQTT gemeldete Entity *Device type* traegt jetzt die gepflegten Angaben als Attribute: Standort, Seriennummer, Stromversorgung, Funktion, Anmerkungen, „ohne HA" und ueberbrueckter Schalter samt Hinweisen, externer Link sowie die Zahl der Fotos und Einbauort-Bilder. Leere Werte werden weggelassen.
+
+### Geaendert: Formular
+
+*Integration* ist ein freies Feld mit Vorschlagsliste — die bisherige Auswahl kannte nur 36 Integrationen und zeigte bei allen anderen (z. B. Bosch Smart Home, FRITZ!Box, UPnP) ein leeres Feld. *Firmware* steht jetzt bei den Grunddaten, *Integration* im Bereich Home Assistant.
+
+### Geaendert: MQTT-Zugangsdaten
+
+Das Add-on darf die MQTT-Zugangsdaten jetzt beim Supervisor erfragen. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Sonst wie bisher *mqtt_user* und *mqtt_password* in der Add-on-Konfiguration fuellen — ein eigener Home-Assistant-Benutzer genuegt, das Mosquitto-Add-on akzeptiert HA-Benutzer.
+
+### Behoben: Auto-Kategorisierung
+
+- **`device_class` kam nie an.** Home Assistant liefert sie in der Liste der Entities nicht mit. Damit lief die Erkennung ueber Rauchmelder, Steckdosen, Fernseher usw. seit 2.4.0 auf echten Anlagen ins Leere, ebenso die Stromversorgung. Die Werte kommen jetzt aus den Zustaenden.
+- **Integrationen mit vielen Geraetearten** (ZHA, Zigbee2MQTT, Hue, IKEA, Shelly, Tuya, Bosch Smart Home u. a.) entscheiden nicht mehr pauschal. Vorher wurde zum Beispiel jedes ZHA- und Zigbee2MQTT-Geraet „Controller/Gateway" und jede IKEA-Fernbedienung „Leuchtmittel".
+- Ein Zwischenstecker heisst oft nach dem, was an ihm haengt — „Fernseher" ist dann eine Steckdose, kein Fernseher. Messstecker, die nur Werte melden, bleiben Steckdosen.
+- Batterie- und Messwerte ueberstimmen den eigentlichen Geraetetyp nicht mehr (Thermostat mit Batterie bleibt Thermostat), ebenso die Kindersicherung eines Heizkoerperthermostats.
+- Neu erkannt: Taster und Fernbedienungen, Bluetooth-Adapter, Haushaltsgeraete und Rollladen ueber den Namen, Wasser- und Rauchmelder auch ohne Sensor-Entity.
+
+### Behoben: Router als „uebergeordnetes Geraet"
+
+FRITZ!Box und UPnP melden in Home Assistant jedes Geraet im Netz als an sich haengend. Der Import machte daraus „Teil von FRITZ!Box" — Klingeln, Maehroboter und Handys verschwanden damit im Filter *Nur Hauptgeraete*. Router zaehlen nicht mehr als uebergeordnetes Geraet; vorhandene Zuordnungen dieser Art loest der naechste Import. Echte Zentralen (Zigbee-Koordinator, Bosch Smart Home Controller, HomematicIP Access Point) bleiben uebergeordnet.
+
+### Behoben: weitere Fehler
+
+- **Eigene Kategorien** fehlten in der Sammelbearbeitung und teils als Filter-Reiter. Sie stehen jetzt ueberall, auch wenn noch kein Geraet zugeordnet ist; *Kategorien verwalten* ist alphabetisch sortiert.
+- **Eigene Feldauswahl im Export** ging auf einem anderen Geraet oder nach dem Loeschen der Browserdaten verloren — sie wird jetzt in der App gespeichert.
+- **Home-Assistant-Version im Fehlerformular** blieb nach einem HA-Update bis zum Neustart des Add-ons auf dem alten Stand.
+- **PDF:** Im Querformat fehlte ab Seite 2 der Tabellenkopf; Ueberschriften, Zusammenfassung und Seitenzahl folgen jetzt der eingestellten Sprache; die Spalten fuer Ja/Nein sind breiter.
+
 ## 3.0.1
 
 Bugfix-Release mit drei Fehlerbehebungen. Die ersten beiden gehoeren zusammen: Erst mit beiden werden auch bereits importierte Zigbee2MQTT-Geraete korrigiert.

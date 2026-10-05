@@ -1,6 +1,6 @@
 # Geräteverwaltung — Benutzerhandbuch
 
-Stand: v2.6.0 · 2026-04-27
+Stand: v3.1.0 · 2026-10-05
 
 Dieses Handbuch ist die Antwort auf die immer wieder gleichen Forum-Fragen. Wenn du noch keine vorherige Version kennst, fang oben beim Schnellstart an. Wer schon eine ältere Version genutzt hat, springt direkt zum Kapitel mit dem Feature, das gerade Fragen aufwirft.
 
@@ -11,11 +11,12 @@ Dieses Handbuch ist die Antwort auf die immer wieder gleichen Forum-Fragen. Wenn
 1. [Schnellstart in 5 Schritten](#schnellstart-in-5-schritten)
 2. [Home Assistant Integration (MQTT-Discovery)](#home-assistant-integration-mqtt-discovery)
 3. [Multi-Channel-Geräte (Parent-Child)](#multi-channel-geräte-parent-child)
-4. [Versicherungs-Doku & Nachlass — die typischen Workflows](#versicherungs-doku--nachlass--die-typischen-workflows)
-5. [Filter, Suche und Sortierung](#filter-suche-und-sortierung)
-6. [Papierkorb & Datenbank-Schnappschüsse](#papierkorb--datenbank-schnappschüsse)
-7. [Häufige Fragen (FAQ)](#häufige-fragen-faq)
-8. [Probleme beheben](#probleme-beheben)
+4. [Doppelte Geräte zusammenführen](#doppelte-geräte-zusammenführen)
+5. [Versicherungs-Doku & Nachlass — die typischen Workflows](#versicherungs-doku--nachlass--die-typischen-workflows)
+6. [Filter, Suche und Sortierung](#filter-suche-und-sortierung)
+7. [Papierkorb & Datenbank-Schnappschüsse](#papierkorb--datenbank-schnappschüsse)
+8. [Häufige Fragen (FAQ)](#häufige-fragen-faq)
+9. [Probleme beheben](#probleme-beheben)
 
 ---
 
@@ -23,9 +24,17 @@ Dieses Handbuch ist die Antwort auf die immer wieder gleichen Forum-Fragen. Wenn
 
 1. **Add-on installieren** über die Home-Assistant-Add-on-Store-URL (siehe README im GitHub-Repo). Nach der Installation erscheint die Geräteverwaltung als Eintrag in der HA-Sidebar.
 2. **Pro-Lizenz aktivieren** unter *Einstellungen → Lizenz*. Ohne Lizenz kannst du bis zu 50 Geräte verwalten und nur Englisch nutzen — alles andere (mehrsprachig, Excel, MQTT, Kamera, Barcode, Dokumente) ist Pro.
-3. **HA-Geräte importieren** unter *Einstellungen → Home Assistant Import → HA-Geräte importieren*. Der Import kann bei großen Setups (300+) eine Minute dauern; er läuft im Hintergrund mit einer Fortschrittsanzeige.
+3. **HA-Geräte importieren** unter *Einstellungen → Home Assistant Import → HA-Geräte importieren*. Der Import kann bei großen Setups (300+) eine Minute dauern; er läuft im Hintergrund mit einer Fortschrittsanzeige. Übernommen werden Name, Hersteller, Modell, Firmware, Raum und Etage, Integration, Netzwerk und — seit 3.1.0 — Seriennummer, MAC-Adresse und Stromversorgung (Batterie/Akku), soweit Home Assistant sie kennt. Ein erneuter Import legt keine Geräte doppelt an und trägt bei vorhandenen Geräten Seriennummer und MAC nur in leere Felder nach.
 4. **Optional: MQTT-Discovery aktivieren** unter *Einstellungen → Home Assistant Integration → Geräte in HA veröffentlichen* — siehe das nächste Kapitel, ob das für dich sinnvoll ist.
 5. **Erste Geräte ergänzen**: Tippe auf ein Gerät in der Liste, dann *Bearbeiten*, und füll mindestens Anschaffungsdatum, Garantie-Ende und Kaufpreis aus. Foto und Einbauort-Bilder ergänzen, Belege als Dokumente hochladen — fertig für Versicherungs-Doku.
+
+### Nach dem Update auf 3.1.0
+
+Einmal in dieser Reihenfolge:
+
+1. *Einstellungen → Aus Home Assistant importieren* — ergänzt Seriennummer und MAC bei vorhandenen Geräten und löst falsche Router-Zuordnungen (siehe [Multi-Channel-Geräte](#multi-channel-geräte-parent-child)).
+2. *Einstellungen → Mögliche Dubletten* — doppelte Geräte prüfen und zusammenführen (siehe [Doppelte Geräte](#doppelte-geräte-zusammenführen)).
+3. *Einstellungen → Kategorien neu zuordnen* — die Vorschau zeigt nach 3.1.0 deutlich mehr Vorschläge als früher, weil die Erkennung erstmals die Geräteklassen aus Home Assistant sieht. Außerdem wird die Stromversorgung nachgetragen. Erst die Vorschau ansehen, einzelne Zeilen abwählen, dann übernehmen. Alles ist über Schnappschuss und Geräte-Historie zurücknehmbar.
 
 ---
 
@@ -47,6 +56,21 @@ Wenn du *Geräte in HA veröffentlichen* einschaltest, publiziert das Add-on **p
 | Binary-Sensor `*_warranty_active` | `on` solange Garantie läuft | `on` / `off` |
 
 Diese Entities tauchen in HA unter *Einstellungen → Geräte & Dienste → MQTT* auf, eine eigene Geräte-Karte pro Inventar-Eintrag.
+
+**Seit 3.1.0** trägt der Sensor `*_type` zusätzlich die gepflegten Angaben als Attribute: Standort, Seriennummer, Stromversorgung, Funktion, Anmerkungen, „Funktioniert ohne HA" und „Wandschalter überbrückt" samt Hinweisen, externer Link sowie die Zahl der Fotos und Einbauort-Bilder. Leere Werte fehlen. In Automationen erreichbar z. B. über `state_attr('sensor.landroid_s300_device_type', 'seriennummer')`.
+
+**Zurück in die App:** Auf der HA-Geräteseite jedes so veröffentlichten Geräts steht der Link **Besuchen**. Er öffnet direkt dieses Gerät in der Geräteverwaltung. Für Geräte anderer Integrationen (z. B. die Original-Geräteseite eines Shelly) kann ein Add-on keinen Link setzen — dort geht es nur über die MQTT-Karte des Inventar-Eintrags.
+
+### Zugangsdaten für den MQTT-Broker
+
+Das Add-on fragt die Zugangsdaten zuerst beim Supervisor an. Stellt das Mosquitto-Add-on sie dort bereit, ist nichts einzutragen. Meldet der Test unter *Einstellungen → Home Assistant Integration → MQTT-Verbindung testen* dagegen **„Not authorized"** (Code 135), braucht das Add-on einen Benutzer. Am einfachsten ein eigener Home-Assistant-Benutzer — das Mosquitto-Add-on akzeptiert jeden HA-Benutzer:
+
+1. In Home Assistant links unten **Einstellungen** → **Personen** → oben den Reiter **Benutzer** öffnen. Fehlt der Reiter: unten links auf den eigenen Namen klicken und **Erweiterter Modus** einschalten.
+2. Rechts unten **Benutzer hinzufügen**. Anzeigename und Benutzername z. B. `geraeteverwaltung`, ein Passwort festlegen.
+3. **„Kann sich nur aus dem lokalen Netzwerk anmelden"** einschalten, **„Administrator"** aus lassen. **Erstellen**.
+4. **Einstellungen** → **Add-ons** (in neueren Versionen **Apps**) → **Geräteverwaltung** → Reiter **Konfiguration**.
+5. Bei **mqtt_user** den Benutzernamen, bei **mqtt_password** das Passwort eintragen. **Speichern**, das Add-on neu starten.
+6. In der Geräteverwaltung *MQTT-Verbindung testen* — jetzt sollte „OK" kommen.
 
 ### Wann ist das sinnvoll?
 
@@ -89,6 +113,8 @@ Beispiele: Shelly 2PM (zwei Steckdosen-Kanäle in einem Gehäuse), Tuya-Hubs, US
 
 Bei Multi-Channel-Setups bläht die Liste schnell auf — drei Zeilen für ein physisches Gerät. In der Liste rechts neben der Sortierung gibt es den Button **„Nur Hauptgeräte"**. Aktiv: Untergeräte sind versteckt, das Button-Label zeigt die Anzahl der versteckten Children. Filter ist Session-persistent.
 
+**Router sind kein Hauptgerät (seit 3.1.0):** FRITZ!Box und UPnP melden in Home Assistant *jedes* Gerät im Netz als an sich hängend. Früher machte der Import daraus „Teil von FRITZ!Box" — Klingel, Mähroboter und Handys verschwanden dann im Filter *Nur Hauptgeräte*. Solche Router-Zuordnungen übernimmt der Import nicht mehr, vorhandene löst er beim nächsten Lauf. Echte Zentralen wie Zigbee-Koordinator, Bosch Smart Home Controller oder HomematicIP Access Point bleiben Hauptgerät ihrer Geräte. Zeigt ein bereits geöffneter Browser danach noch die alte Zuordnung: *Einstellungen → Cache leeren*.
+
 **Routing-Hubs werden nicht versteckt:** HA setzt `via_device_id` auch für Geräte, die über eine Bridge angebunden sind (Zigbee2MQTT-Bridge → Hue/IKEA/Aqara, ZHA-Coordinator → Endgeräte, Z-Wave-JS-Stick → Endgeräte, Matter-Server → Endgeräte). Diese „Children" sind eigene Hardware, nur die Bridge ist Software. Der Filter behandelt Geräte mit Integration `mqtt`, `zha`, `zwave_js` oder `matter` deshalb wie Hauptgeräte — sonst würde der Hauptgeräte-Filter die echten Lampen verstecken und nur die Bridge übrig lassen.
 
 ### Bearbeitung auf alle Kinder anwenden
@@ -102,6 +128,28 @@ Beim Bearbeiten eines Hauptgeräts mit Untergeräten erscheint am Ende der Form 
 - AIN-Artikelnummer
 
 **Nicht** vererbt werden Felder, die kanal-spezifisch sind: Bezeichnung, Seriennummer, MAC, IP, Standort, Home-Assistant-IDs.
+
+---
+
+## Doppelte Geräte zusammenführen
+
+*Neu in 3.1.0.* Seit HA 2026.8 legt Home Assistant für ein physisches Gerät oft mehrere Einträge an: den Shelly über seine eigene Integration und noch einmal über die FRITZ!Box; bei mehreren FRITZ!Boxen im Mesh sogar einmal pro Box. Im Inventar stand das Gerät dann mehrfach.
+
+**Beim Import** fasst die App Einträge mit gleicher MAC- oder Zigbee-Adresse aus verschiedenen Integrationen bzw. Konfigurationen automatisch zu einem Gerät zusammen. Es bleibt der Eintrag der Integration, die das Gerät steuert (Shelly, Ring, Bosch …), nicht der des Routers. Der Zwilling wird gemerkt und beim nächsten Import nicht wieder angelegt.
+
+**Bereits doppelt importierte Geräte** (aus Versionen vor 3.1.0):
+
+1. *Einstellungen → Mögliche Dubletten* aufklappen, **Dubletten suchen**.
+2. Die Liste zeigt Gruppen mit gleicher MAC-Adresse. Das oberste Gerät jeder Gruppe ist der Vorschlag, der bleibt.
+3. Pro Zeile **→ in „…"** führt dieses eine Gerät zusammen — oder **Alle Vorschläge übernehmen** (zweimal klicken zur Bestätigung) für alle Gruppen auf einmal.
+
+**Von Hand**, für Geräte ohne gemeinsame Kennung: auf der Detailseite **Mit anderem Gerät zusammenführen …**, Zielgerät suchen und auswählen, **Zusammenführen**.
+
+Was beim Zusammenführen passiert:
+
+- Das Zielgerät behält alle seine Angaben. Leere Felder füllt die App aus dem anderen Gerät, Anmerkungen werden angehängt.
+- Fotos, Einbauort-Bilder, Dokumente, Änderungshistorie und Untergeräte wandern zum Zielgerät.
+- Das andere Gerät landet im Papierkorb. Vorher legt die App einen Datenbank-Schnappschuss an — über *Einstellungen → Datenbank-Schnappschüsse* lässt sich alles zurückholen.
 
 ---
 
@@ -123,14 +171,16 @@ Workflow:
 
 ### Nachlass
 
-Das Preset *Nachlass* legt den Fokus auf Standort und Identifikatoren:
+Das Preset *Nachlass* richtet sich an Angehörige — was ist es, wo steht es, gibt es noch Garantie, wo liegen die Unterlagen, läuft es ohne HA weiter:
 
-- Nr, Typ, Bezeichnung, Modell, Hersteller, Seriennummer, AIN-Artikelnr
+- Nr, Typ, Bezeichnung, Hersteller, Modell, Seriennummer, AIN-Artikelnr
 - Anschaffungsdatum, Garantie-bis
-- Standort, Stockwerk, MAC, IP
-- Integration, Netzwerk, Firmware, Funktion, Anmerkungen
+- Standort, Etage
+- Funktioniert ohne HA + Hinweis
+- Externer Link
+- Funktion, Anmerkungen
 
-Idee dahinter: Erben können das Gerät anhand von Bezeichnung + Seriennummer im Haus finden, an Hand der MAC im Router-Log identifizieren, und über die Integration nachvollziehen, woher die Daten ursprünglich kamen.
+Netzwerkdetails (MAC, IP, Firmware, Integration) sind seit 3.0.0 bewusst nicht mehr dabei — sie interessieren Erben nicht und kosten nur Spaltenbreite.
 
 ---
 
@@ -142,14 +192,17 @@ Dafür gibt es zwei Felder pro Gerät, ganz unten im Bearbeiten-Formular unter *
 
 **„Funktioniert ohne Home Assistant?"** — drei Möglichkeiten: *Unbekannt* (Voreinstellung, nichts wird ausgegeben), *Ja, läuft auch ohne HA*, *Nein, braucht HA*. Bei *Ja* oder *Nein* erscheint darunter ein Hinweisfeld für den Klartext: „Schalter direkt an der Wand", „Thermostat lässt sich am Gerät stellen", „ohne HA gar nicht bedienbar".
 
+**„Wandschalter überbrückt?"** (*neu in 3.1.0*) — für den Rückbau der wichtigste Punkt: Wurde für dieses Gerät ein Lichtschalter überbrückt, geht die Lampe nach dem Ausbau sonst nicht mehr. Drei Möglichkeiten (*Unbekannt*, *Ja, Schalter überbrückt bzw. entkoppelt*, *Nein*) und ein Hinweisfeld: welcher Schalter, welche Dose — oder welche Einstellung, denn oft ist gar nichts geklemmt, sondern der Aktor umgestellt (z. B. Shelly im Modus „detached"). Erscheint auf der Detailseite in derselben Karte wie „Funktioniert ohne HA".
+
 **„Externer Link"** — ein Verweis in ein anderes System: das Dokument in Paperless-ngx, die Handbuchseite des Herstellers, ein Eintrag im eigenen Wiki. Der Link steht auf der Detailseite und öffnet sich in einem neuen Fenster. Ein bloßer Name wie `paperless.local/x` reicht, `https://` wird automatisch ergänzt.
 
 Das Export-Preset **„Rückbau/Elektriker"** (Export → Preset auswählen) macht daraus das Blatt, das man in den Hausanschlussraum legt:
 
 - Nr, Typ, Bezeichnung, Hersteller, Modell
-- Standort, Stockwerk
+- Standort, Etage
 - Netzwerk, Stromversorgung
 - Ohne HA nutzbar + Hinweis
+- Wandschalter überbrückt + Hinweis
 - Externer Link
 - Funktion, Anmerkungen
 
@@ -157,22 +210,30 @@ Bewusst **ohne** Seriennummern, Kaufdaten und Garantie: Das ist die Liste, die o
 
 Die Spalte *Integration* ist seit 3.0.0 nicht mehr dabei — `fritz` oder `bosch_shc` sind Home-Assistant-Interna und sagen einem Handwerker nichts.
 
-**Alle drei Vorlagen im Vergleich:**
+Das Preset **„Notfallmappe"** (*neu in 3.1.0*) ist die Mappe für den Zählerschrank — für den Elektriker, Nachbarn oder Makler, den Angehörige im Notfall holen: Gerät, Etage und Standort, Hersteller, Modell, Seriennummer, Stromversorgung, läuft-ohne-HA, überbrückte Schalter, Kaufdatum, Garantie, Link zur Anleitung, Funktion und Anmerkungen. Ohne Netzwerkdetails. Kennwörter gehören nicht hinein — die App speichert grundsätzlich keine; ein Hinweis im Anmerkungsfeld, wo die Zugangsdaten liegen (Passwortmanager, Ordner), genügt.
+
+**Alle Vorlagen im Vergleich:**
 
 | Vorlage | Für wen | Enthält |
 |---|---|---|
 | Versicherung | Sachbearbeiter im Schadensfall | Gerät, Seriennummer, Kaufdatum, Garantie, Standort, Link zur Rechnung |
-| Rückbau/Elektriker | Handwerker vor Ort | Gerät, Standort, Netz, Strom, läuft-ohne-HA, Link — keine Kaufdaten |
+| Rückbau/Elektriker | Handwerker vor Ort | Gerät, Standort, Netz, Strom, läuft-ohne-HA, überbrückte Schalter, Link — keine Kaufdaten |
 | Nachlass | Angehörige | Gerät, Seriennummer, Kaufdatum, Garantie, Standort, läuft-ohne-HA, Link |
+| Notfallmappe | Helfer, den Angehörige holen | Gerät, Standort, Seriennummer, Strom, läuft-ohne-HA, überbrückte Schalter, Kaufdatum, Garantie, Link |
 
-Als PDF kommt bei allen dreien eine kompakte Tabelle im Querformat heraus, rund zehn Seiten bei 300 Geräten. Detailseiten je Gerät gibt es nur, wenn Sie die Felder von Hand zusammenstellen statt eine Vorlage zu wählen.
+Als PDF kommt bei allen Vorlagen eine kompakte Tabelle im Querformat heraus, rund zehn Seiten bei 300 Geräten. Detailseiten je Gerät gibt es nur, wenn Sie die Felder von Hand zusammenstellen statt eine Vorlage zu wählen. Die eigene Feldauswahl merkt sich die App seit 3.1.0 auf dem Server — sie gilt also auch auf dem Handy oder nach dem Löschen der Browserdaten.
+
+**Reihenfolge** (*neu in 3.1.0*): Im Export-Dialog lässt sich zwischen *Nach Kategorie gruppiert* (bisheriges Verhalten) und **Etage › Standort › Name** wählen. Für den Zettel im Sicherungskasten ist die zweite Variante die richtige: Wer davorsteht, sucht nach Raum, nicht nach Gerätenamen. In Excel kommt sie als durchgehende Tabelle ohne Kategorie-Zwischenzeilen, die sich frei sortieren und filtern lässt.
+
+**Bilder im PDF** (*neu in 3.1.0*): Unter *Bilder im PDF* lassen sich **Einbauort-Bilder** und **Gerätefotos und Bild-Dokumente** zuwählen. Die Bilder stehen als Bildanhang am Ende des PDFs; in der Liste zeigt die Spalte *Bilder* bei jedem Gerät den Verweis (B1, B2 …). Ein Bild, das bei mehreren Geräten hängt, erscheint nur einmal, mit allen zugehörigen Geräten. Excel enthält keine Bilder.
 
 ---
 
 ## Filter, Suche und Sortierung
 
 - **Suche** oben durchsucht Bezeichnung, Modell, Hersteller, Standort, MAC, IP, Seriennummer, Integration, Funktion und Typ.
-- **Kategorie-Chips** unter der Suche: nur Kategorien, in denen mind. 1 Gerät existiert. Klick wechselt zwischen *aktiv* und *aus*. Aktiver Filter bleibt sichtbar, auch wenn der letzte Gerät aus dieser Kategorie verschwindet — damit man ihn wieder entfernen kann.
+- **Kategorie-Chips** unter der Suche: eingebaute Kategorien nur, wenn mind. 1 Gerät darin ist; eigene Kategorien (aus *Kategorien verwalten*) seit 3.1.0 immer, ebenso frei eingetippte Typen. Klick wechselt zwischen *aktiv* und *aus*. Aktiver Filter bleibt sichtbar, auch wenn das letzte Gerät aus dieser Kategorie verschwindet — damit man ihn wieder entfernen kann.
+- **Foto-Vorschau**: Hat ein Gerät ein Foto, zeigt die Liste es als kleine Vorschau (seit 3.1.0).
 - **Donut-Charts** und **Top-10-Listen** im Dashboard sind klickbar — der Klick auf einen Hersteller-Balken setzt einen Hersteller-Filter und springt in die Geräteliste.
 - **Filter-Chips** über der Liste (z.B. „Nach Hersteller: BOSCH ×") zeigen den aktiven Filter, das X entfernt ihn.
 - **Sortierung**: Dropdown rechts. Optionen: Zuletzt geändert (Default), Name A-Z/Z-A, Typ, Hersteller, Standort, Garantie (am dichtesten Ablauf zuerst). Auswahl ist Session-persistent.
@@ -257,7 +318,7 @@ Alles, was die App speichert, liegt im Datenverzeichnis des Add-ons:
 
 In *Einstellungen → Home Assistant Integration* gibt es **„MQTT-Verbindung testen"**. Der Button gibt eine konkrete Fehlermeldung zurück, mit Hinweis je nach Fehlercode:
 
-- **Code 4 / 5 (Anmeldung abgelehnt)**: User/Passwort in den Add-on-Optionen prüfen. Mosquitto-Broker erwartet einen Eintrag im HA-Personen-User oder in der Mosquitto-ACL.
+- **Code 4 / 5 / 135 (Anmeldung abgelehnt, „Not authorized")**: Es fehlen Zugangsdaten oder sie stimmen nicht. Schritt für Schritt unter [Zugangsdaten für den MQTT-Broker](#zugangsdaten-für-den-mqtt-broker).
 - **Verbindung verweigert**: Läuft der Mosquitto-Broker? Port korrekt (1883 unverschlüsselt, 8883 TLS)?
 - **Nicht erreichbar / Timeout**: Hostname/IP korrekt? Bei externem Broker: HA-Netzwerk muss den Broker erreichen können.
 - **DNS-Fehler**: `mqtt_host` Feld in den Add-on-Optionen prüfen.
@@ -272,4 +333,4 @@ Bug bis v2.5.2 — der Import lief länger als das HA-Ingress-HTTP-Timeout. Ab v
 
 ---
 
-*Stand v2.6.0 · 2026-04-27. Bei Forum-Fragen, die hier nicht beantwortet sind, mach einen Issue auf [github.com/DerRegner-DE/ha-device-inventory](https://github.com/DerRegner-DE/ha-device-inventory) auf — der nächste Releasezyklus pflegt das Handbuch nach.*
+*Stand v3.1.0 · 2026-10-05. Bei Forum-Fragen, die hier nicht beantwortet sind, mach einen Issue auf [github.com/DerRegner-DE/ha-device-inventory](https://github.com/DerRegner-DE/ha-device-inventory) auf — der nächste Releasezyklus pflegt das Handbuch nach.*
