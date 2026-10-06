@@ -3,6 +3,22 @@
 /* Dark mode: class-based toggle */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* v3.1.1 (GitHub #25): Gesperrte Knoepfe wechselten beim Ueberfahren die
+   Farbe und wirkten klickbar. hover greift nur noch auf aktive Elemente. */
+@custom-variant hover {
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      @slot;
+    }
+  }
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+}
+
 /* Safe area support for mobile devices (notch, home indicator, etc.) */
 @supports (padding: env(safe-area-inset-bottom)) {
   html {

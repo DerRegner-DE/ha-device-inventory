@@ -1,6 +1,6 @@
 # Device Management — User Manual
 
-Version: v3.1.0 · 2026-10-05
+Version: v3.1.1 · 2026-10-06
 
 This manual describes how to set up and use Device Management and answers the most common questions from the forum. New to the app? Start with the first chapter and the quick start. If you know an older version, go straight to the chapter that raises questions.
 
@@ -86,6 +86,8 @@ The basic functions are free; a one-time license key unlocks the extended functi
 
 Everything you have already recorded stays visible without a license, and you can turn MQTT off and clean it up at any time. So nothing is left behind if Pro is no longer active.
 
+Without a license, Pro buttons are greyed out, carry the suffix "(Pro)" and react neither to clicks nor to hovering. In Settings, since 3.1.1 they are followed by the note "Pro feature – enter your license key under Settings → License." with the link **Buy Pro – €9.99**.
+
 **Buy:** via the link in the README of the GitHub repository; the key arrives by e-mail with the purchase confirmation. One key is valid for up to three installations and does not expire.
 
 **Activate:** *Settings → License*, enter the key in the *License Key* field, click **Activate**. The Pro functions are unlocked immediately. On activation and occasionally afterwards, the add-on verifies the key with the payment provider Lemon Squeezy; without internet, the last successful check remains valid.
@@ -98,7 +100,7 @@ If no e-mail arrives after the purchase: check the spam folder, otherwise write 
 
 1. **Install the add-on** as described under [Installation, update, uninstallation](#installation-update-uninstallation). After installation, Device Management appears as an entry in the HA sidebar.
 2. **Activate the Pro license** under *Settings → License*. Without a license you can manage up to 50 devices by hand, and the interface is in English. Pro includes, among other things, HA import, more languages, PDF/Excel export, MQTT, camera, scanner, documents, installation photos, handover fields and bulk editing — the full list is under [Free and Pro](#free-and-pro).
-3. **Import HA devices** (Pro) under *Settings → Home Assistant Import → Import HA Devices*. With large setups (300+), the import can take a minute; it runs in the background with a progress indicator. It imports name, manufacturer, model, firmware, room and floor, integration, network and — since 3.1.0 — serial number, MAC address and power supply (Battery/Rechargeable), as far as Home Assistant knows them. A repeated import does not create duplicate devices; for existing devices it fills in serial number and MAC only where the fields are empty.
+3. **Import HA devices** (Pro) under *Settings → Home Assistant Import → Import HA Devices*. With large setups (300+), the import can take a minute; it runs in the background with a progress indicator. It imports name, manufacturer, model, firmware, room and floor, integration, network and — since 3.1.0 — serial number, MAC address and power supply (Battery/Rechargeable), as far as Home Assistant knows them. A repeated import does not create duplicate devices; for existing devices it fills in serial number and MAC only where the fields are empty. As long as no device has been recorded, the dashboard and the device list offer the button **Import from Home Assistant** next to **Add first device**; it leads straight to this section (since 3.1.1).
 4. **Optional: enable MQTT Discovery** (Pro) under *Settings → Home Assistant Integration → Publish devices to HA* — whether this makes sense is explained in the chapter [Home Assistant integration](#home-assistant-integration-mqtt-discovery).
 5. **Complete your first devices**: tap a device in the list, then *Edit*, and enter at least *Purchase Date* and *Warranty Until*, and the purchase price under *Notes*. With Pro, add a photo and installation photos and upload receipts as documents — ready for insurance documentation.
 

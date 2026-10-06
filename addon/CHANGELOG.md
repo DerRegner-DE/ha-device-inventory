@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.1
+
+Kleines Update auf Hinweis aus GitHub #25: Der Import aus Home Assistant war fuer neue Nutzer schwer zu finden, und gesperrte Pro-Knoepfe wirkten klickbar.
+
+### Verbessert: Import aus Home Assistant direkt auf der Startseite
+
+Solange noch kein Geraet erfasst ist, zeigen Startseite und Geraeteliste neben *Erstes Geraet hinzufuegen* den Knopf **Aus Home Assistant importieren** mit einem kurzen Satz, was der Import uebernimmt. Der Knopf fuehrt direkt zum Abschnitt *Einstellungen → Home Assistant Import*. Bisher stand der Import nur in den Einstellungen; wer ihn nicht fand, hat Geraete von Hand abgetippt.
+
+### Behoben: Gesperrte Pro-Knoepfe wirkten klickbar
+
+Ohne Lizenz wechselten ausgegraute Knoepfe wie *HA-Geraete importieren* beim Ueberfahren die Farbe, ein Klick tat aber nichts. Gesperrte Knoepfe reagieren jetzt nicht mehr aufs Ueberfahren und zeigen den Sperr-Mauszeiger. In den Einstellungen steht unter jeder gesperrten Funktion (HA-Import, Geraete neu kategorisieren, MQTT-Verbindung testen, PDF-/Excel-Export) der Hinweis „Pro-Funktion – Lizenzschluessel unter Einstellungen → Lizenz eintragen." mit Link zum Kauf.
+
 ## 3.1.0
 
 Feature-Release mit den im Forum zugesagten Uebergabe-Funktionen, neuen Exportmoeglichkeiten, Hilfe gegen doppelte Geraete seit HA 2026.8 — und einer gruendlich ueberarbeiteten Auto-Kategorisierung. Dabei kam ein alter Fehler ans Licht: Die Kategorisierung nach `device_class` hat seit 2.4.0 auf echten Anlagen nie gegriffen (siehe unten).

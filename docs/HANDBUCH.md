@@ -1,6 +1,6 @@
 # Geräteverwaltung — Benutzerhandbuch
 
-Stand: v3.1.0 · 2026-10-05
+Stand: v3.1.1 · 2026-10-06
 
 Dieses Handbuch beschreibt Einrichtung und Bedienung der Geräteverwaltung und beantwortet die häufigsten Fragen aus dem Forum. Neu dabei? Dann am besten mit dem ersten Kapitel und dem Schnellstart beginnen. Wer eine ältere Version kennt, springt direkt zum Kapitel, das gerade Fragen aufwirft.
 
@@ -86,6 +86,8 @@ Die Grundfunktionen sind kostenlos; erweiterte Funktionen schaltet ein einmalig 
 
 Was schon erfasst ist, bleibt ohne Lizenz sichtbar, und MQTT lässt sich jederzeit ausschalten und aufräumen. So bleiben keine Reste zurück, wenn Pro einmal nicht mehr aktiv ist.
 
+Ohne Lizenz sind Pro-Knöpfe ausgegraut, tragen den Zusatz „(Pro)" und reagieren weder auf Klick noch auf Überfahren. In den Einstellungen steht seit 3.1.1 darunter der Hinweis „Pro-Funktion – Lizenzschlüssel unter Einstellungen → Lizenz eintragen." mit dem Link **Pro kaufen – 9,99 €**.
+
 **Kaufen:** über den Link im README des GitHub-Repositorys; der Schlüssel kommt mit der Kaufbestätigung per E-Mail. Ein Schlüssel gilt für bis zu drei Installationen und läuft nicht ab.
 
 **Aktivieren:** *Einstellungen → Lizenz*, Schlüssel in das Feld *Lizenzschlüssel* eintragen, **Aktivieren**. Die Pro-Funktionen sind sofort frei. Beim Aktivieren und gelegentlich danach prüft das Add-on den Schlüssel beim Zahlungsanbieter Lemon Squeezy; ohne Internet gilt die zuletzt erfolgreiche Prüfung weiter.
@@ -98,7 +100,7 @@ Kommt nach dem Kauf keine E-Mail an: Spam-Ordner prüfen, sonst an support@derre
 
 1. **Add-on installieren** wie unter [Installation, Update, Deinstallation](#installation-update-deinstallation) beschrieben. Nach der Installation erscheint die Geräteverwaltung als Eintrag in der HA-Seitenleiste.
 2. **Pro-Lizenz aktivieren** unter *Einstellungen → Lizenz*. Ohne Lizenz lassen sich bis zu 50 Geräte von Hand verwalten, die Oberfläche ist dann englisch. Pro sind unter anderem HA-Import, weitere Sprachen, PDF-/Excel-Export, MQTT, Kamera, Scanner, Dokumente, Einbauort-Bilder, Übergabe-Felder und Sammelbearbeitung — die vollständige Liste steht unter [Free und Pro](#free-und-pro).
-3. **HA-Geräte importieren** (Pro) unter *Einstellungen → Home Assistant Import → HA-Geräte importieren*. Der Import kann bei großen Setups (300+) eine Minute dauern; er läuft im Hintergrund mit einer Fortschrittsanzeige. Übernommen werden Name, Hersteller, Modell, Firmware, Raum und Etage, Integration, Netzwerk und — seit 3.1.0 — Seriennummer, MAC-Adresse und Stromversorgung (Batterie/Akku), soweit Home Assistant sie kennt. Ein erneuter Import legt keine Geräte doppelt an und trägt bei vorhandenen Geräten Seriennummer und MAC nur in leere Felder nach.
+3. **HA-Geräte importieren** (Pro) unter *Einstellungen → Home Assistant Import → HA-Geräte importieren*. Der Import kann bei großen Setups (300+) eine Minute dauern; er läuft im Hintergrund mit einer Fortschrittsanzeige. Übernommen werden Name, Hersteller, Modell, Firmware, Raum und Etage, Integration, Netzwerk und — seit 3.1.0 — Seriennummer, MAC-Adresse und Stromversorgung (Batterie/Akku), soweit Home Assistant sie kennt. Ein erneuter Import legt keine Geräte doppelt an und trägt bei vorhandenen Geräten Seriennummer und MAC nur in leere Felder nach. Solange noch kein Gerät erfasst ist, bieten Startseite und Geräteliste dafür den Knopf **Aus Home Assistant importieren** neben **Erstes Gerät hinzufügen** an; er führt direkt zu diesem Abschnitt (seit 3.1.1).
 4. **Optional: MQTT-Discovery aktivieren** (Pro) unter *Einstellungen → Home Assistant Integration → Geräte in HA veröffentlichen* — ob das sinnvoll ist, steht im Kapitel [Home Assistant Integration](#home-assistant-integration-mqtt-discovery).
 5. **Erste Geräte ergänzen**: Ein Gerät in der Liste antippen, dann *Bearbeiten*, und mindestens *Anschaffungsdatum* und *Garantie bis* eintragen, den Kaufpreis unter *Anmerkungen*. Mit Pro Foto und Einbauort-Bilder ergänzen und Belege als Dokumente hochladen — fertig für Versicherungs-Doku.
 

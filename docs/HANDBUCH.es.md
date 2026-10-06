@@ -1,6 +1,6 @@
 # Gestión de Dispositivos — Manual de usuario
 
-Versión: v3.1.0 · 2026-10-05
+Versión: v3.1.1 · 2026-10-06
 
 Este manual describe la instalación y el uso de la Gestión de Dispositivos y responde a las preguntas más frecuentes del foro. ¿Es nuevo? Empiece por el primer capítulo y el inicio rápido. Si ya conoce una versión anterior, vaya directamente al capítulo que le plantee dudas.
 
@@ -86,6 +86,8 @@ Las funciones básicas son gratuitas; las funciones avanzadas se desbloquean con
 
 Lo que ya está registrado sigue visible sin licencia, y MQTT se puede desactivar y limpiar en cualquier momento. Así no quedan restos si Pro deja de estar activo.
 
+Sin licencia, los botones Pro aparecen en gris, llevan el añadido «(Pro)» y no reaccionan ni al clic ni al pasar el ratón. En Ajustes, desde la 3.1.1 debajo aparece el aviso «Función Pro: introduce la clave de licencia en Ajustes → Licencia.» con el enlace **Comprar Pro – 9,99 €**.
+
 **Comprar:** mediante el enlace del README del repositorio de GitHub; la clave llega por correo electrónico con la confirmación de compra. Una clave vale para hasta tres instalaciones y no caduca.
 
 **Activar:** *Ajustes → Licencia*, introduzca la clave en el campo *Clave de licencia*, **Activar**. Las funciones Pro quedan disponibles al instante. Al activar y de vez en cuando después, el complemento comprueba la clave con el proveedor de pagos Lemon Squeezy; sin Internet sigue valiendo la última comprobación correcta.
@@ -98,7 +100,7 @@ Si tras la compra no llega ningún correo: revise la carpeta de spam; si no, esc
 
 1. **Instale el complemento** como se describe en [Instalación, actualización, desinstalación](#instalación-actualización-desinstalación). Tras la instalación, la Gestión de Dispositivos aparece como entrada en la barra lateral de HA.
 2. **Active la licencia Pro** en *Ajustes → Licencia*. Sin licencia se pueden gestionar a mano hasta 50 dispositivos y la interfaz está en inglés. Son Pro, entre otras cosas, la importación de HA, los demás idiomas, la exportación a PDF/Excel, MQTT, la cámara, el escáner, los documentos, las fotos de instalación, los campos de traspaso y la edición en lote; la lista completa figura en [Free y Pro](#free-y-pro).
-3. **Importe los dispositivos de HA** (Pro) en *Ajustes → Importar Home Assistant → Importar dispositivos HA*. En instalaciones grandes (300+) la importación puede tardar un minuto; se ejecuta en segundo plano con indicador de progreso. Se importan nombre, fabricante, modelo, firmware, habitación y planta, integración, red y, desde la 3.1.0, número de serie, dirección MAC y alimentación (batería/recargable), siempre que Home Assistant los conozca. Una nueva importación no duplica dispositivos y, en los dispositivos existentes, solo completa el número de serie y la MAC en campos vacíos.
+3. **Importe los dispositivos de HA** (Pro) en *Ajustes → Importar Home Assistant → Importar dispositivos HA*. En instalaciones grandes (300+) la importación puede tardar un minuto; se ejecuta en segundo plano con indicador de progreso. Se importan nombre, fabricante, modelo, firmware, habitación y planta, integración, red y, desde la 3.1.0, número de serie, dirección MAC y alimentación (batería/recargable), siempre que Home Assistant los conozca. Una nueva importación no duplica dispositivos y, en los dispositivos existentes, solo completa el número de serie y la MAC en campos vacíos. Mientras no haya ningún dispositivo registrado, el panel y la lista de dispositivos ofrecen el botón **Importar desde Home Assistant** junto a **Añadir primer dispositivo**; lleva directamente a esta sección (desde la 3.1.1).
 4. **Opcional: active MQTT-Discovery** (Pro) en *Ajustes → Integración Home Assistant → Publicar dispositivos en HA*. Si tiene sentido o no, se explica en el capítulo [Integración con Home Assistant](#integración-con-home-assistant-mqtt-discovery).
 5. **Complete los primeros dispositivos**: toque un dispositivo de la lista, luego *Editar*, e introduzca como mínimo *Fecha de Compra* y *Garantía hasta*, y el precio de compra en *Notas*. Con Pro, añada una foto y fotos de instalación y suba los comprobantes como documentos: listo para la documentación del seguro.
 

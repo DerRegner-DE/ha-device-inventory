@@ -8,6 +8,7 @@ import { useLanguage } from "../i18n";
 import { getDeviceLimit } from "../license";
 import { useLicense } from "../license/useLicense";
 import { DonutFilters, type DonutFilterKey } from "./DonutFilters";
+import { EmptyStart } from "./EmptyStart";
 
 interface CountItem {
   label: string;
@@ -149,17 +150,7 @@ export function Dashboard() {
         </div>
       </div>
 
-      {total === 0 && (
-        <div class="text-center py-8">
-          <p class="text-gray-400 text-sm mb-3">{t("dashboard.noDevices")}</p>
-          <button
-            onClick={() => navigate("/add")}
-            class="px-4 py-2 bg-[#1F4E79] text-white rounded-xl text-sm font-medium"
-          >
-            {t("dashboard.addFirst")}
-          </button>
-        </div>
-      )}
+      {total === 0 && <EmptyStart />}
 
       {total > 0 && (
         <DonutFilters devices={devices} onSelect={applyFilterAndGo} />

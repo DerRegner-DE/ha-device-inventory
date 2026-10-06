@@ -1,6 +1,6 @@
 # Gestion des Appareils — Manuel d'utilisation
 
-Version : v3.1.0 · 2026-10-05
+Version : v3.1.1 · 2026-10-06
 
 Ce manuel décrit l'installation et l'utilisation de la Gestion des Appareils et répond aux questions les plus fréquentes du forum. Vous débutez ? Commencez par le premier chapitre et le démarrage rapide. Si vous connaissez une version antérieure, allez directement au chapitre qui vous pose question.
 
@@ -86,6 +86,8 @@ Les fonctions de base sont gratuites ; les fonctions avancées sont débloquée
 
 Ce qui est déjà saisi reste visible sans licence, et MQTT peut être désactivé et nettoyé à tout moment. Ainsi, aucun résidu ne subsiste si Pro n'est plus actif.
 
+Sans licence, les boutons Pro sont grisés, portent la mention « (Pro) » et ne réagissent ni au clic ni au survol. Dans les Paramètres, depuis 3.1.1, ils sont suivis de la remarque « Fonction Pro – saisissez la clé de licence sous Paramètres → Licence. » avec le lien **Acheter Pro – 9,99 €**.
+
 **Acheter :** via le lien dans le README du dépôt GitHub ; la clé arrive par e-mail avec la confirmation d'achat. Une clé est valable pour trois installations au maximum et n'expire pas.
 
 **Activer :** *Paramètres → Licence*, saisissez la clé dans le champ *Clé de licence*, cliquez sur **Activer**. Les fonctions Pro sont immédiatement disponibles. Lors de l'activation, puis de temps en temps, le module complémentaire vérifie la clé auprès du prestataire de paiement Lemon Squeezy ; sans Internet, la dernière vérification réussie reste valable.
@@ -98,7 +100,7 @@ Si vous ne recevez pas d'e-mail après l'achat : vérifiez le dossier spam, sin
 
 1. **Installer le module complémentaire** comme décrit dans [Installation, mise à jour, désinstallation](#installation-mise-à-jour-désinstallation). Après l'installation, la Gestion des Appareils apparaît comme entrée dans la barre latérale de HA.
 2. **Activer la licence Pro** sous *Paramètres → Licence*. Sans licence, vous pouvez gérer à la main jusqu'à 50 appareils, l'interface est alors en anglais. Sont Pro, entre autres, l'import HA, les autres langues, l'export PDF/Excel, MQTT, la caméra, le scanner, les documents, les photos d'installation, les champs de remise et l'édition en masse — la liste complète figure sous [Free et Pro](#free-et-pro).
-3. **Importer les appareils HA** (Pro) sous *Paramètres → Import Home Assistant → Importer appareils HA*. Pour les grandes installations (300+), l'import peut durer une minute ; il s'exécute en arrière-plan avec un indicateur de progression. Sont repris : nom, fabricant, modèle, firmware, pièce et étage, intégration, réseau et — depuis 3.1.0 — numéro de série, adresse MAC et alimentation (pile/batterie), dans la mesure où Home Assistant les connaît. Un nouvel import ne crée pas de doublons et, pour les appareils existants, ne complète le numéro de série et la MAC que dans les champs vides.
+3. **Importer les appareils HA** (Pro) sous *Paramètres → Import Home Assistant → Importer appareils HA*. Pour les grandes installations (300+), l'import peut durer une minute ; il s'exécute en arrière-plan avec un indicateur de progression. Sont repris : nom, fabricant, modèle, firmware, pièce et étage, intégration, réseau et — depuis 3.1.0 — numéro de série, adresse MAC et alimentation (pile/batterie), dans la mesure où Home Assistant les connaît. Un nouvel import ne crée pas de doublons et, pour les appareils existants, ne complète le numéro de série et la MAC que dans les champs vides. Tant qu'aucun appareil n'est saisi, le tableau de bord et la liste des appareils proposent le bouton **Importer depuis Home Assistant** à côté de **Ajouter le premier appareil** ; il mène directement à cette section (depuis 3.1.1).
 4. **Facultatif : activer MQTT-Discovery** (Pro) sous *Paramètres → Intégration Home Assistant → Publier les appareils dans HA* — le chapitre [Intégration Home Assistant](#intégration-home-assistant-mqtt-discovery) explique si c'est utile.
 5. **Compléter les premiers appareils** : touchez un appareil dans la liste, puis *Modifier*, et saisissez au moins *Date d'Achat* et *Garantie jusqu'au*, et le prix d'achat sous *Remarques*. Avec Pro, ajoutez une photo et des photos d'installation et téléversez les justificatifs comme documents — prêt pour la documentation d'assurance.
 

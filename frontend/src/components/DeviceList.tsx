@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "preact/hooks"
 import { liveQuery } from "dexie";
 import { useDevices, type WarrantyStatus, type SortKey } from "../hooks/useDevices";
 import { DeviceCard } from "./DeviceCard";
+import { EmptyStart } from "./EmptyStart";
 import { FilterBar } from "./FilterBar";
 import { DonutFilters, type DonutFilterKey } from "./DonutFilters";
 import { t } from "../i18n";
@@ -375,6 +376,9 @@ export function DeviceList() {
             <div class="animate-spin w-8 h-8 border-2 border-[#1F4E79] border-t-transparent rounded-full mx-auto mb-3" />
             {t("devices.loading")}
           </div>
+        ) : devices.length === 0 && !(search || activeType || activeNetwork || activePower ||
+            activeWarranty || activeIntegration || activeManufacturer || activeArea || parentsOnly) ? (
+          <EmptyStart />
         ) : devices.length === 0 ? (
           <div class="text-center py-12 text-gray-400">
             <svg

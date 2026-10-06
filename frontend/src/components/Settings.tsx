@@ -1,4 +1,4 @@
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { db } from "../db/schema";
 import { syncPendingQueue, getPendingCount, apiPost, apiGet, syncFromServer } from "../api/client";
 import { t, setLanguage, getLanguage, getAvailableLanguages } from "../i18n";
@@ -11,6 +11,7 @@ import { TrashView } from "./TrashView";
 import { DuplicatesSection } from "./MergeDialog";
 import { RecategorizePreview } from "./RecategorizePreview";
 import { ExportPicker } from "./ExportPicker";
+import { ProHint } from "./ProHint";
 import { hasFeature } from "../license";
 import { useLicense } from "../license/useLicense";
 import { useDarkMode } from "../hooks/useDarkMode";
@@ -31,6 +32,17 @@ export function Settings() {
   // v3.1.0: PDF-/Excel-Export ist Pro, wie in README und Lizenzseite angegeben.
   const hasExcel = hasFeature("excel");
   const hasHaSync = hasFeature("ha_sync");
+
+  // v3.1.1: Leerer Bestand verlinkt auf /settings#ha-import (GitHub #25).
+  useEffect(() => {
+    // Abschnitte darueber (Lizenz, Diagnose) laden nach und verschieben das
+    // Ziel; deshalb nach kurzer Wartezeit ohne Animation springen.
+    if (window.location.hash !== "#ha-import") return;
+    const timer = window.setTimeout(() => {
+      document.getElementById("ha-import")?.scrollIntoView({ block: "start" });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, []);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<string | null>(null);
   const [confirmImport, setConfirmImport] = useState(false);
@@ -569,7 +581,7 @@ export function Settings() {
           )}
         </div>
 
-        <div class="p-4">
+        <div id="ha-import" class="p-4 scroll-mt-20">
           <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("settings.haImport")}</h3>
           <p class="text-xs text-gray-400 mb-3">
             {t("settings.haImportDesc")}
@@ -588,6 +600,7 @@ export function Settings() {
               : t("settings.haImportButton")}
             {!hasHaSync && " (Pro)"}
           </button>
+          {!hasHaSync && <ProHint />}
           {confirmImport && (
             <button
               onClick={() => setConfirmImport(false)}
@@ -650,6 +663,7 @@ export function Settings() {
             {t("recategorize.previewButton")}
             {!hasHaSync && " (Pro)"}
           </button>
+          {!hasHaSync && <div class="mb-2"><ProHint /></div>}
           {/* Legacy "apply immediately" fallback kept behind a disclosure. */}
           <details class="text-xs text-gray-500 dark:text-gray-400">
             <summary class="cursor-pointer select-none">
@@ -867,6 +881,7 @@ export function Settings() {
             {mqttTesting ? "…" : (t("settings.mqttTestButton") || "Test MQTT connection")}
             {!hasHaSync && " (Pro)"}
           </button>
+          {!hasHaSync && <div class="mb-2"><ProHint /></div>}
           {mqttEnabled && hasHaSync && (
             <button
               onClick={handleMqttSync}
@@ -948,6 +963,7 @@ export function Settings() {
               {!hasExcel && " (Pro)"}
             </button>
           </div>
+          {!hasExcel && <ProHint />}
           {/* v3.1.0: Excel-Import in der Oberflaeche (vorher nur API). Liest den
               eigenen Excel-Export wieder ein; Ersetzen nur mit Bestaetigung. */}
           <div class="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -970,7 +986,6 @@ export function Settings() {
               onChange={handleXlsxImport}
               class="w-full text-xs text-gray-600 dark:text-gray-400 file:mr-3 file:px-3 file:py-2 file:rounded-lg file:border-0 file:bg-[#1F4E79] file:text-white file:text-sm file:font-medium file:cursor-pointer disabled:opacity-50"
             />
-            {!hasExcel && <p class="text-xs text-gray-400 mt-1">Pro</p>}
             {xlsxConfirm && (
               <div class="mt-2 flex gap-2">
                 <button
