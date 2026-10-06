@@ -12,6 +12,10 @@ Solange noch kein Geraet erfasst ist, zeigen Startseite und Geraeteliste neben *
 
 Ohne Lizenz wechselten ausgegraute Knoepfe wie *HA-Geraete importieren* beim Ueberfahren die Farbe, ein Klick tat aber nichts. Gesperrte Knoepfe reagieren jetzt nicht mehr aufs Ueberfahren und zeigen den Sperr-Mauszeiger. In den Einstellungen steht unter jeder gesperrten Funktion (HA-Import, Geraete neu kategorisieren, MQTT-Verbindung testen, PDF-/Excel-Export) der Hinweis „Pro-Funktion – Lizenzschluessel unter Einstellungen → Lizenz eintragen." mit Link zum Kauf.
 
+### Behoben: Raumnamen auf der Startseite
+
+Die Liste *Nach Standort (Top 10)* auf der Startseite zeigte bei importierten Geraeten die interne Kennung aus Home Assistant (z. B. „buro" oder „control_room") statt des Raumnamens. Sie nutzte seit 2.1.0 eine feste Beispielliste statt der importierten Namen. Ebenso zeigt der Filter-Chip in der Geraeteliste nach einem Klick auf einen Raum jetzt „Standort: Buero" statt der Kennung.
+
 ## 3.1.0
 
 Feature-Release mit den im Forum zugesagten Uebergabe-Funktionen, neuen Exportmoeglichkeiten, Hilfe gegen doppelte Geraete seit HA 2026.8 — und einer gruendlich ueberarbeiteten Auto-Kategorisierung. Dabei kam ein alter Fehler ans Licht: Die Kategorisierung nach `device_class` hat seit 2.4.0 auf echten Anlagen nie gegriffen (siehe unten).

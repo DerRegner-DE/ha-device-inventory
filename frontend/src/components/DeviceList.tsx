@@ -179,7 +179,11 @@ export function DeviceList() {
   });
   if (activeIntegration) extraChips.push({ label: `${t("dashboard.byIntegration")}: ${activeIntegration}`, onClear: clearIntegration });
   if (activeManufacturer) extraChips.push({ label: `${t("dashboard.byManufacturer")}: ${activeManufacturer}`, onClear: clearManufacturer });
-  if (activeArea) extraChips.push({ label: `${t("dashboard.byLocation")}: ${activeArea}`, onClear: clearArea });
+  if (activeArea) {
+    // v3.1.1: Raumname statt HA-Kennung, Ueberschrift ohne "(Top 10)".
+    const areaName = allDevices.find((d) => d.standort_area_id === activeArea && d.standort_name)?.standort_name;
+    extraChips.push({ label: `${t("detail.location")}: ${areaName || activeArea}`, onClear: clearArea });
+  }
 
   const toggleSelect = (uuid: string) => {
     setSelected((prev) => {

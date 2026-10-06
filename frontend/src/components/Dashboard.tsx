@@ -49,10 +49,17 @@ export function Dashboard() {
   const byArea = new Map<string, number>();
   const byIntegration = new Map<string, number>();
   const byManufacturer = new Map<string, number>();
+  // v3.1.1: Raumnamen aus den Geraeten (HA-Import), nicht aus der festen
+  // Beispielliste FLOORS -- die kennt nur Demo-Raeume, echte Anlagen sahen
+  // hier die HA-Kennung (z. B. "buro" statt "Buero").
+  const areaNames = new Map<string, string>();
 
   for (const d of devices) {
     byType.set(d.typ, (byType.get(d.typ) ?? 0) + 1);
-    if (d.standort_area_id) byArea.set(d.standort_area_id, (byArea.get(d.standort_area_id) ?? 0) + 1);
+    if (d.standort_area_id) {
+      byArea.set(d.standort_area_id, (byArea.get(d.standort_area_id) ?? 0) + 1);
+      if (d.standort_name && !areaNames.has(d.standort_area_id)) areaNames.set(d.standort_area_id, d.standort_name);
+    }
     if (d.integration) byIntegration.set(d.integration, (byIntegration.get(d.integration) ?? 0) + 1);
     if (d.hersteller) byManufacturer.set(d.hersteller, (byManufacturer.get(d.hersteller) ?? 0) + 1);
   }
@@ -61,7 +68,7 @@ export function Dashboard() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([id, count]) => ({
-      label: getAreaName(id),
+      label: areaNames.get(id) ?? getAreaName(id),
       count,
       filterKey: "area",
       filterValue: id,
