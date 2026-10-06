@@ -86,7 +86,7 @@ Las funciones básicas son gratuitas; las funciones avanzadas se desbloquean con
 
 Lo que ya está registrado sigue visible sin licencia, y MQTT se puede desactivar y limpiar en cualquier momento. Así no quedan restos si Pro deja de estar activo.
 
-Sin licencia, los botones Pro aparecen en gris, llevan el añadido «(Pro)» y no reaccionan ni al clic ni al pasar el ratón. En Ajustes, desde la 3.1.1 debajo aparece el aviso «Función Pro: introduce la clave de licencia en Ajustes → Licencia.» con el enlace **Comprar Pro – 9,99 €**.
+Sin licencia, los botones Pro aparecen en gris, llevan el añadido «(Pro)» y no reaccionan ni al clic ni al pasar el ratón. En Ajustes, desde la 3.1.1 debajo aparece el aviso «Función Pro: introduzca la clave de licencia en Ajustes → Licencia.» con el enlace **Comprar Pro – 9,99 €**.
 
 **Comprar:** mediante el enlace del README del repositorio de GitHub; la clave llega por correo electrónico con la confirmación de compra. Una clave vale para hasta tres instalaciones y no caduca.
 
